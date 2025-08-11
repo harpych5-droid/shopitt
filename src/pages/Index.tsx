@@ -1,12 +1,40 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import TopNav from "@/components/TopNav";
+import Feed from "@/components/feed/Feed";
+import CheckoutModal from "@/components/checkout/CheckoutModal";
+import { useEffect, useState } from "react";
+import { Product } from "@/context/ShopProvider";
 
 const Index = () => {
+  const [checkingOut, setCheckingOut] = useState<Product | null>(null);
+
+  useEffect(() => {
+    document.title = "Shopit – Social Commerce Feed";
+    const meta = document.querySelector('meta[name="description"]');
+    if (meta) meta.setAttribute("content", "Discover trending products and buy instantly—Shopit makes shopping social and fun.");
+
+    // Structured data for the feed (simplified)
+    const script = document.createElement("script");
+    script.type = "application/ld+json";
+    script.text = JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'CollectionPage',
+      name: 'Shopit Feed',
+      about: 'Social commerce feed with products and creators'
+    });
+    document.head.appendChild(script);
+    return () => {
+      document.head.removeChild(script);
+    };
+  }, []);
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
+    <div className="min-h-screen bg-background">
+      <TopNav />
+      <main className="container max-w-md pb-24 pt-2">
+        <h1 className="sr-only">Shopit Social Commerce Feed</h1>
+        <Feed onBuy={(p) => setCheckingOut(p)} />
+      </main>
+      <CheckoutModal open={!!checkingOut} onOpenChange={(o) => !o && setCheckingOut(null)} product={checkingOut} />
     </div>
   );
 };
