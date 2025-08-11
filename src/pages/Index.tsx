@@ -3,6 +3,7 @@ import Feed from "@/components/feed/Feed";
 import CheckoutModal from "@/components/checkout/CheckoutModal";
 import { useEffect, useState } from "react";
 import { Product } from "@/context/ShopProvider";
+import AppBar from "@/components/AppBar";
 
 const Index = () => {
   const [checkingOut, setCheckingOut] = useState<Product | null>(null);
@@ -29,11 +30,12 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <TopNav />
-      <main className="container max-w-md pb-24 pt-2">
+      <AppBar />
+      <main className="container max-w-md pb-24 pt-14">
         <h1 className="sr-only">Shopit Social Commerce Feed</h1>
         <Feed onBuy={(p) => setCheckingOut(p)} />
       </main>
+      <TopNav />
       <CheckoutModal open={!!checkingOut} onOpenChange={(o) => !o && setCheckingOut(null)} product={checkingOut} />
     </div>
   );
