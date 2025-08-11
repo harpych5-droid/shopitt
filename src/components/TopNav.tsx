@@ -7,7 +7,7 @@ const TopNav = () => {
   const { cartCount, wishlistCount } = useShop();
 
   return (
-    <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <nav className="container flex items-center justify-between py-2">
         <div className="flex items-center gap-2">
           <Link to="/" className="flex items-center gap-2">
