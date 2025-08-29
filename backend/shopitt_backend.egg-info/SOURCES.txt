@@ -1,0 +1,6 @@
+pyproject.toml
+shopitt_backend.egg-info/PKG-INFO
+shopitt_backend.egg-info/SOURCES.txt
+shopitt_backend.egg-info/dependency_links.txt
+shopitt_backend.egg-info/requires.txt
+shopitt_backend.egg-info/top_level.txt

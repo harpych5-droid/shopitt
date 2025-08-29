@@ -1,0 +1,6 @@
+@import "tailwindcss";
+
+/* Base viewport fill */
+html, body, #app {
+  height: 100%;
+}
