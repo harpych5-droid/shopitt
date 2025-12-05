@@ -1,0 +1,77 @@
+/* Floating Bag Animations */
+
+@keyframes soft-bounce {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-8px) scale(1.02);
+  }
+}
+
+@keyframes jiggle-glow {
+  0%, 100% {
+    transform: translateX(0) scale(1);
+  }
+  10% {
+    transform: translateX(-4px) rotate(-2deg) scale(1.05);
+  }
+  20% {
+    transform: translateX(4px) rotate(2deg) scale(1.05);
+  }
+  30% {
+    transform: translateX(-4px) rotate(-2deg) scale(1.05);
+  }
+  40% {
+    transform: translateX(4px) rotate(2deg) scale(1.05);
+  }
+  50% {
+    transform: translateX(0) scale(1.05);
+  }
+}
+
+.soft-bounce {
+  animation: soft-bounce 3s ease-in-out infinite;
+}
+
+.jiggle-glow {
+  animation: jiggle-glow 0.6s ease-out;
+}
+
+@keyframes animation-pop {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animation-pop {
+  animation: animation-pop 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.floating-bag-container {
+  position: fixed;
+  bottom: 24px;
+  left: 24px;
+  z-index: 40;
+  cursor: pointer;
+}
+
+.touch-target {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+@media (max-width: 640px) {
+  .floating-bag-container {
+    bottom: 80px;
+    left: 16px;
+  }
+}
