@@ -1,7 +1,5 @@
 import { useParams } from "react-router-dom";
-import TopNav from "@/components/TopNav";
 import { useEffect } from "react";
-import AppBar from "@/components/AppBar";
 
 const Profile = () => {
   const { handle } = useParams<{ handle: string }>();
@@ -12,7 +10,6 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <AppBar />
       <main className="container max-w-md space-y-4 pb-24 pt-14">
         <header className="flex items-center gap-3">
           <div className="size-16 rounded-full bg-primary text-primary-foreground grid place-items-center font-bold">
@@ -32,7 +29,6 @@ const Profile = () => {
           ))}
         </section>
       </main>
-      <TopNav />
     </div>
   );
 };

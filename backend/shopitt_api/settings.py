@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     
     # Third-party apps
     'rest_framework',
+    'corsheaders',
     
     # Local apps
     'apps.users',
@@ -48,10 +49,12 @@ INSTALLED_APPS = [
     'apps.drops',
     'apps.events',
     'apps.tastegraph',
+    'apps.bag',  # Floating bag app
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -141,3 +144,13 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
 }
+
+# CORS Configuration - Allow frontend to make requests
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:5173',
+]
+
+CORS_ALLOW_CREDENTIALS = True

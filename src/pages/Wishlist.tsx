@@ -1,6 +1,4 @@
 import { useEffect, useMemo } from "react";
-import AppBar from "@/components/AppBar";
-import TopNav from "@/components/TopNav";
 import { useShop } from "@/context/ShopProvider";
 import { mockPosts } from "@/data/mockPosts";
 
@@ -19,7 +17,6 @@ const Wishlist = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <AppBar />
       <main className="container max-w-md pb-24 pt-14">
         <h1 className="mb-4 text-xl font-bold">Wishlist</h1>
         {items.length === 0 ? (
@@ -40,7 +37,6 @@ const Wishlist = () => {
           </div>
         )}
       </main>
-      <TopNav />
     </div>
   );
 };

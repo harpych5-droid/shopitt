@@ -1,6 +1,4 @@
 import { useEffect } from "react";
-import AppBar from "@/components/AppBar";
-import TopNav from "@/components/TopNav";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -13,7 +11,6 @@ const Search = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <AppBar />
       <main className="container max-w-md pb-24 pt-14">
         <h1 className="mb-3 text-xl font-bold">Search</h1>
         <div className="mb-4">
@@ -31,7 +28,6 @@ const Search = () => {
           ))}
         </div>
       </main>
-      <TopNav />
     </div>
   );
 };

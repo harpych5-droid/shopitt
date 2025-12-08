@@ -1,6 +1,4 @@
 import { useEffect, useMemo } from "react";
-import AppBar from "@/components/AppBar";
-import TopNav from "@/components/TopNav";
 import { useShop } from "@/context/ShopProvider";
 import { Button } from "@/components/ui/button";
 
@@ -19,7 +17,6 @@ const Cart = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <AppBar />
       <main className="container max-w-md pb-24 pt-14">
         <h1 className="mb-4 text-xl font-bold">Cart</h1>
         {cart.length === 0 ? (
@@ -56,7 +53,6 @@ const Cart = () => {
           </div>
         )}
       </main>
-      <TopNav />
     </div>
   );
 };

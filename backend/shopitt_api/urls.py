@@ -29,6 +29,7 @@ urlpatterns = [
     path('api/drops/', include('apps.drops.urls')),
     path('api/events/', include('apps.events.urls')),
     path('api/tastegraph/', include('apps.tastegraph.urls')),
+    path('api/bag/', include('apps.bag.urls')),  # Floating bag endpoints
 ]
 
 # Serve media files in development

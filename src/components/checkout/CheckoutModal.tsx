@@ -1,22 +1,38 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Product } from "@/context/ShopProvider";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useShop } from "@/context/ShopProvider";
+import { useFlying } from "@/hooks/useFlying";
 
 const CheckoutModal = ({ open, onOpenChange, product }: { open: boolean; onOpenChange: (o: boolean) => void; product: Product | null }) => {
   const [step, setStep] = useState<"shipping" | "payment" | "confirm">("shipping");
   const { addToCart } = useShop();
+  const { animateItemToCart } = useFlying();
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   const proceed = () => {
     if (step === "shipping") setStep("payment");
-    else if (step === "payment") setStep("confirm");
+    else if (step === "payment") {
+      setStep("confirm");
+      // Trigger flying animation after a short delay
+      setTimeout(() => {
+        if (product && dialogRef.current) {
+          const productImageEl = dialogRef.current.querySelector('img[alt="' + product.title + '"]') as HTMLElement;
+          const bagElement = document.querySelector('[data-bag-element]') as HTMLElement;
+          
+          if (productImageEl && bagElement) {
+            animateItemToCart(productImageEl, bagElement, product.id, product.media[0]);
+          }
+        }
+      }, 100);
+    }
     else onOpenChange(false);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" ref={dialogRef}>
         <DialogHeader>
           <DialogTitle>Checkout</DialogTitle>
         </DialogHeader>
