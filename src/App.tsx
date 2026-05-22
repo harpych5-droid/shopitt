@@ -30,6 +30,7 @@ import NotFound from "./pages/NotFound.tsx";
 import { AuthBootstrap } from "./components/auth/AuthBootstrap";
 import { IdentityProvider } from "./hooks/useIdentity";
 import { IdentityGate } from "./components/auth/IdentityGate";
+import { InstallPrompt } from "./components/pwa/InstallPrompt";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <InstallPrompt />
       <BrowserRouter>
         <IdentityProvider>
           <AuthBootstrap />
