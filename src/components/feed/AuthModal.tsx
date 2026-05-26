@@ -29,9 +29,11 @@ export const AuthModal = ({ open, onClose, action }: AuthModalProps) => {
       if (pending) {
         sessionStorage.setItem("shopitt:pendingAction", JSON.stringify(pending));
       }
-      const { error } = await signInWithGoogle();
-      if (error) throw error;
-      // The browser will redirect to Google; nothing else to do here.
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+      if (result.error) throw result.error;
+      // Browser redirects to Google; nothing else to do.
     } catch (err: any) {
       console.error("Google sign-in failed", err);
       toast.error(err?.message ?? "Sign-in failed. Please try again.");
