@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Loader2 } from "lucide-react";
 import { useState } from "react";
-import { signInWithGoogle } from "@/hooks/useAuth";
+import { lovable } from "@/integrations/lovable";
 import { shopitt } from "@/store/useShopittStore";
 import { toast } from "sonner";
 
