@@ -5,6 +5,15 @@ import feed4 from "@/assets/feed-4.jpg";
 import feed5 from "@/assets/feed-5.jpg";
 import feed6 from "@/assets/feed-6.jpg";
 
+export type PostType = "product" | "inspiration";
+export type PostBadge =
+  | "Product"
+  | "Inspiration"
+  | "Trend"
+  | "Creator Pick"
+  | "Featured"
+  | "New Drop";
+
 export type FeedItem = {
   id: string;
   brand: string;
@@ -17,7 +26,7 @@ export type FeedItem = {
   currency: string;
   stockLeft: number;
   freeDelivery: boolean;
-  category: "For You" | "Fashion" | "Beauty" | "Tech" | "Footwear";
+  category: "For You" | "Fashion" | "Beauty" | "Tech" | "Footwear" | "Inspiration";
   likes: number;
   sold: number;
   location: string;
@@ -29,6 +38,9 @@ export type FeedItem = {
   kind?: "product" | "service";
   /** Logistics scope (used in Orders + Checkout UI). */
   deliveryType?: "international" | "country" | "local";
+  /** NEW — Discovery layer. */
+  postType?: PostType;
+  badge?: PostBadge;
 };
 
 export const FEED: FeedItem[] = [
@@ -54,6 +66,30 @@ export const FEED: FeedItem[] = [
     comments: 896,
     kind: "product",
     deliveryType: "country",
+    postType: "product",
+    badge: "New Drop",
+  },
+  {
+    id: "i1",
+    brand: "Studio Kola",
+    brandHandle: "studiokola",
+    title: "5 Ways To Style Cargo Pants",
+    drop: "Outfit Idea",
+    image: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=900&q=80&auto=format&fit=crop",
+    price: 0,
+    currency: "",
+    stockLeft: 0,
+    freeDelivery: false,
+    category: "Inspiration",
+    likes: 18420,
+    sold: 0,
+    location: "Lusaka",
+    shipsIn: "",
+    caption: "Cargo szn. Five fits that work from campus to club.",
+    hashtags: ["outfitideas", "streetstyle", "cargopants"],
+    comments: 412,
+    postType: "inspiration",
+    badge: "Inspiration",
   },
   {
     id: "p2",
@@ -74,6 +110,30 @@ export const FEED: FeedItem[] = [
     caption: "Fresh drop just landed 🟠 These go hard with anything",
     hashtags: ["sneakers", "jordan", "shopzambia", "kicks"],
     comments: 234,
+    postType: "product",
+    badge: "Featured",
+  },
+  {
+    id: "i2",
+    brand: "Amara Style",
+    brandHandle: "amarastyle",
+    title: "The Quiet Luxury Mood Board",
+    drop: "Trend Watch",
+    image: "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=900&q=80&auto=format&fit=crop",
+    price: 0,
+    currency: "",
+    stockLeft: 0,
+    freeDelivery: false,
+    category: "Inspiration",
+    likes: 24180,
+    sold: 0,
+    location: "Lusaka",
+    shipsIn: "",
+    caption: "Whisper, don't shout. Neutral tones, sharp tailoring, slow textures.",
+    hashtags: ["quietluxury", "trend", "moodboard"],
+    comments: 538,
+    postType: "inspiration",
+    badge: "Trend",
   },
   {
     id: "p3",
@@ -97,6 +157,29 @@ export const FEED: FeedItem[] = [
     comments: 78,
     kind: "service",
     deliveryType: "local",
+    postType: "product",
+  },
+  {
+    id: "i3",
+    brand: "Chisanga",
+    brandHandle: "chisanga.fits",
+    title: "Date Night, Lusaka Edition",
+    drop: "Creator Pick",
+    image: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=900&q=80&auto=format&fit=crop",
+    price: 0,
+    currency: "",
+    stockLeft: 0,
+    freeDelivery: false,
+    category: "Inspiration",
+    likes: 9820,
+    sold: 0,
+    location: "Lusaka",
+    shipsIn: "",
+    caption: "Silk slip + chunky gold + bare collarbones. Done.",
+    hashtags: ["datenight", "outfitidea", "creator"],
+    comments: 198,
+    postType: "inspiration",
+    badge: "Creator Pick",
   },
   {
     id: "p4",
@@ -117,6 +200,7 @@ export const FEED: FeedItem[] = [
     caption: "Cult favourite is back. Don't sleep.",
     hashtags: ["fragrance", "cult", "shopitt"],
     comments: 145,
+    postType: "product",
   },
   {
     id: "p5",
@@ -139,6 +223,30 @@ export const FEED: FeedItem[] = [
     comments: 312,
     kind: "product",
     deliveryType: "international",
+    postType: "product",
+    badge: "Featured",
+  },
+  {
+    id: "i4",
+    brand: "Tendai",
+    brandHandle: "tendai.muse",
+    title: "Streetwear x Chitenge",
+    drop: "Trend Watch",
+    image: "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=900&q=80&auto=format&fit=crop",
+    price: 0,
+    currency: "",
+    stockLeft: 0,
+    freeDelivery: false,
+    category: "Inspiration",
+    likes: 31240,
+    sold: 0,
+    location: "Lusaka",
+    shipsIn: "",
+    caption: "Heritage prints meet oversized silhouettes. The new African street.",
+    hashtags: ["chitenge", "streetwear", "africanfashion", "trend"],
+    comments: 712,
+    postType: "inspiration",
+    badge: "Trend",
   },
   {
     id: "p6",
@@ -160,6 +268,7 @@ export const FEED: FeedItem[] = [
     caption: "Studio-grade ANC. 40h battery. Built for the commute.",
     hashtags: ["tech", "audio", "headphones"],
     comments: 98,
+    postType: "product",
   },
   {
     id: "p7", brand: "Lumen Optics", brandHandle: "lumenoptics",
@@ -168,6 +277,22 @@ export const FEED: FeedItem[] = [
     price: 3483, oldPrice: 4320, currency: "ZMW ", stockLeft: 6, freeDelivery: true,
     category: "Fashion", likes: 8420, sold: 142, location: "Lusaka", shipsIn: "24h",
     caption: "Golden hour, every hour 🌅", hashtags: ["eyewear","summer","drop"], comments: 211,
+    postType: "product",
+  },
+  {
+    id: "i5",
+    brand: "Mwila",
+    brandHandle: "mwila.studio",
+    title: "Campus Fits That Hit",
+    drop: "Outfit Idea",
+    image: "https://images.unsplash.com/photo-1485518882345-15568b007407?w=900&q=80&auto=format&fit=crop",
+    price: 0, currency: "", stockLeft: 0, freeDelivery: false,
+    category: "Inspiration", likes: 14820, sold: 0, location: "Lusaka", shipsIn: "",
+    caption: "Effortless, all-week looks for the UNZA grind. Mix denim, knit, sneakers.",
+    hashtags: ["campusfits", "outfitideas", "studentstyle"],
+    comments: 287,
+    postType: "inspiration",
+    badge: "Creator Pick",
   },
   {
     id: "p8", brand: "Kora Studio", brandHandle: "korastudio",
@@ -176,6 +301,7 @@ export const FEED: FeedItem[] = [
     price: 5805, currency: "ZMW ", stockLeft: 3, freeDelivery: true,
     category: "Fashion", likes: 19320, sold: 87, location: "Lusaka", shipsIn: "48h",
     caption: "Liquid silk. Pure mood.", hashtags: ["silk","luxe","fashion"], comments: 432,
+    postType: "product",
   },
   {
     id: "p9", brand: "Nimbus Tech", brandHandle: "nimbustech",
@@ -184,6 +310,22 @@ export const FEED: FeedItem[] = [
     price: 4293, oldPrice: 5373, currency: "ZMW ", stockLeft: 11, freeDelivery: true,
     category: "Tech", likes: 11240, sold: 305, location: "Lusaka", shipsIn: "24h",
     caption: "Hi-fi in your pocket. ANC perfected.", hashtags: ["tech","audio","earbuds"], comments: 156,
+    postType: "product",
+  },
+  {
+    id: "i6",
+    brand: "Bupe",
+    brandHandle: "bupe.aesthetic",
+    title: "Future Brand: NSANJE",
+    drop: "Brand Concept",
+    image: "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=900&q=80&auto=format&fit=crop",
+    price: 0, currency: "", stockLeft: 0, freeDelivery: false,
+    category: "Inspiration", likes: 6280, sold: 0, location: "Lusaka", shipsIn: "",
+    caption: "A concept board for a future Zambian streetwear label. Earth tones + sharp logos.",
+    hashtags: ["brandidea", "moodboard", "future"],
+    comments: 121,
+    postType: "inspiration",
+    badge: "Featured",
   },
   {
     id: "p10", brand: "Mira Beauty", brandHandle: "mirabeauty",
@@ -192,6 +334,7 @@ export const FEED: FeedItem[] = [
     price: 864, currency: "ZMW ", stockLeft: 8, freeDelivery: true,
     category: "Beauty", likes: 6480, sold: 521, location: "Ndola", shipsIn: "48h",
     caption: "12-hour wear. Zero transfer.", hashtags: ["beauty","lips","matte"], comments: 89,
+    postType: "product",
   },
   {
     id: "p11", brand: "Onyx Wear", brandHandle: "onyxwear",
@@ -200,6 +343,7 @@ export const FEED: FeedItem[] = [
     price: 2565, currency: "ZMW ", stockLeft: 14, freeDelivery: true,
     category: "Fashion", likes: 14210, sold: 388, location: "Lusaka", shipsIn: "24h",
     caption: "500gsm. Built like armour.", hashtags: ["streetwear","hoodie","drop"], comments: 247,
+    postType: "product",
   },
   {
     id: "p12", brand: "Solas Footwear", brandHandle: "solasfootwear",
@@ -208,6 +352,8 @@ export const FEED: FeedItem[] = [
     price: 4725, oldPrice: 5940, currency: "ZMW ", stockLeft: 5, freeDelivery: true,
     category: "Footwear", likes: 32140, sold: 612, location: "Lusaka", shipsIn: "24h",
     caption: "Walking on clouds. Literally.", hashtags: ["sneakers","kicks","drop"], comments: 524,
+    postType: "product",
+    badge: "New Drop",
   },
   {
     id: "p13", brand: "Verre Maison", brandHandle: "verremaison",
@@ -216,6 +362,7 @@ export const FEED: FeedItem[] = [
     price: 6480, currency: "ZMW ", stockLeft: 4, freeDelivery: false,
     category: "Fashion", likes: 4120, sold: 41, location: "Kitwe", shipsIn: "72h",
     caption: "Hand-blown. Heirloom-ready.", hashtags: ["home","luxury","craft"], comments: 67,
+    postType: "product",
   },
   {
     id: "p14", brand: "Pulse Watches", brandHandle: "pulsewatches",
@@ -224,6 +371,7 @@ export const FEED: FeedItem[] = [
     price: 11070, oldPrice: 14040, currency: "ZMW ", stockLeft: 2, freeDelivery: true,
     category: "Tech", likes: 22180, sold: 73, location: "Lusaka", shipsIn: "24h",
     caption: "Sapphire crystal. Swiss movement.", hashtags: ["watch","luxury","tech"], comments: 388,
+    postType: "product",
   },
   {
     id: "p15", brand: "Halé Skin", brandHandle: "haleskin",
@@ -232,6 +380,7 @@ export const FEED: FeedItem[] = [
     price: 1512, currency: "ZMW ", stockLeft: 18, freeDelivery: true,
     category: "Beauty", likes: 7890, sold: 412, location: "Ndola", shipsIn: "48h",
     caption: "72-hour hydration. Plastic-free.", hashtags: ["skincare","clean","beauty"], comments: 142,
+    postType: "product",
   },
   {
     id: "p16", brand: "Forme Atelier", brandHandle: "formeatelier",
@@ -240,6 +389,7 @@ export const FEED: FeedItem[] = [
     price: 4536, currency: "ZMW ", stockLeft: 6, freeDelivery: true,
     category: "Fashion", likes: 10240, sold: 192, location: "Lusaka", shipsIn: "48h",
     caption: "The drape that does the work.", hashtags: ["tailoring","resort","style"], comments: 178,
+    postType: "product",
   },
   {
     id: "p17", brand: "Aether Audio", brandHandle: "aetheraudio",
@@ -248,6 +398,7 @@ export const FEED: FeedItem[] = [
     price: 13203, currency: "ZMW ", stockLeft: 3, freeDelivery: true,
     category: "Tech", likes: 15870, sold: 54, location: "Lusaka", shipsIn: "72h",
     caption: "Belt-driven. Brass-finished. Pure analog.", hashtags: ["audio","vinyl","studio"], comments: 290,
+    postType: "product",
   },
   {
     id: "p18", brand: "Lune Beauty", brandHandle: "lunebeauty",
@@ -256,13 +407,15 @@ export const FEED: FeedItem[] = [
     price: 1026, oldPrice: 1296, currency: "ZMW ", stockLeft: 9, freeDelivery: true,
     category: "Beauty", likes: 8920, sold: 367, location: "Lusaka", shipsIn: "48h",
     caption: "Lit-from-within. Every angle.", hashtags: ["beauty","glow","makeup"], comments: 121,
+    postType: "product",
   },
 ];
 
-export const CATEGORIES = ["All", "Fashion", "Sneakers", "Beauty", "Luxury", "Tech", "Vintage"] as const;
+export const CATEGORIES = ["All", "Inspiration", "Fashion", "Sneakers", "Beauty", "Luxury", "Tech", "Vintage"] as const;
 
 export const CATEGORY_MAP: Record<string, FeedItem["category"][] | null> = {
   All: null,
+  Inspiration: ["Inspiration"],
   Fashion: ["Fashion"],
   Sneakers: ["Footwear"],
   Beauty: ["Beauty"],
