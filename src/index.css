@@ -6,67 +6,7 @@
 
 @layer base {
   :root {
-    /* LIGHT MODE — Premium, clean, editorial */
-    --background: 0 0% 100%;
-    --foreground: 240 10% 8%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 8%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 8%;
-
-    --primary: 332 100% 60%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 252 90% 64%;
-    --secondary-foreground: 0 0% 100%;
-
-    --muted: 240 5% 96%;
-    --muted-foreground: 240 4% 46%;
-
-    --accent: 240 5% 96%;
-    --accent-foreground: 240 10% 8%;
-
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-
-    --success: 142 71% 38%;
-    --warning: 28 90% 50%;
-
-    --border: 240 6% 90%;
-    --input: 240 6% 90%;
-    --ring: 332 100% 60%;
-
-    --radius: 1rem;
-
-    /* Brand */
-    --brand-pink: 332 100% 60%;
-    --brand-purple: 252 90% 64%;
-
-    --gradient-brand: linear-gradient(135deg, hsl(var(--brand-pink)), hsl(var(--brand-purple)));
-    --gradient-overlay-bottom: linear-gradient(to top, hsl(0 0% 0% / 0.78) 0%, hsl(0 0% 0% / 0.4) 35%, transparent 70%);
-    --gradient-overlay-top: linear-gradient(to bottom, hsl(0 0% 0% / 0.55) 0%, transparent 50%);
-
-    --shadow-brand: 0 8px 24px -10px hsl(var(--brand-pink) / 0.4), 0 2px 10px -2px hsl(var(--brand-purple) / 0.3);
-    --shadow-soft: 0 4px 24px -8px hsl(240 10% 8% / 0.12);
-    --shadow-card: 0 1px 2px hsl(240 10% 8% / 0.04), 0 4px 16px -4px hsl(240 10% 8% / 0.06);
-    --glow-pink: 0 0 24px hsl(var(--brand-pink) / 0.35);
-
-    --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
-
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 240 10% 8%;
-    --sidebar-primary: 332 100% 60%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 5% 96%;
-    --sidebar-accent-foreground: 240 10% 8%;
-    --sidebar-border: 240 6% 90%;
-    --sidebar-ring: 332 100% 60%;
-  }
-
-  .dark {
-    /* DARK MODE — Rich charcoal, elegant, minimal accents */
+    /* DEFAULT — Premium charcoal dark (less neon, more editorial) */
     --background: 240 8% 6%;
     --foreground: 0 0% 98%;
 
@@ -98,10 +38,22 @@
     --input: 240 5% 16%;
     --ring: 332 100% 65%;
 
+    --radius: 1rem;
+
+    /* Brand */
     --brand-pink: 332 100% 65%;
     --brand-purple: 252 100% 72%;
 
+    --gradient-brand: linear-gradient(135deg, hsl(var(--brand-pink)), hsl(var(--brand-purple)));
+    --gradient-overlay-bottom: linear-gradient(to top, hsl(0 0% 0% / 0.85) 0%, hsl(0 0% 0% / 0.45) 35%, transparent 70%);
+    --gradient-overlay-top: linear-gradient(to bottom, hsl(0 0% 0% / 0.6) 0%, transparent 50%);
+
+    --shadow-brand: 0 8px 24px -10px hsl(var(--brand-pink) / 0.45), 0 2px 10px -2px hsl(var(--brand-purple) / 0.35);
+    --shadow-soft: 0 8px 30px -10px hsl(0 0% 0% / 0.5);
     --shadow-card: 0 1px 2px hsl(0 0% 0% / 0.4), 0 4px 16px -4px hsl(0 0% 0% / 0.5);
+    --glow-pink: 0 0 24px hsl(var(--brand-pink) / 0.4);
+
+    --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
 
     --sidebar-background: 240 8% 6%;
     --sidebar-foreground: 0 0% 95%;
@@ -111,6 +63,60 @@
     --sidebar-accent-foreground: 0 0% 95%;
     --sidebar-border: 240 5% 18%;
     --sidebar-ring: 332 100% 65%;
+  }
+
+  .light {
+    /* LIGHT MODE — Clean, editorial, premium */
+    --background: 0 0% 100%;
+    --foreground: 240 10% 8%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 8%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 8%;
+
+    --primary: 332 100% 58%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 252 90% 62%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 240 5% 96%;
+    --muted-foreground: 240 4% 46%;
+
+    --accent: 240 5% 96%;
+    --accent-foreground: 240 10% 8%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 71% 38%;
+    --warning: 28 90% 50%;
+
+    --border: 240 6% 90%;
+    --input: 240 6% 90%;
+    --ring: 332 100% 58%;
+
+    --brand-pink: 332 100% 58%;
+    --brand-purple: 252 90% 62%;
+
+    --shadow-card: 0 1px 2px hsl(240 10% 8% / 0.04), 0 4px 16px -4px hsl(240 10% 8% / 0.06);
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 240 10% 8%;
+    --sidebar-primary: 332 100% 58%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 5% 96%;
+    --sidebar-accent-foreground: 240 10% 8%;
+    --sidebar-border: 240 6% 90%;
+    --sidebar-ring: 332 100% 58%;
+  }
+
+  /* Keep .dark identical to :root default so any existing .dark wrappers still work */
+  .dark {
+    --background: 240 8% 6%;
+    --foreground: 0 0% 98%;
   }
 }
 
@@ -129,7 +135,6 @@
     text-rendering: optimizeLegibility;
     overscroll-behavior-y: none;
     font-family: 'Figtree', system-ui, -apple-system, sans-serif;
-    font-feature-settings: "ss01", "cv11";
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -164,32 +169,14 @@
     -webkit-backdrop-filter: blur(20px) saturate(160%);
     border: 1px solid hsl(0 0% 100% / 0.1);
   }
-  .overlay-bottom {
-    background-image: var(--gradient-overlay-bottom);
-  }
-  .overlay-top {
-    background-image: var(--gradient-overlay-top);
-  }
-  .shadow-brand {
-    box-shadow: var(--shadow-brand);
-  }
-  .shadow-soft {
-    box-shadow: var(--shadow-soft);
-  }
-  .shadow-card {
-    box-shadow: var(--shadow-card);
-  }
-  .glow-pink {
-    box-shadow: var(--glow-pink);
-  }
-  .feed-snap {
-    scroll-snap-type: y mandatory;
-    -webkit-overflow-scrolling: touch;
-  }
-  .feed-item {
-    scroll-snap-align: start;
-    scroll-snap-stop: always;
-  }
+  .overlay-bottom { background-image: var(--gradient-overlay-bottom); }
+  .overlay-top { background-image: var(--gradient-overlay-top); }
+  .shadow-brand { box-shadow: var(--shadow-brand); }
+  .shadow-soft { box-shadow: var(--shadow-soft); }
+  .shadow-card { box-shadow: var(--shadow-card); }
+  .glow-pink { box-shadow: var(--glow-pink); }
+  .feed-snap { scroll-snap-type: y mandatory; -webkit-overflow-scrolling: touch; }
+  .feed-item { scroll-snap-align: start; scroll-snap-stop: always; }
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 0px); }
