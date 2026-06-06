@@ -5,6 +5,7 @@ import { HomeFeedCard } from "@/components/feed/HomeFeedCard";
 import { FloatingBag } from "@/components/feed/FloatingBag";
 import { AuthModal } from "@/components/feed/AuthModal";
 import { BagSheet } from "@/components/feed/BagSheet";
+import { SaveSheet } from "@/components/feed/SaveSheet";
 import { BottomNav } from "@/components/feed/BottomNav";
 import { FEED, CATEGORY_MAP, type FeedItem } from "@/data/feed";
 import { shopitt } from "@/store/useShopittStore";
@@ -30,6 +31,7 @@ const Index = () => {
   const [authOpen, setAuthOpen] = useState(false);
   const [authAction, setAuthAction] = useState<"like" | "save" | "buy" | "comment" | null>(null);
   const [bagOpen, setBagOpen] = useState(false);
+  const [saveSheetPostId, setSaveSheetPostId] = useState<string | null>(null);
 
   const baseItems = useMemo(() => {
     const allowed = CATEGORY_MAP[category];
@@ -133,6 +135,7 @@ const Index = () => {
               item={item}
               index={i}
               onAuthRequired={handleAuthRequired}
+              onOpenSaveSheet={(id) => setSaveSheetPostId(id)}
             />
           ))}
           {items.length === 0 && (
