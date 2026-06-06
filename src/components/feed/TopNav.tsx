@@ -5,10 +5,10 @@ import { useIdentity } from "@/hooks/useIdentity";
 import { IdentityAvatar } from "@/components/identity/IdentityAvatar";
 
 interface TopNavProps {
-  hidden: boolean;
+  hidden?: boolean;
 }
 
-export const TopNav = ({ hidden }: TopNavProps) => {
+export const TopNav = ({ hidden = false }: TopNavProps) => {
   const { profile, isAuthed } = useIdentity();
 
   return (

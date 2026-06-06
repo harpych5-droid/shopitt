@@ -15,6 +15,7 @@ import ChatThread from "./pages/ChatThread.tsx";
 import SellerDashboard from "./pages/SellerDashboard.tsx";
 import ProductDetail from "./pages/ProductDetail.tsx";
 import Dashboard from "./pages/Dashboard.tsx";
+import Discover from "./pages/Discover.tsx";
 import Wallet from "./pages/Wallet.tsx";
 import Orders from "./pages/Orders.tsx";
 import OrderTracking from "./pages/OrderTracking.tsx";
@@ -48,6 +49,7 @@ const App = () => (
               {/* Core feed */}
               <Route path="/" element={<Index />} />
               <Route path="/shorts" element={<Shorts />} />
+              <Route path="/discover" element={<Discover />} />
               <Route path="/search" element={<Search />} />
               <Route path="/create" element={<Create />} />
 

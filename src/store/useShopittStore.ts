@@ -1,17 +1,27 @@
 import { useSyncExternalStore } from "react";
 import type { FeedItem } from "@/data/feed";
 
+export type Collection = { id: string; name: string };
+
 type State = {
   liked: Set<string>;
+  /** Derived: union of postIds across all collections. Kept for back-compat. */
   saved: Set<string>;
+  collections: Collection[];
+  /** postId -> Set of collectionIds it belongs to. */
+  postCollections: Map<string, Set<string>>;
   bag: { item: FeedItem; qty: number }[];
   authed: boolean;
   pendingAction: null | { type: "like" | "save" | "buy" | "comment"; itemId?: string };
 };
 
+const DEFAULT_COLLECTION: Collection = { id: "default", name: "All Saves" };
+
 let state: State = {
   liked: new Set(),
   saved: new Set(),
+  collections: [DEFAULT_COLLECTION],
+  postCollections: new Map(),
   bag: [],
   authed: false,
   pendingAction: null,
@@ -24,6 +34,16 @@ const set = (updater: (s: State) => State) => {
   state = updater(state);
   emit();
 };
+
+const recomputeSaved = (postCollections: Map<string, Set<string>>): Set<string> => {
+  const out = new Set<string>();
+  postCollections.forEach((cols, postId) => {
+    if (cols.size > 0) out.add(postId);
+  });
+  return out;
+};
+
+const uid = () => Math.random().toString(36).slice(2, 10);
 
 export const shopitt = {
   subscribe(listener: () => void) {
@@ -40,13 +60,63 @@ export const shopitt = {
       return { ...s, liked };
     });
   },
-  toggleSave(id: string) {
+  // ---- Collections ----
+  createCollection(name: string): string {
+    const id = uid();
+    set((s) => ({ ...s, collections: [...s.collections, { id, name }] }));
+    return id;
+  },
+  renameCollection(id: string, name: string) {
+    set((s) => ({
+      ...s,
+      collections: s.collections.map((c) => (c.id === id ? { ...c, name } : c)),
+    }));
+  },
+  deleteCollection(id: string) {
+    if (id === "default") return;
     set((s) => {
-      const saved = new Set(s.saved);
-      saved.has(id) ? saved.delete(id) : saved.add(id);
-      return { ...s, saved };
+      const postCollections = new Map(s.postCollections);
+      postCollections.forEach((cols, postId) => {
+        if (cols.has(id)) {
+          const next = new Set(cols);
+          next.delete(id);
+          postCollections.set(postId, next);
+        }
+      });
+      return {
+        ...s,
+        collections: s.collections.filter((c) => c.id !== id),
+        postCollections,
+        saved: recomputeSaved(postCollections),
+      };
     });
   },
+  togglePostInCollection(postId: string, collectionId: string) {
+    set((s) => {
+      const postCollections = new Map(s.postCollections);
+      const current = new Set(postCollections.get(postId) ?? []);
+      current.has(collectionId) ? current.delete(collectionId) : current.add(collectionId);
+      postCollections.set(postId, current);
+      return { ...s, postCollections, saved: recomputeSaved(postCollections) };
+    });
+  },
+  collectionsForPost(postId: string): Set<string> {
+    return state.postCollections.get(postId) ?? new Set();
+  },
+  /** Quick toggle: if saved anywhere, remove from all; else add to default. */
+  quickToggleSave(postId: string) {
+    set((s) => {
+      const postCollections = new Map(s.postCollections);
+      const existing = postCollections.get(postId);
+      if (existing && existing.size > 0) {
+        postCollections.set(postId, new Set());
+      } else {
+        postCollections.set(postId, new Set(["default"]));
+      }
+      return { ...s, postCollections, saved: recomputeSaved(postCollections) };
+    });
+  },
+  // ---- Bag ----
   addToBag(item: FeedItem) {
     set((s) => {
       const existing = s.bag.find((b) => b.item.id === item.id);
@@ -70,6 +140,10 @@ export const shopitt = {
   },
   setPending(p: State["pendingAction"]) {
     set((s) => ({ ...s, pendingAction: p }));
+  },
+  // legacy alias
+  toggleSave(id: string) {
+    shopitt.quickToggleSave(id);
   },
 };
 

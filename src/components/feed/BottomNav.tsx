@@ -1,10 +1,10 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { Home, PlayCircle, Bell, User, Plus } from "lucide-react";
+import { Home, Compass, Bell, User, Plus } from "lucide-react";
 import { motion } from "framer-motion";
 
 const items = [
   { to: "/", label: "Home", icon: Home, end: true },
-  { to: "/shorts", label: "Shorts", icon: PlayCircle, end: false },
+  { to: "/discover", label: "Discover", icon: Compass, end: false },
   { to: "/create", label: "", icon: Plus, end: false, primary: true },
   { to: "/alerts", label: "Alerts", icon: Bell, end: false, badge: 2 },
   { to: "/profile", label: "Profile", icon: User, end: false },
