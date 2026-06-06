@@ -160,6 +160,7 @@ const Index = () => {
 
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} action={authAction} />
       <BagSheet open={bagOpen} onClose={() => setBagOpen(false)} />
+      <SaveSheet open={!!saveSheetPostId} postId={saveSheetPostId} onClose={() => setSaveSheetPostId(null)} />
     </main>
   );
 };
