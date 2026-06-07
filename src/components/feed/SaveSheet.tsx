@@ -9,10 +9,12 @@ interface SaveSheetProps {
   postId: string | null;
 }
 
+const EMPTY_SET: Set<string> = new Set();
+
 export const SaveSheet = ({ open, onClose, postId }: SaveSheetProps) => {
   const collections = useShopitt((s) => s.collections);
   const memberships = useShopitt((s) =>
-    postId ? s.postCollections.get(postId) ?? new Set<string>() : new Set<string>(),
+    postId ? s.postCollections.get(postId) ?? EMPTY_SET : EMPTY_SET,
   );
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
