@@ -32,11 +32,13 @@ import { AuthBootstrap } from "./components/auth/AuthBootstrap";
 import { IdentityProvider } from "./hooks/useIdentity";
 import { IdentityGate } from "./components/auth/IdentityGate";
 import { InstallPrompt } from "./components/pwa/InstallPrompt";
+import { ThemeProvider } from "./hooks/useTheme";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
+    <ThemeProvider>
     <TooltipProvider>
       <Toaster />
       <Sonner />
@@ -88,6 +90,7 @@ const App = () => (
         </IdentityProvider>
       </BrowserRouter>
     </TooltipProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 
