@@ -48,10 +48,10 @@
     --gradient-overlay-bottom: linear-gradient(to top, hsl(0 0% 0% / 0.85) 0%, hsl(0 0% 0% / 0.45) 35%, transparent 70%);
     --gradient-overlay-top: linear-gradient(to bottom, hsl(0 0% 0% / 0.6) 0%, transparent 50%);
 
-    --shadow-brand: 0 8px 24px -10px hsl(var(--brand-pink) / 0.45), 0 2px 10px -2px hsl(var(--brand-purple) / 0.35);
-    --shadow-soft: 0 8px 30px -10px hsl(0 0% 0% / 0.5);
-    --shadow-card: 0 1px 2px hsl(0 0% 0% / 0.4), 0 4px 16px -4px hsl(0 0% 0% / 0.5);
-    --glow-pink: 0 0 24px hsl(var(--brand-pink) / 0.4);
+    --shadow-brand: 0 4px 14px -6px hsl(0 0% 0% / 0.45);
+    --shadow-soft: 0 4px 18px -8px hsl(0 0% 0% / 0.45);
+    --shadow-card: 0 1px 2px hsl(0 0% 0% / 0.35), 0 2px 8px -3px hsl(0 0% 0% / 0.4);
+    --glow-pink: none;
 
     --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
 
@@ -174,7 +174,7 @@
   .shadow-brand { box-shadow: var(--shadow-brand); }
   .shadow-soft { box-shadow: var(--shadow-soft); }
   .shadow-card { box-shadow: var(--shadow-card); }
-  .glow-pink { box-shadow: var(--glow-pink); }
+  .glow-pink { box-shadow: none; }
   .feed-snap { scroll-snap-type: y mandatory; -webkit-overflow-scrolling: touch; }
   .feed-item { scroll-snap-align: start; scroll-snap-stop: always; }
   .no-scrollbar::-webkit-scrollbar { display: none; }
