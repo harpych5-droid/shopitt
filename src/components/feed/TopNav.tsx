@@ -3,6 +3,7 @@ import { Search, MessageCircle, Menu as MenuIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useIdentity } from "@/hooks/useIdentity";
 import { IdentityAvatar } from "@/components/identity/IdentityAvatar";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface TopNavProps {
   hidden?: boolean;
@@ -15,7 +16,7 @@ export const TopNav = ({ hidden = false }: TopNavProps) => {
     <motion.header
       initial={false}
       animate={{ y: hidden ? -90 : 0, opacity: hidden ? 0 : 1 }}
-      transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
       className="fixed top-0 inset-x-0 z-40 bg-background/90 backdrop-blur-xl border-b border-border/40"
     >
       <div className="flex items-center justify-between px-4 py-2.5 max-w-md mx-auto gap-2">
@@ -42,6 +43,7 @@ export const TopNav = ({ hidden = false }: TopNavProps) => {
           >
             <MessageCircle className="h-5 w-5 text-foreground" />
           </Link>
+          <ThemeToggle />
           <Link
             to="/menu"
             aria-label="Menu"

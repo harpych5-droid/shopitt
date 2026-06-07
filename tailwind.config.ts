@@ -103,8 +103,8 @@ export default {
           "100%": { backgroundPosition: "1000px 0" },
         },
         "glow-pulse": {
-          "0%, 100%": { boxShadow: "0 0 20px hsl(var(--brand-pink) / 0.45), 0 0 40px hsl(var(--brand-purple) / 0.25)" },
-          "50%": { boxShadow: "0 0 32px hsl(var(--brand-pink) / 0.65), 0 0 60px hsl(var(--brand-purple) / 0.4)" },
+          "0%, 100%": { boxShadow: "0 4px 14px -6px hsl(0 0% 0% / 0.45)" },
+          "50%": { boxShadow: "0 4px 14px -6px hsl(0 0% 0% / 0.45)" },
         },
         "heart-burst": {
           "0%": { transform: "scale(1)" },
