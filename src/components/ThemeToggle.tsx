@@ -6,8 +6,8 @@ interface ThemeToggleProps {
 }
 
 export const ThemeToggle = ({ className = "" }: ThemeToggleProps) => {
-  const { theme, toggle } = useTheme();
-  const isDark = theme === "dark";
+  const { applied, toggle } = useTheme();
+  const isDark = applied === "dark";
 
   return (
     <button

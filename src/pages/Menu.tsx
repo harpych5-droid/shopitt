@@ -19,6 +19,7 @@ import {
   Sparkles,
   Plus,
   ChevronRight,
+  Settings as SettingsIcon,
 } from "lucide-react";
 import { BottomNav } from "@/components/feed/BottomNav";
 import { useIdentity } from "@/hooks/useIdentity";
@@ -42,6 +43,7 @@ const SECTIONS: { key: SectionKey; title: string; tag: string; items: Item[]; ct
     items: [
       { icon: User, label: "Profile", hint: "View your social profile", to: "/profile" },
       { icon: Pencil, label: "Edit profile", hint: "Name, bio, avatar", to: "/edit-profile" },
+      { icon: SettingsIcon, label: "Settings", hint: "Theme, account, sign out", to: "/settings" },
       { icon: Globe, label: "Country & Region", hint: "All countries supported", to: "/country" },
     ],
     cta: { copy: "Complete your profile to unlock seller verification.", to: "/edit-profile" },
