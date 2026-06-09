@@ -420,7 +420,9 @@ const UserProfile = () => {
             </div>
           )}
         </section>
+        </div>
       </div>
+
 
       <BottomNav />
     </main>
