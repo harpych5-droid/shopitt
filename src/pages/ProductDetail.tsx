@@ -22,6 +22,7 @@ import { FEED } from "@/data/feed";
 import { useShopitt, shopitt } from "@/store/useShopittStore";
 import { AuthModal } from "@/components/feed/AuthModal";
 import { BagSheet } from "@/components/feed/BagSheet";
+import { PlaceOrderSheet } from "@/components/feed/PlaceOrderSheet";
 
 const DELIVERY_META = {
   international: { icon: Globe, label: "International delivery" },
@@ -44,6 +45,8 @@ const ProductDetail = () => {
   const [authOpen, setAuthOpen] = useState(false);
   const [authAction, setAuthAction] = useState<"like" | "save" | "buy" | "comment" | null>(null);
   const [bagOpen, setBagOpen] = useState(false);
+  const [orderOpen, setOrderOpen] = useState(false);
+
 
   const liked = useShopitt((s) => s.liked.has(product.id));
   const saved = useShopitt((s) => s.saved.has(product.id));
@@ -85,8 +88,7 @@ const ProductDetail = () => {
 
   const handleBuy = () =>
     guard("buy", () => {
-      shopitt.addToBag(product);
-      setBagOpen(true);
+      setOrderOpen(true);
     });
   const handleAddBag = () => guard("buy", () => shopitt.addToBag(product));
   const handleLike = () => guard("like", () => shopitt.toggleLike(product.id));
@@ -363,6 +365,7 @@ const ProductDetail = () => {
 
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} action={authAction} />
       <BagSheet open={bagOpen} onClose={() => setBagOpen(false)} />
+      <PlaceOrderSheet open={orderOpen} product={product} onClose={() => setOrderOpen(false)} />
     </main>
   );
 };
