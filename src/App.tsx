@@ -11,6 +11,7 @@ import { IdentityGate } from "./components/auth/IdentityGate";
 import { InstallPrompt } from "./components/pwa/InstallPrompt";
 import { ThemeProvider } from "./hooks/useTheme";
 import { SplashScreen } from "./components/SplashScreen";
+import { DesktopSidebar } from "./components/DesktopSidebar";
 
 // Lazy-loaded routes for faster initial paint
 const Shorts = lazy(() => import("./pages/Shorts.tsx"));
@@ -63,6 +64,8 @@ const App = () => (
           <IdentityProvider>
             <AuthBootstrap />
             <IdentityGate>
+              <DesktopSidebar />
+              <div className="lg:pl-60">
               <Suspense fallback={<RouteFallback />}>
                 <Routes>
                   <Route path="/" element={<Index />} />
@@ -100,6 +103,7 @@ const App = () => (
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>
+              </div>
             </IdentityGate>
           </IdentityProvider>
         </BrowserRouter>
