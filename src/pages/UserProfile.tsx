@@ -261,53 +261,63 @@ const UserProfile = () => {
         </div>
       </header>
 
-      <div className="max-w-md mx-auto px-4 pb-32">
-        {/* PROFILE HEADER */}
-        <section className="pt-6">
-          <div className="flex items-start gap-4">
-            <button
-              aria-label="View avatar"
-              className="relative shrink-0 active:scale-95 transition-transform"
-            >
-              <span className="absolute -inset-1 rounded-full gradient-brand animate-glow-pulse" />
-              <span className="relative block h-20 w-20 rounded-full bg-background p-[3px]">
-                {profile.avatar_url ? (
-                  <img
-                    src={profile.avatar_url}
-                    alt={displayName}
-                    className="h-full w-full rounded-full object-cover"
-                  />
-                ) : (
-                  <span className="block h-full w-full rounded-full gradient-brand flex items-center justify-center text-2xl font-black text-white">
-                    {displayName[0].toUpperCase()}
-                  </span>
-                )}
-              </span>
-            </button>
+      <div className="max-w-md mx-auto pb-32">
+        {/* COVER */}
+        <div className="relative h-32 sm:h-40 gradient-brand overflow-hidden">
+          <div className="absolute -bottom-6 -right-6 h-32 w-32 rounded-full bg-white/15 blur-2xl" />
+          <div className="absolute -top-4 -left-4 h-24 w-24 rounded-full bg-white/10 blur-2xl" />
+        </div>
 
-            <div className="flex-1 grid grid-cols-3 gap-2 pt-1">
-              {[
-                { label: "Posts", value: posts.length },
-                { label: "Followers", value: followers },
-                { label: "Following", value: following },
-              ].map((s) => (
-                <button key={s.label} className="text-center active:scale-95 transition-transform">
-                  <div className="text-lg font-extrabold text-foreground tabular-nums">
-                    {s.value >= 1000 ? (s.value / 1000).toFixed(1) + "k" : s.value}
-                  </div>
-                  <div className="text-[11px] text-muted-foreground font-medium">{s.label}</div>
-                </button>
-              ))}
+        <div className="px-4">
+          {/* PROFILE HEADER */}
+          <section className="-mt-12">
+            <div className="flex items-end gap-4">
+              <button
+                aria-label="View avatar"
+                className="relative shrink-0 active:scale-95 transition-transform"
+              >
+                <span className="absolute -inset-1 rounded-full gradient-brand" />
+                <span className="relative block h-24 w-24 rounded-full bg-background p-[3px]">
+                  {profile.avatar_url ? (
+                    <img
+                      src={profile.avatar_url}
+                      alt={displayName}
+                      className="h-full w-full rounded-full object-cover"
+                    />
+                  ) : (
+                    <span className="block h-full w-full rounded-full gradient-brand flex items-center justify-center text-2xl font-black text-white">
+                      {displayName[0].toUpperCase()}
+                    </span>
+                  )}
+                </span>
+              </button>
+              <div className="flex-1 grid grid-cols-3 gap-2 pb-1.5">
+                {[
+                  { label: "Posts", value: posts.length },
+                  { label: "Followers", value: followers },
+                  { label: "Following", value: following },
+                ].map((s) => (
+                  <button key={s.label} className="text-center active:scale-95 transition-transform">
+                    <div className="text-lg font-extrabold text-foreground tabular-nums">
+                      {s.value >= 1000 ? (s.value / 1000).toFixed(1) + "k" : s.value}
+                    </div>
+                    <div className="text-[11px] text-muted-foreground font-medium">{s.label}</div>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
 
-          <div className="mt-4">
-            <h2 className="text-base font-bold text-foreground">{displayName}</h2>
-            <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-              <MapPin className="h-3.5 w-3.5 text-brand-pink" />
-              <span>{location}</span>
+            <div className="mt-4">
+              <h2 className="text-base font-bold text-foreground">{displayName}</h2>
+              <p className="mt-1 text-sm text-foreground/85 leading-snug">
+                Discovering African fashion, one drop at a time. ✨
+              </p>
+              <div className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                <MapPin className="h-3.5 w-3.5 text-brand-pink" />
+                <span>{location}</span>
+              </div>
             </div>
-          </div>
+
 
           <div className="mt-4 flex items-center gap-2">
             {isSelf ? (
@@ -410,7 +420,9 @@ const UserProfile = () => {
             </div>
           )}
         </section>
+        </div>
       </div>
+
 
       <BottomNav />
     </main>

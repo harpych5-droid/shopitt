@@ -4,6 +4,7 @@ import { X, Box, Video, Briefcase, ChevronRight, Camera } from "lucide-react";
 import { BottomNav } from "@/components/feed/BottomNav";
 
 type Mode = null | "product" | "short" | "service";
+type PostType = "product" | "inspiration";
 
 const TYPES = [
   { key: "product" as const, icon: Box, title: "Post Product", desc: "Sell fashion, sneakers, accessories…", color: "from-brand-pink to-brand-purple" },
@@ -13,6 +14,7 @@ const TYPES = [
 
 const Create = () => {
   const [mode, setMode] = useState<Mode>(null);
+  const [postType, setPostType] = useState<PostType>("product");
 
   useEffect(() => {
     document.title = "Create Post — Shopitt";
@@ -68,11 +70,35 @@ const Create = () => {
           </>
         ) : (
           <form className="space-y-5">
+            {mode === "product" && (
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Post type</span>
+                <div className="mt-2 grid grid-cols-2 gap-2 rounded-full bg-muted/50 p-1">
+                  {(["product", "inspiration"] as PostType[]).map((t) => {
+                    const active = postType === t;
+                    return (
+                      <button
+                        type="button"
+                        key={t}
+                        onClick={() => setPostType(t)}
+                        className={`h-9 rounded-full text-xs font-extrabold capitalize transition-all ${
+                          active ? "gradient-brand text-white shadow-brand" : "text-muted-foreground"
+                        }`}
+                      >
+                        {t}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <div className="aspect-square w-32 rounded-2xl border-2 border-dashed border-border bg-card flex flex-col items-center justify-center text-center">
               <Camera className="h-7 w-7 text-brand-pink" />
               <span className="mt-1 text-[11px] font-semibold text-foreground">Add Photo/Video</span>
               <span className="text-[10px] text-muted-foreground">0/5</span>
             </div>
+
 
             <div>
               <span className="inline-block rounded-full gradient-brand px-3 py-1 text-[11px] font-bold text-white">Drop Title *</span>
