@@ -100,7 +100,7 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet }: H
       </header>
 
       {/* MEDIA */}
-      <Link to={`/p/${item.id}`} className="relative block w-full aspect-[4/5] bg-muted overflow-hidden">
+      <Link to={`/p/${item.id}`} className="relative block w-full aspect-[4/6] bg-muted overflow-hidden">
         {!loaded && (
           <div
             className="absolute inset-0 bg-muted animate-pulse"

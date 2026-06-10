@@ -39,6 +39,8 @@ const Privacy = lazy(() => import("./pages/Privacy.tsx"));
 const Safety = lazy(() => import("./pages/Safety.tsx"));
 const Contact = lazy(() => import("./pages/Contact.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
+const Admin = lazy(() => import("./pages/Admin.tsx"));
+
 
 const queryClient = new QueryClient();
 
@@ -100,7 +102,9 @@ const App = () => (
                   <Route path="/safety" element={<Safety />} />
                   <Route path="/contact" element={<Contact />} />
 
+                  <Route path="/admin" element={<Admin />} />
                   <Route path="*" element={<NotFound />} />
+
                 </Routes>
               </Suspense>
               </div>
