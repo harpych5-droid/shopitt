@@ -3,7 +3,7 @@ import { Search, Film, Menu as MenuIcon } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useRef } from "react";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
-import { toast } from "sonner";
+
 
 interface TopNavProps {
   hidden?: boolean;
