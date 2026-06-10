@@ -102,7 +102,9 @@ const App = () => (
                   <Route path="/safety" element={<Safety />} />
                   <Route path="/contact" element={<Contact />} />
 
+                  <Route path="/admin" element={<Admin />} />
                   <Route path="*" element={<NotFound />} />
+
                 </Routes>
               </Suspense>
               </div>
