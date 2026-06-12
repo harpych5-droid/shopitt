@@ -1,7 +1,14 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 import { useIdentity } from "./useIdentity";
 
+/**
+ * Admin check against the external Shopitt Supabase schema.
+ *
+ * That schema stores role directly on `profiles.role` (no separate
+ * `user_roles` table). We query for `role = 'admin'` on the current
+ * user's profile.
+ */
 export function useIsAdmin() {
   const { user } = useIdentity();
   const [isAdmin, setIsAdmin] = useState(false);
@@ -16,14 +23,13 @@ export function useIsAdmin() {
     }
     setLoading(true);
     (supabase as any)
-      .from("user_roles")
+      .from("profiles")
       .select("role")
-      .eq("user_id", user.id)
-      .eq("role", "admin")
+      .eq("id", user.id)
       .maybeSingle()
       .then(({ data }: any) => {
         if (!active) return;
-        setIsAdmin(!!data);
+        setIsAdmin(data?.role === "admin");
         setLoading(false);
       });
     return () => {

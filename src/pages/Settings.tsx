@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Sun, Moon, Monitor, LogOut, Check } from "lucide-react";
 import { useTheme, type ThemeMode } from "@/hooks/useTheme";
 import { useIdentity } from "@/hooks/useIdentity";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
 const themeOptions: { value: ThemeMode; label: string; icon: typeof Sun; hint: string }[] = [
