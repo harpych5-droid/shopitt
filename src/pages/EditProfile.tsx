@@ -4,7 +4,7 @@ import { ArrowLeft, Camera, Check } from "lucide-react";
 import { BottomNav } from "@/components/feed/BottomNav";
 import { toast } from "sonner";
 import { useIdentity } from "@/hooks/useIdentity";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 import { IdentityAvatar } from "@/components/identity/IdentityAvatar";
 
 const EditProfile = () => {

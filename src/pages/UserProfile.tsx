@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { BottomNav } from "@/components/feed/BottomNav";
 import { Skeleton } from "@/components/ui/skeleton";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 import { signInWithGoogle } from "@/hooks/useAuth";
 import { useIdentity } from "@/hooks/useIdentity";
 import { toast } from "sonner";

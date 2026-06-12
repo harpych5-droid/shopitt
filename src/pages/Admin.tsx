@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useIdentity } from "@/hooks/useIdentity";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 
 type Section =
   | "overview" | "users" | "sellers" | "content" | "orders"
