@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Loader2 } from "lucide-react";
+import { X, Loader2, Mail } from "lucide-react";
 import { useState } from "react";
-import { lovable } from "@/integrations/lovable";
+import { supabase } from "@/lib/supabase";
 import { shopitt } from "@/store/useShopittStore";
 import { toast } from "sonner";
 
@@ -18,25 +18,60 @@ const COPY: Record<string, string> = {
   comment: "Join the conversation on this drop.",
 };
 
+type Mode = "choose" | "email";
+
 export const AuthModal = ({ open, onClose, action }: AuthModalProps) => {
   const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState<Mode>("choose");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isSignUp, setIsSignUp] = useState(false);
+
+  const persistPending = () => {
+    const pending = shopitt.get().pendingAction;
+    if (pending) sessionStorage.setItem("shopitt:pendingAction", JSON.stringify(pending));
+  };
 
   const handleGoogle = async () => {
     try {
       setLoading(true);
-      // Persist pending action so it survives the OAuth redirect roundtrip
-      const pending = shopitt.get().pendingAction;
-      if (pending) {
-        sessionStorage.setItem("shopitt:pendingAction", JSON.stringify(pending));
-      }
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+      persistPending();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: window.location.origin },
       });
-      if (result.error) throw result.error;
-      // Browser redirects to Google; nothing else to do.
+      if (error) throw error;
+      // Browser redirects to Google.
     } catch (err: any) {
       console.error("Google sign-in failed", err);
       toast.error(err?.message ?? "Sign-in failed. Please try again.");
+      setLoading(false);
+    }
+  };
+
+  const handleEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) return toast.error("Enter email and password");
+    try {
+      setLoading(true);
+      persistPending();
+      const { error } = isSignUp
+        ? await supabase.auth.signUp({
+            email,
+            password,
+            options: { emailRedirectTo: window.location.origin },
+          })
+        : await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      if (isSignUp) {
+        toast.success("Check your email to confirm your account");
+      } else {
+        toast.success("Welcome back 🔥");
+        onClose();
+      }
+    } catch (err: any) {
+      toast.error(err?.message ?? "Authentication failed");
+    } finally {
       setLoading(false);
     }
   };
@@ -64,7 +99,6 @@ export const AuthModal = ({ open, onClose, action }: AuthModalProps) => {
             transition={{ type: "spring", stiffness: 320, damping: 30 }}
             className="relative w-full sm:max-w-md mx-3 mb-3 sm:mb-0 rounded-3xl overflow-hidden glass-dark"
           >
-            {/* Glow accent */}
             <div className="absolute -top-20 -left-20 h-56 w-56 rounded-full bg-brand-pink/40 blur-3xl pointer-events-none" />
             <div className="absolute -bottom-24 -right-16 h-56 w-56 rounded-full bg-brand-purple/40 blur-3xl pointer-events-none" />
 
@@ -82,25 +116,68 @@ export const AuthModal = ({ open, onClose, action }: AuthModalProps) => {
                   S
                 </div>
                 <h3 className="text-2xl font-black tracking-tight">
-                  Unlock <span className="text-gradient-brand">Shopitt</span> 🔥
+                  {mode === "email"
+                    ? (isSignUp ? "Create your account" : "Welcome back")
+                    : <>Unlock <span className="text-gradient-brand">Shopitt</span> 🔥</>}
                 </h3>
                 <p className="text-sm text-white/70 mt-1.5">
                   {action ? COPY[action] : "Sign in to continue."}
                 </p>
               </div>
 
-              <button
-                onClick={handleGoogle}
-                disabled={loading}
-                className="w-full h-12 rounded-full bg-white text-black font-semibold text-sm flex items-center justify-center gap-2.5 hover:bg-white/90 active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed"
-              >
-                {loading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <GoogleIcon />
-                )}
-                {loading ? "Redirecting…" : "Continue with Google"}
-              </button>
+              {mode === "choose" && (
+                <>
+                  <button
+                    onClick={handleGoogle}
+                    disabled={loading}
+                    className="w-full h-12 rounded-full bg-white text-black font-semibold text-sm flex items-center justify-center gap-2.5 hover:bg-white/90 active:scale-[0.98] transition-all disabled:opacity-70"
+                  >
+                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <GoogleIcon />}
+                    {loading ? "Redirecting…" : "Continue with Google"}
+                  </button>
+
+                  <button
+                    onClick={() => setMode("email")}
+                    className="w-full h-12 mt-3 rounded-full bg-white/10 hover:bg-white/15 text-white font-semibold text-sm flex items-center justify-center gap-2.5 transition-colors"
+                  >
+                    <Mail className="h-4 w-4" /> Continue with email
+                  </button>
+                </>
+              )}
+
+              {mode === "email" && (
+                <form onSubmit={handleEmail} className="space-y-3">
+                  <input
+                    type="email"
+                    autoComplete="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full h-12 px-4 rounded-2xl bg-white/10 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-brand-pink"
+                  />
+                  <input
+                    type="password"
+                    autoComplete={isSignUp ? "new-password" : "current-password"}
+                    placeholder="Password (min 6 chars)"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full h-12 px-4 rounded-2xl bg-white/10 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-brand-pink"
+                  />
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full h-12 rounded-full gradient-brand text-white font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-70"
+                  >
+                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : (isSignUp ? "Create account" : "Sign in")}
+                  </button>
+                  <div className="flex items-center justify-between text-xs text-white/60 pt-1">
+                    <button type="button" onClick={() => setMode("choose")} className="hover:text-white">← Back</button>
+                    <button type="button" onClick={() => setIsSignUp((v) => !v)} className="hover:text-white">
+                      {isSignUp ? "Have an account? Sign in" : "New here? Create account"}
+                    </button>
+                  </div>
+                </form>
+              )}
 
               <p className="text-[11px] text-white/40 text-center mt-4 leading-relaxed">
                 By continuing, you agree to Shopitt's Terms & Privacy Policy.
