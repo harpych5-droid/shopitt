@@ -9,21 +9,10 @@ import { SaveSheet } from "@/components/feed/SaveSheet";
 import { BottomNav } from "@/components/feed/BottomNav";
 import { FEED, CATEGORY_MAP, type FeedItem } from "@/data/feed";
 import { shopitt } from "@/store/useShopittStore";
-
-const PAGE_SIZE = 6;
-
-const shuffle = <T,>(arr: T[]): T[] => {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-};
+import { useFeedPosts } from "@/hooks/useFeedPosts";
 
 const Index = () => {
   const sentinelRef = useRef<HTMLDivElement>(null);
-  const [page, setPage] = useState(1);
   const scrollRef = useRef<HTMLDivElement>(null);
   const lastScroll = useRef(0);
   const [navHidden, setNavHidden] = useState(false);
@@ -33,24 +22,19 @@ const Index = () => {
   const [bagOpen, setBagOpen] = useState(false);
   const [saveSheetPostId, setSaveSheetPostId] = useState<string | null>(null);
 
-  const baseItems = useMemo(() => {
-    const allowed = CATEGORY_MAP[category];
-    if (!allowed) return FEED;
-    return FEED.filter((f) => allowed.includes(f.category));
-  }, [category]);
+  // Real posts from public.posts on the external Supabase project.
+  const { items: dbItems, loading, hasMore, loadMore } = useFeedPosts();
+
+  // Demo safety net: if the DB has no posts yet, fall back to the mock feed so
+  // judges never see an empty screen at JETS.
+  const useMock = !loading && dbItems.length === 0;
 
   const items = useMemo<FeedItem[]>(() => {
-    if (baseItems.length === 0) return [];
-    const out: FeedItem[] = [];
-    for (let p = 0; p < page; p++) {
-      const round = p === 0 ? baseItems : shuffle(baseItems);
-      round.forEach((it, idx) =>
-        out.push({ ...it, id: `${it.id}__${p}_${idx}` })
-      );
-      if (out.length >= page * PAGE_SIZE) break;
-    }
-    return out;
-  }, [baseItems, page]);
+    const source = useMock ? FEED : dbItems;
+    const allowed = CATEGORY_MAP[category];
+    if (!allowed) return source;
+    return source.filter((f) => allowed.includes(f.category));
+  }, [dbItems, useMock, category]);
 
   // Reset paging on category change
   useEffect(() => {
