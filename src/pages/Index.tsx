@@ -36,9 +36,8 @@ const Index = () => {
     return source.filter((f) => allowed.includes(f.category));
   }, [dbItems, useMock, category]);
 
-  // Reset paging on category change
+  // Reset scroll on category change
   useEffect(() => {
-    setPage(1);
     const el = scrollRef.current;
     if (el) el.scrollTo({ top: 0, behavior: "auto" });
   }, [category]);
@@ -59,20 +58,20 @@ const Index = () => {
     return () => el.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Infinite scroll via IntersectionObserver
+  // Infinite scroll via IntersectionObserver — load next page from DB
   useEffect(() => {
     const sentinel = sentinelRef.current;
     const root = scrollRef.current;
     if (!sentinel || !root) return;
     const io = new IntersectionObserver(
       (entries) => {
-        if (entries[0]?.isIntersecting) setPage((p) => p + 1);
+        if (entries[0]?.isIntersecting && hasMore && !useMock) loadMore();
       },
       { root, rootMargin: "800px 0px", threshold: 0 }
     );
     io.observe(sentinel);
     return () => io.disconnect();
-  }, [baseItems.length]);
+  }, [hasMore, useMock, loadMore]);
 
   useEffect(() => {
     document.title = "Shopitt — Shop Drops You Crave";
