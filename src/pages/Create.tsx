@@ -129,17 +129,17 @@ const Create = () => {
       const payload: Record<string, any> = {
         user_id: user.id,
         title: title.trim(),
-        caption: description.trim() || null,
+        description: description.trim() || null,
         media_url: primary.secure_url,
         media_urls: mediaUrls,
         media_type: isVideo ? "video" : "image",
-        video_url: isVideo ? primary.secure_url : null,
         post_type: finalPostType,
         hashtags: parseHashtags(hashtags),
         price:
           finalPostType === "product" && price ? Number(price) : null,
-        stock: stock ? Number(stock) : null,
+        stock_quantity: stock ? Number(stock) : null,
         currency: "ZMW",
+        is_available: true,
       };
 
       const { error } = await supabase.from("posts").insert(payload);
