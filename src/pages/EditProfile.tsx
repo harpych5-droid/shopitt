@@ -1,11 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Camera, Check } from "lucide-react";
+import { ArrowLeft, Camera, Check, Loader2 } from "lucide-react";
 import { BottomNav } from "@/components/feed/BottomNav";
 import { toast } from "sonner";
 import { useIdentity } from "@/hooks/useIdentity";
 import { supabase } from "@/lib/supabase";
 import { IdentityAvatar } from "@/components/identity/IdentityAvatar";
+import { uploadToCloudinary } from "@/lib/cloudinary";
 
 const EditProfile = () => {
   const navigate = useNavigate();
@@ -17,6 +18,8 @@ const EditProfile = () => {
     avatar_url: "",
   });
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     document.title = "Edit profile — Shopitt";
@@ -115,9 +118,15 @@ const EditProfile = () => {
       </header>
 
       <div className="max-w-md mx-auto px-4 pt-6 space-y-5">
-        {/* Avatar */}
+        {/* Avatar with gallery upload */}
         <section className="flex flex-col items-center gap-3">
-          <div className="relative">
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadingAvatar}
+            className="relative"
+            aria-label="Change photo"
+          >
             <IdentityAvatar
               profile={{
                 id: user.id,
@@ -128,11 +137,40 @@ const EditProfile = () => {
               size={96}
             />
             <span className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full bg-foreground text-background flex items-center justify-center border-4 border-background">
-              <Camera className="h-3.5 w-3.5" />
+              {uploadingAvatar ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Camera className="h-3.5 w-3.5" />
+              )}
             </span>
-          </div>
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            hidden
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (fileInputRef.current) fileInputRef.current.value = "";
+              if (!file) return;
+              try {
+                setUploadingAvatar(true);
+                const res = await uploadToCloudinary(file, {
+                  resourceType: "image",
+                  folder: `shopitt/avatars/${user.id}`,
+                });
+                update("avatar_url", res.secure_url);
+                toast.success("Photo uploaded — tap Save to apply");
+              } catch (err: any) {
+                console.error("Avatar upload failed", err);
+                toast.error(err?.message ?? "Upload failed");
+              } finally {
+                setUploadingAvatar(false);
+              }
+            }}
+          />
           <p className="text-[11px] text-muted-foreground">
-            Paste a public image URL below to change your photo
+            Tap your photo to pick a new one from your gallery
           </p>
         </section>
 
@@ -144,16 +182,6 @@ const EditProfile = () => {
               value={form.username}
               onChange={(e) => update("username", e.target.value)}
               placeholder="your_handle"
-              className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-            />
-          </Field>
-
-          <Field label="Avatar URL">
-            <input
-              type="url"
-              value={form.avatar_url}
-              onChange={(e) => update("avatar_url", e.target.value)}
-              placeholder="https://…"
               className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
             />
           </Field>

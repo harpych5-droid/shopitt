@@ -99,5 +99,6 @@ export function postToFeedItem(p: DbPost): FeedItem {
         : undefined,
     postType: isInspiration ? "inspiration" : "product",
     badge: isInspiration ? "Inspiration" : "Product",
+    mediaType: (p.media_type ?? "").toLowerCase() === "video" ? "video" : "image",
   };
 }
