@@ -41,6 +41,8 @@ export type FeedItem = {
   /** NEW — Discovery layer. */
   postType?: PostType;
   badge?: PostBadge;
+  /** Media kind — 'video' renders an inline auto-playing <video>. */
+  mediaType?: "image" | "video";
 };
 
 export const FEED: FeedItem[] = [
