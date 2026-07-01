@@ -57,17 +57,29 @@ export const FeedCard = ({ item, index, onAuthRequired }: FeedCardProps) => {
             }}
           />
         )}
-        <motion.img
-          src={item.image}
-          alt={item.title}
-          loading={index < 2 ? "eager" : "lazy"}
-          width={832}
-          height={1472}
-          className="h-full w-full object-cover"
-          initial={{ scale: 1.08, opacity: 0 }}
-          animate={{ scale: loaded ? 1 : 1.08, opacity: loaded ? 1 : 0 }}
-          transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
-        />
+        {item.mediaType === "video" ? (
+          <video
+            src={item.image}
+            className="h-full w-full object-cover"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+          />
+        ) : (
+          <motion.img
+            src={item.image}
+            alt={item.title}
+            loading={index < 2 ? "eager" : "lazy"}
+            width={832}
+            height={1472}
+            className="h-full w-full object-cover"
+            initial={{ scale: 1.08, opacity: 0 }}
+            animate={{ scale: loaded ? 1 : 1.08, opacity: loaded ? 1 : 0 }}
+            transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+          />
+        )}
         {/* Top + bottom gradient overlays for readability */}
         <div className="pointer-events-none absolute inset-x-0 top-0 h-48 overlay-top" />
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[55%] overlay-bottom" />

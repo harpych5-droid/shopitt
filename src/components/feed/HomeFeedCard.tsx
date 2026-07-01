@@ -39,11 +39,14 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet }: H
 
   const isInspiration = item.postType === "inspiration";
 
+  const isVideo = item.mediaType === "video";
+
   useEffect(() => {
+    if (isVideo) { setLoaded(true); return; }
     const img = new Image();
     img.src = item.image;
     img.onload = () => setLoaded(true);
-  }, [item.image]);
+  }, [item.image, isVideo]);
 
   const guard = (action: "like" | "save" | "buy" | "comment", run: () => void) => {
     if (!authed) {
@@ -106,15 +109,27 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet }: H
             className="absolute inset-0 bg-muted animate-pulse"
           />
         )}
-        <motion.img
-          src={item.image}
-          alt={item.title}
-          loading={index < 2 ? "eager" : "lazy"}
-          className="h-full w-full object-cover"
-          initial={{ scale: 1.04, opacity: 0 }}
-          animate={{ scale: loaded ? 1 : 1.04, opacity: loaded ? 1 : 0 }}
-          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-        />
+        {isVideo ? (
+          <video
+            src={item.image}
+            className="h-full w-full object-cover"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+          />
+        ) : (
+          <motion.img
+            src={item.image}
+            alt={item.title}
+            loading={index < 2 ? "eager" : "lazy"}
+            className="h-full w-full object-cover"
+            initial={{ scale: 1.04, opacity: 0 }}
+            animate={{ scale: loaded ? 1 : 1.04, opacity: loaded ? 1 : 0 }}
+            transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+          />
+        )}
 
         {/* BADGE — TOP LEFT (replaces drop title) */}
         {item.badge && (
