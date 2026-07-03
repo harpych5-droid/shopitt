@@ -336,29 +336,31 @@ const ProductDetail = () => {
           <div className="flex items-center gap-4">
             <button onClick={handleLike} aria-label="Like" className="flex items-center gap-1.5 active:scale-90 transition-transform">
               <Heart className={`h-6 w-6 ${liked ? "fill-brand-pink text-brand-pink" : "text-foreground"}`} />
-              <span className="text-sm font-bold tabular-nums">
-                {(product.likes + (liked ? 1 : 0)).toLocaleString()}
-              </span>
+              <span className="text-sm font-bold tabular-nums">{likeCount.toLocaleString()}</span>
             </button>
-            <div className="flex items-center gap-1.5">
+            <button onClick={() => setCommentsOpen(true)} className="flex items-center gap-1.5">
               <MessageCircle className="h-6 w-6 text-foreground" />
-              <span className="text-sm font-bold tabular-nums">{product.comments}</span>
-            </div>
+              <span className="text-sm font-bold tabular-nums">{commentCount}</span>
+            </button>
             <button aria-label="Share" className="active:scale-90 transition-transform">
               <Send className="h-6 w-6 text-foreground" />
             </button>
           </div>
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-success/15 text-success text-[11px] font-bold">
-            ✓ {product.sold} sold
-          </span>
         </section>
 
         {/* COMMENTS */}
         <section className="px-4 mt-6">
-          <h2 className="text-xs uppercase tracking-[0.16em] font-bold text-muted-foreground mb-3">
-            Comments
-          </h2>
-          <CommentsEmpty onComment={() => guard("comment", () => {})} />
+          <button
+            onClick={() => setCommentsOpen(true)}
+            className="w-full rounded-3xl glass p-5 text-center active:scale-95 transition-transform"
+          >
+            <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl gradient-brand shadow-brand">
+              <MessageCircle className="h-6 w-6 text-white" />
+            </span>
+            <h3 className="mt-3 text-base font-extrabold">
+              {commentCount > 0 ? `View all ${commentCount} comments` : "Be the first to comment 🔥"}
+            </h3>
+          </button>
         </section>
       </div>
 
