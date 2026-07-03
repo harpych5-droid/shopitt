@@ -60,6 +60,20 @@ export const shopitt = {
       return { ...s, liked };
     });
   },
+  hydrateLiked(ids: string[]) {
+    set((s) => ({ ...s, liked: new Set(ids) }));
+  },
+  hydrateSaved(ids: string[]) {
+    set((s) => {
+      const postCollections = new Map(s.postCollections);
+      ids.forEach((id) => {
+        if (!postCollections.has(id) || postCollections.get(id)!.size === 0) {
+          postCollections.set(id, new Set(["default"]));
+        }
+      });
+      return { ...s, postCollections, saved: new Set(ids) };
+    });
+  },
   // ---- Collections ----
   createCollection(name: string): string {
     const id = uid();

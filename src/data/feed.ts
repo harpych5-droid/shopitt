@@ -18,6 +18,10 @@ export type FeedItem = {
   id: string;
   brand: string;
   brandHandle: string;
+  /** Optional user avatar URL — real photo when available, gradient initial fallback. */
+  avatar?: string | null;
+  /** Auth-linked user id for the poster (required for follow/order/message flows). */
+  userId?: string;
   title: string;
   drop: string;
   image: string;

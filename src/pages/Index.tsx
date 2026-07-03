@@ -6,10 +6,13 @@ import { FloatingBag } from "@/components/feed/FloatingBag";
 import { AuthModal } from "@/components/feed/AuthModal";
 import { BagSheet } from "@/components/feed/BagSheet";
 import { SaveSheet } from "@/components/feed/SaveSheet";
+import { CommentsSheet } from "@/components/feed/CommentsSheet";
 import { BottomNav } from "@/components/feed/BottomNav";
-import { FEED, CATEGORY_MAP, type FeedItem } from "@/data/feed";
+import { CATEGORY_MAP, type FeedItem } from "@/data/feed";
 import { shopitt } from "@/store/useShopittStore";
 import { useFeedPosts } from "@/hooks/useFeedPosts";
+import { Sparkles } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Index = () => {
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -21,28 +24,21 @@ const Index = () => {
   const [authAction, setAuthAction] = useState<"like" | "save" | "buy" | "comment" | null>(null);
   const [bagOpen, setBagOpen] = useState(false);
   const [saveSheetPostId, setSaveSheetPostId] = useState<string | null>(null);
+  const [commentsPostId, setCommentsPostId] = useState<string | null>(null);
 
-  // Real posts from public.posts on the external Supabase project.
   const { items: dbItems, loading, hasMore, loadMore } = useFeedPosts();
 
-  // Demo safety net: if the DB has no posts yet, fall back to the mock feed so
-  // judges never see an empty screen at JETS.
-  const useMock = !loading && dbItems.length === 0;
-
   const items = useMemo<FeedItem[]>(() => {
-    const source = useMock ? FEED : dbItems;
     const allowed = CATEGORY_MAP[category];
-    if (!allowed) return source;
-    return source.filter((f) => allowed.includes(f.category));
-  }, [dbItems, useMock, category]);
+    if (!allowed) return dbItems;
+    return dbItems.filter((f) => allowed.includes(f.category));
+  }, [dbItems, category]);
 
-  // Reset scroll on category change
   useEffect(() => {
     const el = scrollRef.current;
     if (el) el.scrollTo({ top: 0, behavior: "auto" });
   }, [category]);
 
-  // Hide nav on scroll-down
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
@@ -58,20 +54,19 @@ const Index = () => {
     return () => el.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Infinite scroll via IntersectionObserver — load next page from DB
   useEffect(() => {
     const sentinel = sentinelRef.current;
     const root = scrollRef.current;
     if (!sentinel || !root) return;
     const io = new IntersectionObserver(
       (entries) => {
-        if (entries[0]?.isIntersecting && hasMore && !useMock) loadMore();
+        if (entries[0]?.isIntersecting && hasMore) loadMore();
       },
-      { root, rootMargin: "800px 0px", threshold: 0 }
+      { root, rootMargin: "800px 0px", threshold: 0 },
     );
     io.observe(sentinel);
     return () => io.disconnect();
-  }, [hasMore, useMock, loadMore]);
+  }, [hasMore, loadMore]);
 
   useEffect(() => {
     document.title = "Shopitt — Shop Drops You Crave";
@@ -98,6 +93,8 @@ const Index = () => {
     setAuthOpen(true);
   };
 
+  const isEmpty = !loading && items.length === 0;
+
   return (
     <main className="relative min-h-[100dvh] w-full bg-background">
       <TopNav hidden={navHidden} />
@@ -105,11 +102,7 @@ const Index = () => {
 
       <h1 className="sr-only">Shopitt — Discover drops, shop instantly</h1>
 
-      <div
-        ref={scrollRef}
-        className="h-[100dvh] w-full overflow-y-auto no-scrollbar"
-      >
-        {/* Spacer for fixed top nav (54px) + category tabs (~48px) */}
+      <div ref={scrollRef} className="h-[100dvh] w-full overflow-y-auto no-scrollbar">
         <div className="h-[108px]" />
         <div className="max-w-md mx-auto pb-28">
           {items.map((item, i) => (
@@ -119,20 +112,40 @@ const Index = () => {
               index={i}
               onAuthRequired={handleAuthRequired}
               onOpenSaveSheet={(id) => setSaveSheetPostId(id)}
+              onOpenComments={(id) => setCommentsPostId(id)}
             />
           ))}
-          {items.length === 0 && (
-            <div className="py-20 text-center text-muted-foreground text-sm">
-              No drops in this category yet.
+
+          {isEmpty && (
+            <div className="mx-4 mt-6 rounded-3xl bg-card border border-border/60 p-6 text-center">
+              <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl gradient-brand shadow-brand">
+                <Sparkles className="h-6 w-6 text-white" />
+              </span>
+              <h3 className="mt-3 text-base font-extrabold">No drops yet</h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Be the first to drop something in this category.
+              </p>
+              <Link
+                to="/create"
+                className="mt-4 inline-flex items-center gap-1.5 rounded-full gradient-brand px-5 py-2.5 text-sm font-bold text-white shadow-brand active:scale-95 transition-transform"
+              >
+                Create a post
+              </Link>
             </div>
           )}
-          {items.length > 0 && (
+
+          {hasMore && (
             <div ref={sentinelRef} className="flex items-center justify-center py-10">
               <div className="flex gap-1.5">
                 <span className="h-2 w-2 rounded-full bg-brand-pink animate-pulse-soft" />
                 <span className="h-2 w-2 rounded-full bg-brand-purple animate-pulse-soft [animation-delay:120ms]" />
                 <span className="h-2 w-2 rounded-full bg-brand-pink animate-pulse-soft [animation-delay:240ms]" />
               </div>
+            </div>
+          )}
+          {!hasMore && items.length > 0 && (
+            <div className="py-6 text-center text-[11px] text-muted-foreground">
+              You're all caught up ✨
             </div>
           )}
         </div>
@@ -144,6 +157,11 @@ const Index = () => {
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} action={authAction} />
       <BagSheet open={bagOpen} onClose={() => setBagOpen(false)} />
       <SaveSheet open={!!saveSheetPostId} postId={saveSheetPostId} onClose={() => setSaveSheetPostId(null)} />
+      <CommentsSheet
+        open={!!commentsPostId}
+        postId={commentsPostId}
+        onClose={() => setCommentsPostId(null)}
+      />
     </main>
   );
 };
