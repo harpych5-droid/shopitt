@@ -66,6 +66,7 @@ const App = () => (
         <BrowserRouter>
           <IdentityProvider>
             <AuthBootstrap />
+            <SocialHydrator />
             <IdentityGate>
               <DesktopSidebar />
               <div className="lg:pl-60">
