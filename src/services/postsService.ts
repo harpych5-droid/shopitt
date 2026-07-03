@@ -62,6 +62,16 @@ export async function fetchUserPosts(userId: string) {
   return { data: (data ?? []) as DbPost[], error: null as string | null };
 }
 
+export async function fetchPostById(id: string) {
+  const { data, error } = await (supabase as any)
+    .from("posts")
+    .select(SELECT)
+    .eq("id", id)
+    .maybeSingle();
+  if (error) return { data: null, error: error.message };
+  return { data: (data as DbPost) ?? null, error: null as string | null };
+}
+
 /** Map a DB post row → the FeedItem shape the UI components expect. */
 export function postToFeedItem(p: DbPost): FeedItem {
   const firstMedia =
@@ -75,8 +85,10 @@ export function postToFeedItem(p: DbPost): FeedItem {
 
   return {
     id: p.id,
+    userId: p.user_id,
     brand,
     brandHandle: handle,
+    avatar: p.profiles?.avatar_url ?? null,
     title: p.title ?? "Untitled drop",
     drop: p.category_name ?? (isInspiration ? "Inspiration" : "New Drop"),
     image: firstMedia,
@@ -91,7 +103,7 @@ export function postToFeedItem(p: DbPost): FeedItem {
     shipsIn: p.delivery_type ?? "—",
     caption: p.description ?? "",
     hashtags: p.hashtags ?? [],
-    comments: p.review_count ?? 0,
+    comments: 0,
     kind: isInspiration ? undefined : "product",
     deliveryType:
       p.delivery_type === "international" || p.delivery_type === "country" || p.delivery_type === "local"

@@ -4,12 +4,14 @@ import { Heart, Bookmark, MessageCircle, Send, Truck, MoreHorizontal, MapPin, Ba
 import { Link } from "react-router-dom";
 import type { FeedItem, PostBadge } from "@/data/feed";
 import { useShopitt, shopitt } from "@/store/useShopittStore";
+import { usePostSocial } from "@/hooks/usePostSocial";
 
 interface HomeFeedCardProps {
   item: FeedItem;
   index: number;
   onAuthRequired: (action: "like" | "save" | "buy" | "comment", itemId: string) => void;
   onOpenSaveSheet: (postId: string) => void;
+  onOpenComments: (postId: string) => void;
 }
 
 const badgeStyles: Record<PostBadge, string> = {
@@ -30,22 +32,22 @@ const badgeIcon = (b: PostBadge) => {
   }
 };
 
-export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet }: HomeFeedCardProps) => {
+export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onOpenComments }: HomeFeedCardProps) => {
   const [loaded, setLoaded] = useState(false);
   const [burst, setBurst] = useState(false);
-  const liked = useShopitt((s) => s.liked.has(item.id));
-  const saved = useShopitt((s) => s.saved.has(item.id));
   const authed = useShopitt((s) => s.authed);
+  const { liked, saved, likeCount, commentCount, toggleLike } = usePostSocial(item.id, item.likes, item.comments);
 
   const isInspiration = item.postType === "inspiration";
-
   const isVideo = item.mediaType === "video";
 
   useEffect(() => {
     if (isVideo) { setLoaded(true); return; }
+    if (!item.image) { setLoaded(true); return; }
     const img = new Image();
     img.src = item.image;
     img.onload = () => setLoaded(true);
+    img.onerror = () => setLoaded(true);
   }, [item.image, isVideo]);
 
   const guard = (action: "like" | "save" | "buy" | "comment", run: () => void) => {
@@ -58,13 +60,16 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet }: H
 
   const handleLike = () =>
     guard("like", () => {
-      shopitt.toggleLike(item.id);
+      toggleLike();
       setBurst(true);
       setTimeout(() => setBurst(false), 600);
     });
   const handleSave = () => guard("save", () => onOpenSaveSheet(item.id));
   const handleBuy = () => guard("buy", () => shopitt.addToBag(item));
-  const handleComment = () => guard("comment", () => {});
+  const handleComment = () => onOpenComments(item.id);
+
+  const avatar = item.avatar;
+  const initial = (item.brand?.[0] ?? "S").toUpperCase();
 
   return (
     <article className="w-full bg-background border-b border-border/40">
@@ -74,9 +79,19 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet }: H
           <div className="relative shrink-0">
             <span className="absolute -inset-0.5 rounded-full gradient-brand" />
             <div className="relative h-9 w-9 rounded-full bg-background p-[2px]">
-              <div className="h-full w-full rounded-full gradient-brand flex items-center justify-center text-[12px] font-black text-white">
-                {item.brand[0]}
-              </div>
+              {avatar ? (
+                <img
+                  src={avatar}
+                  alt={item.brandHandle}
+                  referrerPolicy="no-referrer"
+                  className="h-full w-full rounded-full object-cover"
+                  onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = "none")}
+                />
+              ) : (
+                <div className="h-full w-full rounded-full gradient-brand flex items-center justify-center text-[12px] font-black text-white">
+                  {initial}
+                </div>
+              )}
             </div>
           </div>
           <div className="min-w-0">
@@ -87,9 +102,9 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet }: H
               <BadgeCheck className="h-3.5 w-3.5 text-brand-purple fill-brand-purple/20 shrink-0" />
             </div>
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <MapPin className="h-3 w-3 text-brand-pink" />
-              <span className="truncate">{item.location}</span>
-              {!isInspiration && item.shipsIn && (
+              {item.location && <MapPin className="h-3 w-3 text-brand-pink" />}
+              {item.location && <span className="truncate">{item.location}</span>}
+              {!isInspiration && item.shipsIn && item.shipsIn !== "—" && (
                 <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-full bg-success/15 text-success text-[10px] font-semibold">
                   Ships {item.shipsIn}
                 </span>
@@ -102,13 +117,9 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet }: H
         </button>
       </header>
 
-      {/* MEDIA */}
-      <Link to={`/p/${item.id}`} className="relative block w-full aspect-[4/6] bg-muted overflow-hidden">
-        {!loaded && (
-          <div
-            className="absolute inset-0 bg-muted animate-pulse"
-          />
-        )}
+      {/* MEDIA — extended aspect ratio for Instagram-like feel */}
+      <Link to={`/p/${item.id}`} className="relative block w-full aspect-[4/5] bg-muted overflow-hidden">
+        {!loaded && <div className="absolute inset-0 bg-muted animate-pulse" />}
         {isVideo ? (
           <video
             src={item.image}
@@ -120,18 +131,19 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet }: H
             preload="metadata"
           />
         ) : (
-          <motion.img
-            src={item.image}
-            alt={item.title}
-            loading={index < 2 ? "eager" : "lazy"}
-            className="h-full w-full object-cover"
-            initial={{ scale: 1.04, opacity: 0 }}
-            animate={{ scale: loaded ? 1 : 1.04, opacity: loaded ? 1 : 0 }}
-            transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-          />
+          item.image && (
+            <motion.img
+              src={item.image}
+              alt={item.title}
+              loading={index < 2 ? "eager" : "lazy"}
+              className="h-full w-full object-cover"
+              initial={{ scale: 1.04, opacity: 0 }}
+              animate={{ scale: loaded ? 1 : 1.04, opacity: loaded ? 1 : 0 }}
+              transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+            />
+          )
         )}
 
-        {/* BADGE — TOP LEFT (replaces drop title) */}
         {item.badge && (
           <div className="absolute top-3 left-3 z-10">
             <div className={`rounded-full px-2.5 py-1 flex items-center gap-1 text-[11px] font-bold tracking-wide ${badgeStyles[item.badge]} backdrop-blur-md`}>
@@ -141,7 +153,6 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet }: H
           </div>
         )}
 
-        {/* STOCK PILL — TOP RIGHT (products only) */}
         {!isInspiration && item.stockLeft > 0 && item.stockLeft <= 10 && (
           <div className="absolute top-3 right-3 z-10">
             <div className="rounded-full bg-warning px-2.5 py-1 flex items-center gap-1 shadow-soft">
@@ -153,7 +164,6 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet }: H
           </div>
         )}
 
-        {/* BOTTOM OVERLAY */}
         {isInspiration ? (
           <div className="absolute inset-x-0 bottom-0 z-10 pointer-events-none">
             <div className="h-28 overlay-bottom" />
@@ -246,20 +256,17 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet }: H
       <div className="px-4 pb-4 pt-1">
         <div className="flex items-center gap-2 mb-1.5">
           <span className="text-sm font-semibold text-foreground">
-            {(item.likes + (liked ? 1 : 0)).toLocaleString()} likes
+            {likeCount.toLocaleString()} likes
           </span>
-          {!isInspiration && item.sold > 0 && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-success/15 text-success text-[11px] font-semibold">
-              ✓ {item.sold} sold
-            </span>
-          )}
         </div>
-        <p className="text-sm text-foreground leading-snug">
-          <Link to={`/u/${item.brandHandle}`} className="font-semibold mr-1.5">
-            {item.brandHandle}
-          </Link>
-          <span className="text-foreground/90">{item.caption}</span>
-        </p>
+        {item.caption && (
+          <p className="text-sm text-foreground leading-snug">
+            <Link to={`/u/${item.brandHandle}`} className="font-semibold mr-1.5">
+              {item.brandHandle}
+            </Link>
+            <span className="text-foreground/90">{item.caption}</span>
+          </p>
+        )}
         {item.hashtags.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1.5">
             {item.hashtags.map((h) => (
@@ -276,7 +283,7 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet }: H
           onClick={handleComment}
           className="mt-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
-          View all {item.comments} comments
+          {commentCount > 0 ? `View all ${commentCount} comments` : "Add a comment"}
         </button>
       </div>
     </article>

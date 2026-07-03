@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Index from "./pages/Index.tsx";
 import { AuthBootstrap } from "./components/auth/AuthBootstrap";
+import { SocialHydrator } from "./components/auth/SocialHydrator";
 import { IdentityProvider } from "./hooks/useIdentity";
 import { IdentityGate } from "./components/auth/IdentityGate";
 import { InstallPrompt } from "./components/pwa/InstallPrompt";
@@ -65,6 +66,7 @@ const App = () => (
         <BrowserRouter>
           <IdentityProvider>
             <AuthBootstrap />
+            <SocialHydrator />
             <IdentityGate>
               <DesktopSidebar />
               <div className="lg:pl-60">

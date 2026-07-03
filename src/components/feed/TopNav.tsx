@@ -1,9 +1,9 @@
 import { motion } from "framer-motion";
-import { Search, Film, Menu as MenuIcon } from "lucide-react";
+import { Search, Film, MessageCircle, Menu as MenuIcon, Heart } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useRef } from "react";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
-
+import { useNotifications } from "@/hooks/useNotifications";
 
 interface TopNavProps {
   hidden?: boolean;
@@ -12,6 +12,7 @@ interface TopNavProps {
 export const TopNav = ({ hidden = false }: TopNavProps) => {
   const navigate = useNavigate();
   const { isAdmin } = useIsAdmin();
+  const { unread } = useNotifications();
   const clicks = useRef<number[]>([]);
 
   const handleLogoClick = (e: React.MouseEvent) => {
@@ -23,8 +24,6 @@ export const TopNav = ({ hidden = false }: TopNavProps) => {
       if (isAdmin) {
         e.preventDefault();
         navigate("/admin");
-      } else {
-        // silently ignore for non-admins
       }
     }
   };
@@ -48,12 +47,23 @@ export const TopNav = ({ hidden = false }: TopNavProps) => {
           </span>
         </Link>
 
-        <div className="flex items-center gap-1 shrink-0">
-          <Link to="/search" aria-label="Search Shopitt" className="h-10 w-10 rounded-full hover:bg-muted/50 transition-colors flex items-center justify-center">
+        <div className="flex items-center gap-0.5 shrink-0">
+          <Link to="/search" aria-label="Search" className="h-10 w-10 rounded-full hover:bg-muted/50 transition-colors flex items-center justify-center">
             <Search className="h-5 w-5 text-foreground" />
           </Link>
-          <Link to="/shorts" aria-label="Watch Reels" className="h-10 w-10 rounded-full hover:bg-muted/50 transition-colors flex items-center justify-center">
+          <Link to="/shorts" aria-label="Reels" className="h-10 w-10 rounded-full hover:bg-muted/50 transition-colors flex items-center justify-center">
             <Film className="h-5 w-5 text-foreground" />
+          </Link>
+          <Link to="/alerts" aria-label="Alerts" className="relative h-10 w-10 rounded-full hover:bg-muted/50 transition-colors flex items-center justify-center">
+            <Heart className="h-5 w-5 text-foreground" />
+            {unread > 0 && (
+              <span className="absolute top-1.5 right-1.5 min-w-[16px] h-4 px-1 rounded-full gradient-brand text-[9px] font-extrabold text-white flex items-center justify-center shadow-brand">
+                {unread > 9 ? "9+" : unread}
+              </span>
+            )}
+          </Link>
+          <Link to="/chats" aria-label="Chats" className="h-10 w-10 rounded-full hover:bg-muted/50 transition-colors flex items-center justify-center">
+            <MessageCircle className="h-5 w-5 text-foreground" />
           </Link>
           <Link to="/menu" aria-label="Menu" className="h-10 w-10 rounded-full hover:bg-muted/50 transition-colors flex items-center justify-center">
             <MenuIcon className="h-5 w-5 text-foreground" />
@@ -63,6 +73,3 @@ export const TopNav = ({ hidden = false }: TopNavProps) => {
     </motion.header>
   );
 };
-
-
-

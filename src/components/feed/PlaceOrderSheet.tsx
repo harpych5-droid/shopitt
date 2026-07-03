@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { X, CheckCircle2, Truck, Phone } from "lucide-react";
+import { X, CheckCircle2, Truck, Phone, Loader2 } from "lucide-react";
 import type { FeedItem } from "@/data/feed";
+import { useIdentity } from "@/hooks/useIdentity";
+import { createOrder } from "@/services/ordersService";
+import { Link } from "react-router-dom";
+import { toast } from "sonner";
 
 interface PlaceOrderSheetProps {
   open: boolean;
@@ -12,33 +16,58 @@ interface PlaceOrderSheetProps {
 type Stage = "form" | "confirmed";
 
 export const PlaceOrderSheet = ({ open, product, onClose }: PlaceOrderSheetProps) => {
+  const { user, profile, isAuthed } = useIdentity();
   const [stage, setStage] = useState<Stage>("form");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [orderId, setOrderId] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
       setStage("form");
       setSubmitting(false);
+      setName(profile?.username ?? "");
     }
-  }, [open, product?.id]);
+  }, [open, product?.id, profile]);
 
   if (!product) return null;
 
   const canSubmit = name.trim() && phone.trim() && address.trim() && !submitting;
 
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canSubmit) return;
+    if (!isAuthed || !user) {
+      toast.error("Please sign in to order");
+      return;
+    }
+    if (!product.userId) {
+      toast.error("Seller info missing");
+      return;
+    }
     setSubmitting(true);
-    // Demo: simulate request
-    setTimeout(() => {
-      setStage("confirmed");
-      setSubmitting(false);
-    }, 600);
+    const { id, error } = await createOrder({
+      buyerId: user.id,
+      sellerId: product.userId,
+      postId: product.id,
+      quantity: 1,
+      unitPrice: product.price,
+      currency: (product.currency ?? "USD").trim(),
+      buyerName: name.trim(),
+      buyerPhone: phone.trim(),
+      deliveryAddress: address.trim() + (notes ? `\nNotes: ${notes.trim()}` : ""),
+      productSnapshot: { title: product.title, media_url: product.image },
+    });
+    setSubmitting(false);
+    if (error) {
+      toast.error(error);
+      return;
+    }
+    setOrderId(id);
+    setStage("confirmed");
   };
 
   return (
@@ -66,24 +95,15 @@ export const PlaceOrderSheet = ({ open, product, onClose }: PlaceOrderSheetProps
               <h2 className="text-base font-extrabold">
                 {stage === "form" ? "Place Order" : "Order placed"}
               </h2>
-              <button
-                onClick={onClose}
-                aria-label="Close"
-                className="h-9 w-9 rounded-full hover:bg-muted/50 flex items-center justify-center"
-              >
+              <button onClick={onClose} aria-label="Close" className="h-9 w-9 rounded-full hover:bg-muted/50 flex items-center justify-center">
                 <X className="h-5 w-5" />
               </button>
             </div>
 
             {stage === "form" ? (
               <form onSubmit={onSubmit} className="px-4 py-4 space-y-4 max-w-md mx-auto">
-                {/* Product summary */}
                 <div className="flex items-center gap-3 rounded-2xl bg-card border border-border/60 p-3">
-                  <img
-                    src={product.image}
-                    alt={product.title}
-                    className="h-16 w-16 rounded-xl object-cover bg-muted shrink-0"
-                  />
+                  <img src={product.image} alt={product.title} className="h-16 w-16 rounded-xl object-cover bg-muted shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold truncate">{product.title}</p>
                     <p className="text-[11px] text-muted-foreground truncate">@{product.brandHandle}</p>
@@ -95,71 +115,42 @@ export const PlaceOrderSheet = ({ open, product, onClose }: PlaceOrderSheetProps
 
                 <div>
                   <label className="text-xs font-semibold text-foreground">Full name *</label>
-                  <input
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Your name"
-                    className="mt-1.5 w-full rounded-2xl bg-card border border-border/60 px-4 py-3 text-sm focus:outline-none focus:border-brand-pink"
-                  />
+                  <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" className="mt-1.5 w-full rounded-2xl bg-card border border-border/60 px-4 py-3 text-sm focus:outline-none focus:border-brand-pink" />
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-foreground">Phone *</label>
-                  <input
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+260 ..."
-                    type="tel"
-                    className="mt-1.5 w-full rounded-2xl bg-card border border-border/60 px-4 py-3 text-sm focus:outline-none focus:border-brand-pink"
-                  />
+                  <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+260 ..." type="tel" className="mt-1.5 w-full rounded-2xl bg-card border border-border/60 px-4 py-3 text-sm focus:outline-none focus:border-brand-pink" />
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-foreground">Delivery address *</label>
-                  <textarea
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    placeholder="Area, street, landmark"
-                    rows={2}
-                    className="mt-1.5 w-full rounded-2xl bg-card border border-border/60 px-4 py-3 text-sm focus:outline-none focus:border-brand-pink"
-                  />
+                  <textarea value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Area, street, landmark" rows={2} className="mt-1.5 w-full rounded-2xl bg-card border border-border/60 px-4 py-3 text-sm focus:outline-none focus:border-brand-pink" />
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-foreground">Notes (optional)</label>
-                  <input
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Size, color, preferred time…"
-                    className="mt-1.5 w-full rounded-2xl bg-card border border-border/60 px-4 py-3 text-sm focus:outline-none focus:border-brand-pink"
-                  />
+                  <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Size, color, preferred time…" className="mt-1.5 w-full rounded-2xl bg-card border border-border/60 px-4 py-3 text-sm focus:outline-none focus:border-brand-pink" />
                 </div>
 
                 <div className="rounded-2xl bg-muted/40 border border-border/60 px-3 py-2.5 flex items-start gap-2 text-[12px] text-muted-foreground leading-snug">
                   <Truck className="h-4 w-4 text-brand-pink mt-0.5 shrink-0" />
-                  No payment is taken now. The seller contacts you to arrange payment & delivery.
+                  The seller will contact you to arrange payment & delivery.
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={!canSubmit}
-                  className="w-full h-12 rounded-full gradient-brand shadow-brand text-sm font-extrabold text-white flex items-center justify-center disabled:opacity-50 active:scale-[0.98] transition-transform"
-                >
-                  {submitting ? "Placing order…" : "Place Order"}
+                <button type="submit" disabled={!canSubmit} className="w-full h-12 rounded-full gradient-brand shadow-brand text-sm font-extrabold text-white flex items-center justify-center disabled:opacity-50 active:scale-[0.98] transition-transform">
+                  {submitting ? (
+                    <span className="inline-flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Placing…</span>
+                  ) : (
+                    "Place Order"
+                  )}
                 </button>
               </form>
             ) : (
               <div className="px-6 py-10 max-w-md mx-auto text-center">
-                <motion.span
-                  initial={{ scale: 0.7, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ type: "spring", stiffness: 360, damping: 22 }}
-                  className="inline-flex h-16 w-16 items-center justify-center rounded-full gradient-brand shadow-brand"
-                >
+                <motion.span initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 360, damping: 22 }} className="inline-flex h-16 w-16 items-center justify-center rounded-full gradient-brand shadow-brand">
                   <CheckCircle2 className="h-9 w-9 text-white" />
                 </motion.span>
-                <h3 className="mt-4 text-xl font-extrabold tracking-tight">
-                  Order received 🎉
-                </h3>
+                <h3 className="mt-4 text-xl font-extrabold tracking-tight">Order received 🎉</h3>
                 <p className="mt-2 text-sm text-muted-foreground leading-snug">
-                  <span className="font-semibold text-foreground">{product.brand}</span> will contact you to arrange payment and delivery — usually within an hour.
+                  <span className="font-semibold text-foreground">{product.brand}</span> will contact you to arrange payment and delivery.
                 </p>
                 <div className="mt-5 rounded-2xl bg-card border border-border/60 p-4 text-left">
                   <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground font-bold">Order summary</p>
@@ -173,23 +164,17 @@ export const PlaceOrderSheet = ({ open, product, onClose }: PlaceOrderSheetProps
                   </div>
                   <div className="mt-1 flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Status</span>
-                    <span className="font-semibold text-brand-pink">Received</span>
+                    <span className="font-semibold text-brand-pink">Pending</span>
                   </div>
                 </div>
                 <div className="mt-5 flex items-center gap-2">
-                  <a
-                    href={`tel:`}
-                    className="flex-1 h-11 rounded-full bg-card border border-border/60 text-sm font-bold flex items-center justify-center gap-1.5"
-                  >
+                  <a href="tel:" className="flex-1 h-11 rounded-full bg-card border border-border/60 text-sm font-bold flex items-center justify-center gap-1.5">
                     <Phone className="h-4 w-4" />
                     Call seller
                   </a>
-                  <button
-                    onClick={onClose}
-                    className="flex-1 h-11 rounded-full gradient-brand shadow-brand text-sm font-extrabold text-white"
-                  >
-                    Done
-                  </button>
+                  <Link to={orderId ? `/orders/${orderId}` : "/orders"} onClick={onClose} className="flex-1 h-11 rounded-full gradient-brand shadow-brand text-sm font-extrabold text-white flex items-center justify-center">
+                    View order
+                  </Link>
                 </div>
               </div>
             )}

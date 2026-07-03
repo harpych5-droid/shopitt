@@ -2,27 +2,21 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  ArrowLeft,
-  Heart,
-  Bookmark,
-  Send,
-  Truck,
-  ShoppingBag,
-  BadgeCheck,
-  MapPin,
-  MessageCircle,
-  Sparkles,
-  Plus,
-  ChevronLeft,
-  ChevronRight,
-  CalendarCheck,
-  Globe,
+  ArrowLeft, Heart, Bookmark, Send, Truck, ShoppingBag, BadgeCheck, MapPin,
+  MessageCircle, Sparkles, Plus, ChevronLeft, ChevronRight, CalendarCheck, Globe, Loader2,
 } from "lucide-react";
-import { FEED } from "@/data/feed";
+import type { FeedItem } from "@/data/feed";
 import { useShopitt, shopitt } from "@/store/useShopittStore";
 import { AuthModal } from "@/components/feed/AuthModal";
 import { BagSheet } from "@/components/feed/BagSheet";
 import { PlaceOrderSheet } from "@/components/feed/PlaceOrderSheet";
+import { CommentsSheet } from "@/components/feed/CommentsSheet";
+import { fetchPostById, postToFeedItem } from "@/services/postsService";
+import { usePostSocial } from "@/hooks/usePostSocial";
+import { useIdentity } from "@/hooks/useIdentity";
+import { followUser, unfollowUser } from "@/services/socialService";
+import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 
 const DELIVERY_META = {
   international: { icon: Globe, label: "International delivery" },
@@ -31,14 +25,27 @@ const DELIVERY_META = {
 } as const;
 
 const ProductDetail = () => {
-  const { id } = useParams();
-  const product = useMemo(() => FEED.find((p) => p.id === id) ?? FEED[0], [id]);
+  const { id = "" } = useParams();
+  const { user } = useIdentity();
+  const [product, setProduct] = useState<FeedItem | null>(null);
+  const [notFound, setNotFound] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // Build a small gallery from the available images so swipe works visually.
-  const gallery = useMemo(() => {
-    const others = FEED.filter((f) => f.id !== product.id).slice(0, 2).map((f) => f.image);
-    return [product.image, ...others];
-  }, [product]);
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      const { data } = await fetchPostById(id);
+      if (cancelled) return;
+      if (!data) { setNotFound(true); setLoading(false); return; }
+      setProduct(postToFeedItem(data));
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [id]);
+
+  const gallery = useMemo(() => (product ? [product.image] : []), [product]);
 
   const [slide, setSlide] = useState(0);
   const [following, setFollowing] = useState(false);
@@ -46,19 +53,25 @@ const ProductDetail = () => {
   const [authAction, setAuthAction] = useState<"like" | "save" | "buy" | "comment" | null>(null);
   const [bagOpen, setBagOpen] = useState(false);
   const [orderOpen, setOrderOpen] = useState(false);
+  const [commentsOpen, setCommentsOpen] = useState(false);
 
-
-  const liked = useShopitt((s) => s.liked.has(product.id));
-  const saved = useShopitt((s) => s.saved.has(product.id));
   const authed = useShopitt((s) => s.authed);
+  const social = usePostSocial(product?.id ?? "", 0, 0);
+  const { liked, saved, likeCount, commentCount, toggleLike, toggleSave } = social;
 
   const trackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    document.title = `${product.title} — Shopitt`;
-  }, [product.title]);
+    if (product) document.title = `${product.title} — Shopitt`;
+  }, [product?.title]);
 
-  // Track horizontal scroll to set active slide
+  useEffect(() => {
+    if (!user || !product?.userId || user.id === product.userId) return;
+    supabase.from("followers").select("*", { count: "exact", head: true })
+      .eq("follower_id", user.id).eq("following_id", product.userId)
+      .then(({ count }) => setFollowing((count ?? 0) > 0));
+  }, [user, product?.userId]);
+
   useEffect(() => {
     const el = trackRef.current;
     if (!el) return;
@@ -76,6 +89,18 @@ const ProductDetail = () => {
     el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" });
   };
 
+  if (loading) {
+    return <main className="min-h-[100dvh] bg-background flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></main>;
+  }
+  if (notFound || !product) {
+    return (
+      <main className="min-h-[100dvh] bg-background flex flex-col items-center justify-center p-6 text-center">
+        <p className="text-sm text-muted-foreground mb-4">This post no longer exists.</p>
+        <Link to="/" className="rounded-full gradient-brand px-5 py-2.5 text-sm font-bold text-white shadow-brand">Back to feed</Link>
+      </main>
+    );
+  }
+
   const guard = (action: "like" | "save" | "buy" | "comment", run: () => void) => {
     if (!authed) {
       shopitt.setPending({ type: action, itemId: product.id });
@@ -86,13 +111,19 @@ const ProductDetail = () => {
     run();
   };
 
-  const handleBuy = () =>
-    guard("buy", () => {
-      setOrderOpen(true);
-    });
+  const handleBuy = () => guard("buy", () => setOrderOpen(true));
   const handleAddBag = () => guard("buy", () => shopitt.addToBag(product));
-  const handleLike = () => guard("like", () => shopitt.toggleLike(product.id));
-  const handleSave = () => guard("save", () => shopitt.toggleSave(product.id));
+  const handleLike = () => guard("like", () => toggleLike());
+  const handleSave = () => guard("save", () => toggleSave());
+  const handleFollow = async () => {
+    if (!user || !product.userId) return;
+    const next = !following;
+    setFollowing(next);
+    const { error } = next
+      ? await followUser(user.id, product.userId)
+      : await unfollowUser(user.id, product.userId);
+    if (error) { setFollowing(!next); toast.error(error); }
+  };
 
   return (
     <main className="min-h-[100dvh] bg-background pb-32">
@@ -305,29 +336,31 @@ const ProductDetail = () => {
           <div className="flex items-center gap-4">
             <button onClick={handleLike} aria-label="Like" className="flex items-center gap-1.5 active:scale-90 transition-transform">
               <Heart className={`h-6 w-6 ${liked ? "fill-brand-pink text-brand-pink" : "text-foreground"}`} />
-              <span className="text-sm font-bold tabular-nums">
-                {(product.likes + (liked ? 1 : 0)).toLocaleString()}
-              </span>
+              <span className="text-sm font-bold tabular-nums">{likeCount.toLocaleString()}</span>
             </button>
-            <div className="flex items-center gap-1.5">
+            <button onClick={() => setCommentsOpen(true)} className="flex items-center gap-1.5">
               <MessageCircle className="h-6 w-6 text-foreground" />
-              <span className="text-sm font-bold tabular-nums">{product.comments}</span>
-            </div>
+              <span className="text-sm font-bold tabular-nums">{commentCount}</span>
+            </button>
             <button aria-label="Share" className="active:scale-90 transition-transform">
               <Send className="h-6 w-6 text-foreground" />
             </button>
           </div>
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-success/15 text-success text-[11px] font-bold">
-            ✓ {product.sold} sold
-          </span>
         </section>
 
         {/* COMMENTS */}
         <section className="px-4 mt-6">
-          <h2 className="text-xs uppercase tracking-[0.16em] font-bold text-muted-foreground mb-3">
-            Comments
-          </h2>
-          <CommentsEmpty onComment={() => guard("comment", () => {})} />
+          <button
+            onClick={() => setCommentsOpen(true)}
+            className="w-full rounded-3xl glass p-5 text-center active:scale-95 transition-transform"
+          >
+            <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl gradient-brand shadow-brand">
+              <MessageCircle className="h-6 w-6 text-white" />
+            </span>
+            <h3 className="mt-3 text-base font-extrabold">
+              {commentCount > 0 ? `View all ${commentCount} comments` : "Be the first to comment 🔥"}
+            </h3>
+          </button>
         </section>
       </div>
 
@@ -366,6 +399,7 @@ const ProductDetail = () => {
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} action={authAction} />
       <BagSheet open={bagOpen} onClose={() => setBagOpen(false)} />
       <PlaceOrderSheet open={orderOpen} product={product} onClose={() => setOrderOpen(false)} />
+      <CommentsSheet open={commentsOpen} postId={product.id} onClose={() => setCommentsOpen(false)} />
     </main>
   );
 };
