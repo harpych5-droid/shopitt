@@ -53,19 +53,25 @@ const ProductDetail = () => {
   const [authAction, setAuthAction] = useState<"like" | "save" | "buy" | "comment" | null>(null);
   const [bagOpen, setBagOpen] = useState(false);
   const [orderOpen, setOrderOpen] = useState(false);
+  const [commentsOpen, setCommentsOpen] = useState(false);
 
-
-  const liked = useShopitt((s) => s.liked.has(product.id));
-  const saved = useShopitt((s) => s.saved.has(product.id));
   const authed = useShopitt((s) => s.authed);
+  const social = usePostSocial(product?.id ?? "", 0, 0);
+  const { liked, saved, likeCount, commentCount, toggleLike, toggleSave } = social;
 
   const trackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    document.title = `${product.title} — Shopitt`;
-  }, [product.title]);
+    if (product) document.title = `${product.title} — Shopitt`;
+  }, [product?.title]);
 
-  // Track horizontal scroll to set active slide
+  useEffect(() => {
+    if (!user || !product?.userId || user.id === product.userId) return;
+    supabase.from("followers").select("*", { count: "exact", head: true })
+      .eq("follower_id", user.id).eq("following_id", product.userId)
+      .then(({ count }) => setFollowing((count ?? 0) > 0));
+  }, [user, product?.userId]);
+
   useEffect(() => {
     const el = trackRef.current;
     if (!el) return;
@@ -83,6 +89,18 @@ const ProductDetail = () => {
     el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" });
   };
 
+  if (loading) {
+    return <main className="min-h-[100dvh] bg-background flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></main>;
+  }
+  if (notFound || !product) {
+    return (
+      <main className="min-h-[100dvh] bg-background flex flex-col items-center justify-center p-6 text-center">
+        <p className="text-sm text-muted-foreground mb-4">This post no longer exists.</p>
+        <Link to="/" className="rounded-full gradient-brand px-5 py-2.5 text-sm font-bold text-white shadow-brand">Back to feed</Link>
+      </main>
+    );
+  }
+
   const guard = (action: "like" | "save" | "buy" | "comment", run: () => void) => {
     if (!authed) {
       shopitt.setPending({ type: action, itemId: product.id });
@@ -93,13 +111,19 @@ const ProductDetail = () => {
     run();
   };
 
-  const handleBuy = () =>
-    guard("buy", () => {
-      setOrderOpen(true);
-    });
+  const handleBuy = () => guard("buy", () => setOrderOpen(true));
   const handleAddBag = () => guard("buy", () => shopitt.addToBag(product));
-  const handleLike = () => guard("like", () => shopitt.toggleLike(product.id));
-  const handleSave = () => guard("save", () => shopitt.toggleSave(product.id));
+  const handleLike = () => guard("like", () => toggleLike());
+  const handleSave = () => guard("save", () => toggleSave());
+  const handleFollow = async () => {
+    if (!user || !product.userId) return;
+    const next = !following;
+    setFollowing(next);
+    const { error } = next
+      ? await followUser(user.id, product.userId)
+      : await unfollowUser(user.id, product.userId);
+    if (error) { setFollowing(!next); toast.error(error); }
+  };
 
   return (
     <main className="min-h-[100dvh] bg-background pb-32">
