@@ -399,6 +399,7 @@ const ProductDetail = () => {
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} action={authAction} />
       <BagSheet open={bagOpen} onClose={() => setBagOpen(false)} />
       <PlaceOrderSheet open={orderOpen} product={product} onClose={() => setOrderOpen(false)} />
+      <CommentsSheet open={commentsOpen} postId={product.id} onClose={() => setCommentsOpen(false)} />
     </main>
   );
 };
