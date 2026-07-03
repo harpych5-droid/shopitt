@@ -1,7 +1,17 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Plus, Check, Bookmark } from "lucide-react";
+import { X, Plus, Check, Bookmark, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useShopitt, shopitt } from "@/store/useShopittStore";
+import { useIdentity } from "@/hooks/useIdentity";
+import {
+  fetchCollections,
+  ensureDefaultCollection,
+  createCollection,
+  togglePostInCollection,
+  savePost,
+  fetchPostMemberships,
+  type CollectionRow,
+} from "@/services/socialService";
+import { toast } from "sonner";
 
 interface SaveSheetProps {
   open: boolean;
@@ -9,15 +19,34 @@ interface SaveSheetProps {
   postId: string | null;
 }
 
-const EMPTY_SET: Set<string> = new Set();
-
 export const SaveSheet = ({ open, onClose, postId }: SaveSheetProps) => {
-  const collections = useShopitt((s) => s.collections);
-  const memberships = useShopitt((s) =>
-    postId ? s.postCollections.get(postId) ?? EMPTY_SET : EMPTY_SET,
-  );
+  const { user, isAuthed } = useIdentity();
+  const [collections, setCollections] = useState<CollectionRow[]>([]);
+  const [memberships, setMemberships] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open || !user || !postId) return;
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      await ensureDefaultCollection(user.id);
+      const [cols, allMem] = await Promise.all([
+        fetchCollections(user.id),
+        fetchPostMemberships(user.id),
+      ]);
+      if (cancelled) return;
+      setCollections(cols);
+      setMemberships(allMem.get(postId) ?? new Set<string>());
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, user, postId]);
 
   useEffect(() => {
     if (!open) {
@@ -28,17 +57,39 @@ export const SaveSheet = ({ open, onClose, postId }: SaveSheetProps) => {
 
   if (!postId) return null;
 
-  const handleToggle = (collectionId: string) => {
-    shopitt.togglePostInCollection(postId, collectionId);
+  const handleToggle = async (collectionId: string) => {
+    if (!user) return;
+    const isMember = memberships.has(collectionId);
+    setBusyId(collectionId);
+    setMemberships((prev) => {
+      const next = new Set(prev);
+      isMember ? next.delete(collectionId) : next.add(collectionId);
+      return next;
+    });
+    const { error } = await togglePostInCollection(collectionId, postId, isMember);
+    if (!isMember) {
+      // also record in saved_items for quick lookup
+      await savePost(postId, user.id);
+    }
+    setBusyId(null);
+    if (error) toast.error(error);
   };
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
+    if (!user) return;
     const trimmed = name.trim();
     if (!trimmed) return;
-    const id = shopitt.createCollection(trimmed);
-    shopitt.togglePostInCollection(postId, id);
+    const { data, error } = await createCollection(user.id, trimmed);
+    if (error || !data) {
+      toast.error(error ?? "Could not create collection");
+      return;
+    }
+    setCollections((prev) => [...prev, data]);
     setName("");
     setCreating(false);
+    await togglePostInCollection(data.id, postId, false);
+    await savePost(postId, user.id);
+    setMemberships((prev) => new Set(prev).add(data.id));
   };
 
   return (
@@ -64,78 +115,80 @@ export const SaveSheet = ({ open, onClose, postId }: SaveSheetProps) => {
                 <Bookmark className="h-5 w-5 text-brand-pink" />
                 <h2 className="font-display text-lg font-bold">Save to collection</h2>
               </div>
-              <button
-                onClick={onClose}
-                aria-label="Close"
-                className="h-9 w-9 rounded-full hover:bg-muted flex items-center justify-center"
-              >
+              <button onClick={onClose} aria-label="Close" className="h-9 w-9 rounded-full hover:bg-muted flex items-center justify-center">
                 <X className="h-5 w-5" />
               </button>
             </div>
 
             <div className="flex-1 overflow-y-auto px-3 pb-4">
-              <ul className="space-y-1">
-                {collections.map((c) => {
-                  const checked = memberships.has(c.id);
-                  return (
-                    <li key={c.id}>
-                      <button
-                        onClick={() => handleToggle(c.id)}
-                        className="w-full flex items-center justify-between gap-3 px-3 py-3 rounded-2xl hover:bg-muted/60 active:scale-[0.99] transition"
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div
-                            className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${
-                              checked ? "gradient-brand" : "bg-muted"
-                            }`}
-                          >
-                            <Bookmark
-                              className={`h-5 w-5 ${checked ? "text-white fill-white" : "text-muted-foreground"}`}
-                            />
+              {!isAuthed ? (
+                <p className="px-4 py-6 text-sm text-muted-foreground text-center">
+                  Sign in to save posts to collections.
+                </p>
+              ) : loading ? (
+                <div className="py-8 flex justify-center">
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
+                <ul className="space-y-1">
+                  {collections.map((c) => {
+                    const checked = memberships.has(c.id);
+                    return (
+                      <li key={c.id}>
+                        <button
+                          onClick={() => handleToggle(c.id)}
+                          disabled={busyId === c.id}
+                          className="w-full flex items-center justify-between gap-3 px-3 py-3 rounded-2xl hover:bg-muted/60 active:scale-[0.99] transition disabled:opacity-60"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${checked ? "gradient-brand" : "bg-muted"}`}>
+                              <Bookmark className={`h-5 w-5 ${checked ? "text-white fill-white" : "text-muted-foreground"}`} />
+                            </div>
+                            <span className="font-semibold truncate">{c.name}</span>
                           </div>
-                          <span className="font-semibold truncate">{c.name}</span>
-                        </div>
-                        {checked && (
-                          <span className="h-7 w-7 rounded-full gradient-brand flex items-center justify-center shrink-0">
-                            <Check className="h-4 w-4 text-white" strokeWidth={3} />
-                          </span>
-                        )}
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
+                          {busyId === c.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                          ) : checked ? (
+                            <span className="h-7 w-7 rounded-full gradient-brand flex items-center justify-center shrink-0">
+                              <Check className="h-4 w-4 text-white" strokeWidth={3} />
+                            </span>
+                          ) : null}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
 
-              <div className="mt-3 px-3">
-                {creating ? (
-                  <div className="flex items-center gap-2">
-                    <input
-                      autoFocus
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleCreate()}
-                      placeholder="e.g. Dream Closet, Date Night…"
-                      className="flex-1 h-11 rounded-xl bg-muted px-4 text-sm font-medium outline-none focus:ring-2 focus:ring-ring"
-                    />
-                    <button
-                      onClick={handleCreate}
-                      className="h-11 px-4 rounded-xl gradient-brand text-white text-sm font-bold"
-                    >
-                      Create
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setCreating(true)}
-                    className="w-full flex items-center gap-3 px-3 py-3 rounded-2xl border border-dashed border-border hover:bg-muted/40 transition"
-                  >
-                    <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center">
-                      <Plus className="h-5 w-5" />
+              {isAuthed && (
+                <div className="mt-3 px-3">
+                  {creating ? (
+                    <div className="flex items-center gap-2">
+                      <input
+                        autoFocus
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleCreate()}
+                        placeholder="e.g. Dream Closet, Date Night…"
+                        className="flex-1 h-11 rounded-xl bg-muted px-4 text-sm font-medium outline-none focus:ring-2 focus:ring-ring"
+                      />
+                      <button onClick={handleCreate} className="h-11 px-4 rounded-xl gradient-brand text-white text-sm font-bold">
+                        Create
+                      </button>
                     </div>
-                    <span className="font-semibold text-muted-foreground">New collection</span>
-                  </button>
-                )}
-              </div>
+                  ) : (
+                    <button
+                      onClick={() => setCreating(true)}
+                      className="w-full flex items-center gap-3 px-3 py-3 rounded-2xl border border-dashed border-border hover:bg-muted/40 transition"
+                    >
+                      <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center">
+                        <Plus className="h-5 w-5" />
+                      </div>
+                      <span className="font-semibold text-muted-foreground">New collection</span>
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </motion.div>
         </>
