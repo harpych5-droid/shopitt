@@ -91,7 +91,7 @@ export function postToFeedItem(p: DbPost): FeedItem {
     brandHandle: handle,
     avatar: p.profiles?.avatar_url ?? null,
     title: p.title ?? "Untitled drop",
-    drop: p.category_name ?? (isInspiration ? "Inspiration" : "New Drop"),
+    drop: p.drop_title ?? p.category_name ?? (isInspiration ? "Inspiration" : "New Drop"),
     image: firstMedia,
     price: Number(p.price ?? 0),
     currency: (p.currency ?? "USD") + " ",
