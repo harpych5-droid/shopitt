@@ -17,6 +17,11 @@ interface BottomNavProps {
 
 export const BottomNav = ({ hidden = false }: BottomNavProps) => {
   const { pathname } = useLocation();
+  const { unread } = useNotifications();
+  const items = baseItems.map((it) => ({
+    ...it,
+    badge: "badgeKey" in it && it.badgeKey === "unread" ? unread : 0,
+  }));
   return (
     <motion.nav
       initial={false}
