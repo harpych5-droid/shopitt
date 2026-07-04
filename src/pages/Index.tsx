@@ -69,8 +69,8 @@ const Index = () => {
   }, [hasMore, loadMore]);
 
   useEffect(() => {
-    document.title = "Shopitt — Shop Drops You Crave";
-    const desc = "Shopitt is the social commerce feed for drops you crave. Discover, like, save and buy in one tap.";
+    document.title = "Vylogue — Shop Drops You Crave";
+    const desc = "Vylogue is the social commerce feed for drops you crave. Discover, like, save and buy in one tap.";
     let meta = document.querySelector('meta[name="description"]');
     if (!meta) {
       meta = document.createElement("meta");
@@ -100,7 +100,7 @@ const Index = () => {
       <TopNav hidden={navHidden} />
       <CategoryTabs active={category} onChange={setCategory} hidden={navHidden} />
 
-      <h1 className="sr-only">Shopitt — Discover drops, shop instantly</h1>
+      <h1 className="sr-only">Vylogue — Discover drops, shop instantly</h1>
 
       <div ref={scrollRef} className="h-[100dvh] w-full overflow-y-auto no-scrollbar">
         <div className="h-[108px]" />

@@ -17,7 +17,7 @@ const Shorts = () => {
   const [items, setItems] = useState<FeedItem[] | null>(null);
 
   useEffect(() => {
-    document.title = "Shopitt Shorts — Vertical Drops";
+    document.title = "Vylogue Shorts — Vertical Drops";
   }, []);
 
   useEffect(() => {
@@ -60,7 +60,7 @@ const Shorts = () => {
         <span className="h-9 w-9" />
       </header>
 
-      <h1 className="sr-only">Shopitt Shorts</h1>
+      <h1 className="sr-only">Vylogue Shorts</h1>
 
       {items === null ? (
         <div className="h-full w-full flex items-center justify-center">

@@ -23,7 +23,7 @@ const Saved = () => {
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
 
-  useEffect(() => { document.title = "Saved collections — Shopitt"; }, []);
+  useEffect(() => { document.title = "Saved collections — Vylogue"; }, []);
 
   const loadCollections = useCallback(async () => {
     if (!user) { setLoading(false); return; }

@@ -62,7 +62,7 @@ const ProductDetail = () => {
   const trackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (product) document.title = `${product.title} — Shopitt`;
+    if (product) document.title = `${product.title} — Vylogue`;
   }, [product?.title]);
 
   useEffect(() => {

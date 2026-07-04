@@ -18,7 +18,7 @@ const ChatThread = () => {
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    document.title = `Chat with @${handle} — Shopitt`;
+    document.title = `Chat with @${handle} — Vylogue`;
   }, [handle]);
 
   // Resolve other profile (handle can be username or uuid)

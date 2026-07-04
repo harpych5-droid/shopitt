@@ -30,7 +30,7 @@ const Dashboard = () => {
   const suggested = FEED.slice(0, 4);
 
   useEffect(() => {
-    document.title = "Dashboard — Shopitt";
+    document.title = "Dashboard — Vylogue";
   }, []);
 
   return (
@@ -46,7 +46,7 @@ const Dashboard = () => {
             <h1 className="mt-1 text-2xl font-black tracking-tight">
               Hey, @{profile?.username ?? "shopper"} 👋
             </h1>
-            <p className="mt-1 text-sm text-muted-foreground">Here's what's happening in your Shopitt today.</p>
+            <p className="mt-1 text-sm text-muted-foreground">Here's what's happening in your Vylogue today.</p>
           </section>
 
           {/* Quick stats */}

@@ -21,7 +21,7 @@ const TRANSACTIONS = [
 
 const Wallet = () => {
   useEffect(() => {
-    document.title = "Wallet — Shopitt";
+    document.title = "Wallet — Vylogue";
   }, []);
 
   return (

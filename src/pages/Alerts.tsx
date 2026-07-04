@@ -24,7 +24,7 @@ const Alerts = () => {
   const { items, unread, loading, markAllRead } = useNotifications();
 
   useEffect(() => {
-    document.title = "Alerts — Shopitt";
+    document.title = "Alerts — Vylogue";
   }, []);
 
   useEffect(() => {

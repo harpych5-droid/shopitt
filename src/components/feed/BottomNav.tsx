@@ -1,12 +1,13 @@
 import { NavLink, useLocation } from "react-router-dom";
 import { Home, Compass, Bell, User, Plus } from "lucide-react";
 import { motion } from "framer-motion";
+import { useNotifications } from "@/hooks/useNotifications";
 
-const items = [
+const baseItems = [
   { to: "/", label: "Home", icon: Home, end: true },
   { to: "/discover", label: "Discover", icon: Compass, end: false },
   { to: "/create", label: "", icon: Plus, end: false, primary: true },
-  { to: "/alerts", label: "Alerts", icon: Bell, end: false, badge: 2 },
+  { to: "/alerts", label: "Alerts", icon: Bell, end: false, badgeKey: "unread" as const },
   { to: "/profile", label: "Profile", icon: User, end: false },
 ];
 
@@ -16,6 +17,11 @@ interface BottomNavProps {
 
 export const BottomNav = ({ hidden = false }: BottomNavProps) => {
   const { pathname } = useLocation();
+  const { unread } = useNotifications();
+  const items = baseItems.map((it) => ({
+    ...it,
+    badge: "badgeKey" in it && it.badgeKey === "unread" ? unread : 0,
+  }));
   return (
     <motion.nav
       initial={false}
@@ -56,9 +62,9 @@ export const BottomNav = ({ hidden = false }: BottomNavProps) => {
                     strokeWidth={active ? 2.4 : 2}
                     fill={active && item.label === "Home" ? "currentColor" : "none"}
                   />
-                  {item.badge ? (
+                  {item.badge > 0 ? (
                     <span className="absolute -top-1 -right-2 min-w-[16px] h-[16px] px-1 rounded-full bg-brand-pink text-[10px] font-bold text-white flex items-center justify-center border border-background">
-                      {item.badge}
+                      {item.badge > 9 ? "9+" : item.badge}
                     </span>
                   ) : null}
                 </div>

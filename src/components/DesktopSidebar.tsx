@@ -32,7 +32,7 @@ export const DesktopSidebar = () => {
           S
         </span>
         <span className="font-display text-lg font-extrabold tracking-tight">
-          Shopitt
+          Vylogue
         </span>
       </NavLink>
 
@@ -72,7 +72,7 @@ export const DesktopSidebar = () => {
       </nav>
 
       <p className="px-2 text-[11px] text-muted-foreground">
-        © Shopitt — built in Africa.
+        © Vylogue — built in Africa.
       </p>
     </aside>
   );

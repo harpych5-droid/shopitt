@@ -18,7 +18,7 @@ const Settings = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    document.title = "Settings — Shopitt";
+    document.title = "Settings — Vylogue";
   }, []);
 
   const handleLogout = async () => {
@@ -118,7 +118,7 @@ const Settings = () => {
         </section>
 
         <p className="text-center text-[11px] text-muted-foreground pt-2">
-          Shopitt by <span className="font-bold text-foreground">AETHØNN Inc.</span> · v1.1
+          Vylogue by <span className="font-bold text-foreground">AETHØNN Inc.</span> · v1.1
         </p>
       </div>
     </main>

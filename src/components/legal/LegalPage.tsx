@@ -15,7 +15,7 @@ interface LegalPageProps {
  */
 export const LegalPage = ({ title, updated, children }: LegalPageProps) => {
   useEffect(() => {
-    document.title = `${title} — Shopitt`;
+    document.title = `${title} — Vylogue`;
   }, [title]);
 
   return (

@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Heart, Bookmark, MessageCircle, Send, Truck, MoreHorizontal, MapPin, BadgeCheck, ShoppingBag, CalendarCheck, Sparkles, Flame } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { FeedItem, PostBadge } from "@/data/feed";
@@ -33,22 +33,12 @@ const badgeIcon = (b: PostBadge) => {
 };
 
 export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onOpenComments }: HomeFeedCardProps) => {
-  const [loaded, setLoaded] = useState(false);
   const [burst, setBurst] = useState(false);
   const authed = useShopitt((s) => s.authed);
   const { liked, saved, likeCount, commentCount, toggleLike } = usePostSocial(item.id, item.likes, item.comments);
 
   const isInspiration = item.postType === "inspiration";
   const isVideo = item.mediaType === "video";
-
-  useEffect(() => {
-    if (isVideo) { setLoaded(true); return; }
-    if (!item.image) { setLoaded(true); return; }
-    const img = new Image();
-    img.src = item.image;
-    img.onload = () => setLoaded(true);
-    img.onerror = () => setLoaded(true);
-  }, [item.image, isVideo]);
 
   const guard = (action: "like" | "save" | "buy" | "comment", run: () => void) => {
     if (!authed) {
@@ -119,7 +109,6 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
 
       {/* MEDIA — extended aspect ratio for Instagram-like feel */}
       <Link to={`/p/${item.id}`} className="relative block w-full aspect-[4/5] bg-muted overflow-hidden">
-        {!loaded && <div className="absolute inset-0 bg-muted animate-pulse" />}
         {isVideo ? (
           <video
             src={item.image}
@@ -132,23 +121,23 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
           />
         ) : (
           item.image && (
-            <motion.img
+            <img
               src={item.image}
               alt={item.title}
               loading={index < 2 ? "eager" : "lazy"}
+              decoding="async"
               className="h-full w-full object-cover"
-              initial={{ scale: 1.04, opacity: 0 }}
-              animate={{ scale: loaded ? 1 : 1.04, opacity: loaded ? 1 : 0 }}
-              transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
             />
           )
         )}
 
-        {item.badge && (
-          <div className="absolute top-3 left-3 z-10">
-            <div className={`rounded-full px-2.5 py-1 flex items-center gap-1 text-[11px] font-bold tracking-wide ${badgeStyles[item.badge]} backdrop-blur-md`}>
-              {badgeIcon(item.badge)}
-              <span>{item.badge}</span>
+        {item.drop && (
+          <div className="absolute top-3 left-3 z-10 max-w-[65%]">
+            <div className="rounded-full glass-dark backdrop-blur-xl bg-black/40 border border-white/10 px-3 py-1.5 flex items-center gap-1">
+              {item.badge && badgeIcon(item.badge)}
+              <span className="text-[11px] font-bold tracking-wide text-white truncate">
+                {item.drop}
+              </span>
             </div>
           </div>
         )}
