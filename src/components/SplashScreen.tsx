@@ -55,9 +55,9 @@ export const SplashScreen = () => {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.35, duration: 0.5 }}
-              className="font-display text-[11px] font-bold tracking-[0.32em] text-foreground/80"
+            className="font-display text-[11px] font-bold tracking-[0.32em] text-foreground/80"
             >
-              LET THERE BE SHOPITT.
+              LET THERE BE VYLOGUE.
             </motion.p>
 
             <motion.div
