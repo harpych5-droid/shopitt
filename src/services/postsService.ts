@@ -19,6 +19,7 @@ export type DbPost = {
   hashtags: string[] | null;
   post_type: string | null;
   category_name: string | null;
+  drop_title: string | null;
   is_available: boolean | null;
   stock_quantity: number | null;
   delivery_type: string | null;
