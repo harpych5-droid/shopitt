@@ -59,7 +59,7 @@ const Admin = () => {
           <div className="flex items-center gap-2">
             <span className="h-7 w-7 rounded-lg gradient-brand grid place-items-center text-white text-[11px] font-black">S</span>
             <div className="leading-tight">
-              <div className="text-sm font-bold">Shopitt</div>
+              <div className="text-sm font-bold">Vylogue</div>
               <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Admin</div>
             </div>
           </div>
@@ -222,7 +222,7 @@ const Overview = () => {
     <>
       <SectionHeader
         title="Operations Overview"
-        subtitle="Realtime snapshot of the Shopitt platform."
+        subtitle="Realtime snapshot of the Vylogue platform."
         action={<Pill tone="green"><span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" /> Systems healthy</Pill>}
       />
 
@@ -521,7 +521,7 @@ const ContentPage = () => {
   const [tab, setTab] = useState<"Posts" | "Reels" | "Comments" | "Reports">("Posts");
   return (
     <>
-      <SectionHeader title="Content Moderation" subtitle="Approve, remove, or feature content across Shopitt." />
+      <SectionHeader title="Content Moderation" subtitle="Approve, remove, or feature content across Vylogue." />
       <div className="flex gap-2 mb-4">
         {(["Posts", "Reels", "Comments", "Reports"] as const).map((t) => (
           <button
@@ -615,7 +615,7 @@ const AnalyticsPage = () => (
 
 const TrendsPage = () => (
   <>
-    <SectionHeader title="Trend Engine" subtitle="Auto-calculated trending content across Shopitt." />
+    <SectionHeader title="Trend Engine" subtitle="Auto-calculated trending content across Vylogue." />
     <div className="grid md:grid-cols-2 gap-4">
       {[
         { title: "Trending Hashtags", items: ["#ankaraseason", "#asoebibella", "#streetafrika", "#bridalgoals", "#lookbook2026"] },
@@ -824,7 +824,7 @@ const SettingsPage = () => (
     <div className="grid md:grid-cols-2 gap-4">
       <Card className="p-5 space-y-3">
         <h3 className="font-semibold">Platform</h3>
-        <Field label="Platform name" value="Shopitt" />
+        <Field label="Platform name" value="Vylogue" />
         <Field label="Default theme" value="System" />
         <Field label="Version" value="v0.9.0-jets" />
       </Card>

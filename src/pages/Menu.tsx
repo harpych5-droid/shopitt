@@ -50,7 +50,7 @@ const SECTIONS: { key: SectionKey; title: string; tag: string; items: Item[]; ct
   },
   {
     key: "shopitt",
-    title: "Shopitt",
+    title: "Vylogue",
     tag: "Commerce",
     items: [
       { icon: Wallet, label: "Wallet", hint: "Balance, payouts, withdraw", to: "/wallet" },
@@ -84,7 +84,7 @@ const Menu = () => {
   });
 
   useEffect(() => {
-    document.title = "Menu — Shopitt";
+    document.title = "Menu — Vylogue";
   }, []);
 
   const toggle = (k: SectionKey) => setOpen((s) => ({ ...s, [k]: !s[k] }));
@@ -118,7 +118,7 @@ const Menu = () => {
             <IdentityAvatar profile={profile} size={56} className="text-base" />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-extrabold text-foreground truncate">
-                {isAuthed && profile?.username ? `@${profile.username}` : "Sign in to Shopitt"}
+                {isAuthed && profile?.username ? `@${profile.username}` : "Sign in to Vylogue"}
               </p>
               <p className="text-xs text-muted-foreground">
                 {isAuthed ? "Tap to view your profile" : "Continue with Google to unlock"}
@@ -222,7 +222,7 @@ const Menu = () => {
 
         {/* Footer */}
         <div className="pt-4 text-center text-[11px] text-muted-foreground">
-          <p>Shopitt by <span className="font-bold text-foreground">AETHØNN Inc.</span></p>
+          <p>Vylogue by <span className="font-bold text-foreground">AETHØNN Inc.</span></p>
           <p>v1.0 · Made for the culture</p>
         </div>
 

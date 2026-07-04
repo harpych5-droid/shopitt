@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 
 /**
- * External Supabase project (Shopitt production backend).
+ * External Supabase project (Vylogue production backend).
  *
  * This project is shared with the Expo mobile app (lib/supabase.ts).
  * We intentionally do NOT use Lovable Cloud's auto-generated client

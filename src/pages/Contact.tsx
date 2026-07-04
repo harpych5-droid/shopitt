@@ -5,7 +5,7 @@ import { BottomNav } from "@/components/feed/BottomNav";
 
 const Contact = () => {
   useEffect(() => {
-    document.title = "Contact AETHØNN Inc. — Shopitt";
+    document.title = "Contact AETHØNN Inc. — Vylogue";
   }, []);
 
   return (
@@ -29,7 +29,7 @@ const Contact = () => {
           </span>
           <h2 className="mt-3 text-xl font-black text-white tracking-tight">AETHØNN Inc.</h2>
           <p className="mt-1 text-sm text-white/85">
-            Makers of Shopitt — built for the culture, shipped to the world.
+            Makers of Vylogue — built for the culture, shipped to the world.
           </p>
         </section>
 

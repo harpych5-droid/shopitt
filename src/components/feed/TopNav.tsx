@@ -38,12 +38,12 @@ export const TopNav = ({ hidden = false }: TopNavProps) => {
       <div className="flex items-center justify-between px-4 py-2.5 max-w-md mx-auto gap-2">
         <Link
           to="/"
-          aria-label="Shopitt home"
+          aria-label="Vylogue home"
           onClick={handleLogoClick}
           className="inline-flex shrink-0 select-none"
         >
           <span className="rounded-full gradient-brand px-4 py-1.5 text-base font-extrabold text-white tracking-tight shadow-brand">
-            Shopitt
+            Vylogue
           </span>
         </Link>
 

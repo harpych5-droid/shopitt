@@ -87,13 +87,13 @@ const Discover = () => {
       { id: "outfit-ideas", title: "Outfit Ideas", subtitle: "Style starters & full looks", icon: Sparkles, items: outfitIdeas, layout: "tall" },
       { id: "most-saved", title: "Most Saved", subtitle: "The pieces people keep coming back to", icon: Bookmark, items: mostSaved },
       { id: "new-creators", title: "New Creators", subtitle: "Voices defining the new wave", icon: Users, items: newCreators, layout: "creator" },
-      { id: "featured", title: "Shopitt Featured", subtitle: "Drops worth your attention", icon: Compass, items: featured },
+      { id: "featured", title: "Vylogue Featured", subtitle: "Drops worth your attention", icon: Compass, items: featured },
     ].filter((s) => s.items.length > 0) as Section[];
   }, []);
 
   useEffect(() => {
-    document.title = "Discover — Shopitt";
-    const desc = "Discover trending fits, outfit ideas, creator picks, and fashion trends on Shopitt.";
+    document.title = "Discover — Vylogue";
+    const desc = "Discover trending fits, outfit ideas, creator picks, and fashion trends on Vylogue.";
     let meta = document.querySelector('meta[name="description"]');
     if (!meta) {
       meta = document.createElement("meta");

@@ -186,8 +186,8 @@ const UserProfile = () => {
 
   useEffect(() => {
     document.title = profile?.username
-      ? `@${profile.username} — Shopitt`
-      : "Profile — Shopitt";
+      ? `@${profile.username} — Vylogue`
+      : "Profile — Vylogue";
   }, [profile?.username]);
 
   const handleFollowToggle = async () => {
@@ -237,7 +237,7 @@ const UserProfile = () => {
 
   const isSelf = authedUserId === profile.id;
   const username = profile.username || "shopper";
-  const displayName = profile.username || "Shopitt user";
+  const displayName = profile.username || "Vylogue user";
   const location = profile.country || "—";
 
   // No 'type' column on posts — Shorts tab stays empty until schema supports it
@@ -459,7 +459,7 @@ const SignInCTA = () => {
           <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl gradient-brand shadow-brand mb-4">
             <Sparkles className="h-7 w-7 text-white" />
           </span>
-          <h3 className="text-xl font-extrabold tracking-tight">Sign in to Shopitt</h3>
+          <h3 className="text-xl font-extrabold tracking-tight">Sign in to Vylogue</h3>
           <p className="mt-1.5 text-sm text-muted-foreground leading-snug">
             Your profile, drops and saved items live here. Sign in to continue.
           </p>

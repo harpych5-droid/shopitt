@@ -22,7 +22,7 @@ const EditProfile = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    document.title = "Edit profile — Shopitt";
+    document.title = "Edit profile — Vylogue";
   }, []);
 
   // Hydrate form from global identity when it lands

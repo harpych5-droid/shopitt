@@ -47,7 +47,7 @@ export const SplashScreen = () => {
               className="rounded-3xl gradient-brand px-7 py-4 shadow-brand"
             >
               <span className="font-display text-4xl font-black tracking-tight text-white">
-                Shopitt
+                Vylogue
               </span>
             </motion.div>
 

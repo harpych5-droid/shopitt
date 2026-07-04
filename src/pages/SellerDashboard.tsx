@@ -31,7 +31,7 @@ const SellerDashboard = () => {
     : { sales: 0, orders: 0, listed: 0, growth: 0 };
 
   useEffect(() => {
-    document.title = "Seller Dashboard — Shopitt";
+    document.title = "Seller Dashboard — Vylogue";
   }, []);
 
   return (

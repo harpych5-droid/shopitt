@@ -11,7 +11,7 @@ const Search = () => {
   const [recent, setRecent] = useState<string[]>(RECENT_INITIAL);
 
   useEffect(() => {
-    document.title = "Search — Shopitt";
+    document.title = "Search — Vylogue";
   }, []);
 
   const results = useMemo(() => {
