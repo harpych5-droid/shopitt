@@ -144,11 +144,13 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
           )
         )}
 
-        {item.badge && (
-          <div className="absolute top-3 left-3 z-10">
-            <div className={`rounded-full px-2.5 py-1 flex items-center gap-1 text-[11px] font-bold tracking-wide ${badgeStyles[item.badge]} backdrop-blur-md`}>
-              {badgeIcon(item.badge)}
-              <span>{item.badge}</span>
+        {item.drop && (
+          <div className="absolute top-3 left-3 z-10 max-w-[65%]">
+            <div className="rounded-full glass-dark backdrop-blur-xl bg-black/40 border border-white/10 px-3 py-1.5 flex items-center gap-1">
+              {item.badge && badgeIcon(item.badge)}
+              <span className="text-[11px] font-bold tracking-wide text-white truncate">
+                {item.drop}
+              </span>
             </div>
           </div>
         )}
