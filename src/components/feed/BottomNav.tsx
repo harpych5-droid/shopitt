@@ -62,9 +62,9 @@ export const BottomNav = ({ hidden = false }: BottomNavProps) => {
                     strokeWidth={active ? 2.4 : 2}
                     fill={active && item.label === "Home" ? "currentColor" : "none"}
                   />
-                  {item.badge ? (
+                  {item.badge > 0 ? (
                     <span className="absolute -top-1 -right-2 min-w-[16px] h-[16px] px-1 rounded-full bg-brand-pink text-[10px] font-bold text-white flex items-center justify-center border border-background">
-                      {item.badge}
+                      {item.badge > 9 ? "9+" : item.badge}
                     </span>
                   ) : null}
                 </div>
