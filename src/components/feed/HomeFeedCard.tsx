@@ -33,22 +33,12 @@ const badgeIcon = (b: PostBadge) => {
 };
 
 export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onOpenComments }: HomeFeedCardProps) => {
-  const [loaded, setLoaded] = useState(false);
   const [burst, setBurst] = useState(false);
   const authed = useShopitt((s) => s.authed);
   const { liked, saved, likeCount, commentCount, toggleLike } = usePostSocial(item.id, item.likes, item.comments);
 
   const isInspiration = item.postType === "inspiration";
   const isVideo = item.mediaType === "video";
-
-  useEffect(() => {
-    if (isVideo) { setLoaded(true); return; }
-    if (!item.image) { setLoaded(true); return; }
-    const img = new Image();
-    img.src = item.image;
-    img.onload = () => setLoaded(true);
-    img.onerror = () => setLoaded(true);
-  }, [item.image, isVideo]);
 
   const guard = (action: "like" | "save" | "buy" | "comment", run: () => void) => {
     if (!authed) {
