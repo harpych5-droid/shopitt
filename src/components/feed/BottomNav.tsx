@@ -1,12 +1,13 @@
 import { NavLink, useLocation } from "react-router-dom";
 import { Home, Compass, Bell, User, Plus } from "lucide-react";
 import { motion } from "framer-motion";
+import { useNotifications } from "@/hooks/useNotifications";
 
-const items = [
+const baseItems = [
   { to: "/", label: "Home", icon: Home, end: true },
   { to: "/discover", label: "Discover", icon: Compass, end: false },
   { to: "/create", label: "", icon: Plus, end: false, primary: true },
-  { to: "/alerts", label: "Alerts", icon: Bell, end: false, badge: 2 },
+  { to: "/alerts", label: "Alerts", icon: Bell, end: false, badgeKey: "unread" as const },
   { to: "/profile", label: "Profile", icon: User, end: false },
 ];
 
