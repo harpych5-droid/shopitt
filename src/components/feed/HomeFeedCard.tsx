@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Heart, Bookmark, MessageCircle, Send, Truck, MoreHorizontal, MapPin, BadgeCheck, ShoppingBag, CalendarCheck, Sparkles, Flame } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { FeedItem, PostBadge } from "@/data/feed";
