@@ -109,7 +109,6 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
 
       {/* MEDIA — extended aspect ratio for Instagram-like feel */}
       <Link to={`/p/${item.id}`} className="relative block w-full aspect-[4/5] bg-muted overflow-hidden">
-        {!loaded && <div className="absolute inset-0 bg-muted animate-pulse" />}
         {isVideo ? (
           <video
             src={item.image}
@@ -122,14 +121,12 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
           />
         ) : (
           item.image && (
-            <motion.img
+            <img
               src={item.image}
               alt={item.title}
               loading={index < 2 ? "eager" : "lazy"}
+              decoding="async"
               className="h-full w-full object-cover"
-              initial={{ scale: 1.04, opacity: 0 }}
-              animate={{ scale: loaded ? 1 : 1.04, opacity: loaded ? 1 : 0 }}
-              transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
             />
           )
         )}
