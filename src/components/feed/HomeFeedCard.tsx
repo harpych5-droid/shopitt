@@ -34,8 +34,11 @@ const badgeIcon = (b: PostBadge) => {
 
 export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onOpenComments }: HomeFeedCardProps) => {
   const [burst, setBurst] = useState(false);
+  const [dtBurst, setDtBurst] = useState(false);
   const authed = useShopitt((s) => s.authed);
   const { liked, saved, likeCount, commentCount, toggleLike } = usePostSocial(item.id, item.likes, item.comments);
+  const lastTap = useRef(0);
+  const navigate = useNavigate();
 
   const isInspiration = item.postType === "inspiration";
   const isVideo = item.mediaType === "video";
@@ -57,6 +60,29 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
   const handleSave = () => guard("save", () => onOpenSaveSheet(item.id));
   const handleBuy = () => guard("buy", () => shopitt.addToBag(item));
   const handleComment = () => onOpenComments(item.id);
+
+  const handleMediaTap = (e: React.MouseEvent) => {
+    const now = Date.now();
+    if (now - lastTap.current < 300) {
+      e.preventDefault();
+      lastTap.current = 0;
+      guard("like", () => {
+        if (!liked) toggleLike();
+        setDtBurst(true);
+        setTimeout(() => setDtBurst(false), 700);
+      });
+      return;
+    }
+    lastTap.current = now;
+    // let single tap navigate after a short delay
+    setTimeout(() => {
+      if (Date.now() - lastTap.current >= 280 && lastTap.current !== 0) {
+        lastTap.current = 0;
+        navigate(`/p/${item.id}`);
+      }
+    }, 300);
+    e.preventDefault();
+  };
 
   const avatar = item.avatar;
   const initial = (item.brand?.[0] ?? "S").toUpperCase();
