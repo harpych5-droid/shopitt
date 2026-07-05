@@ -134,7 +134,21 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
       </header>
 
       {/* MEDIA — extended aspect ratio for Instagram-like feel */}
-      <Link to={`/p/${item.id}`} className="relative block w-full aspect-[4/5] bg-muted overflow-hidden">
+      <Link to={`/p/${item.id}`} onClick={handleMediaTap} className="relative block w-full aspect-[4/5] bg-muted overflow-hidden select-none">
+        <AnimatePresence>
+          {dtBurst && (
+            <motion.div
+              key="dt-heart"
+              initial={{ scale: 0.4, opacity: 0 }}
+              animate={{ scale: [0.4, 1.2, 1], opacity: [0, 1, 0] }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+              className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center"
+            >
+              <Heart className="h-24 w-24 fill-brand-pink text-brand-pink drop-shadow-2xl" />
+            </motion.div>
+          )}
+        </AnimatePresence>
         {isVideo ? (
           <video
             src={item.image}
