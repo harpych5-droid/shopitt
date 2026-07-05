@@ -5,7 +5,7 @@ const Terms = () => (
     <section>
       <h3 className="text-base font-extrabold text-foreground">1. Welcome to Shopitt</h3>
       <p className="mt-1">
-        Shopitt is a social commerce platform operated by VYLOGUE ENTERPRISES By creating an account or
+        Shopitt is a social commerce platform operated by VYLOGUE ENTERPRISES. By creating an account or
         using the app you agree to these Terms.
       </p>
     </section>

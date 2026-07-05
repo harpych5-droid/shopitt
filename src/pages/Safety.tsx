@@ -39,7 +39,7 @@ const Safety = () => (
     <section>
       <h3 className="text-base font-extrabold text-foreground">Need help fast?</h3>
       <p className="mt-1">
-        Call VYLOGUE ENTERPRISES on <a className="text-brand-pink font-bold" href="tel:0573105096">0573105096</a> or
+        Call Shopitt on <a className="text-brand-pink font-bold" href="tel:0573105096">0573105096</a> or
         email <a className="text-brand-pink font-bold" href="mailto:shopitt54@gmail.com">shopitt54@gmail.com</a>.
       </p>
     </section>
