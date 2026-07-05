@@ -1,0 +1,26 @@
+{
+  "name": "Shopitt",
+  "short_name": "Shopitt",
+  "description": "Shopitt — the immersive social shopping feed. Discover drops, like, save, and buy in one tap.",
+  "start_url": "/",
+  "id": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0B0B0F",
+  "theme_color": "#FF4D8D",
+  "categories": ["shopping", "social", "lifestyle"],
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "/favicon.png", "sizes": "64x64", "type": "image/png" }
+  ],
+  "shortcuts": [
+    { "name": "Home", "short_name": "Home", "url": "/", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Create Post", "short_name": "Create", "url": "/create", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Reels", "short_name": "Reels", "url": "/shorts", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Messages", "short_name": "Chats", "url": "/chats", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Saved", "short_name": "Saved", "url": "/saved", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] }
+  ]
+}
