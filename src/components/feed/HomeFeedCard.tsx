@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Heart, Bookmark, MessageCircle, Send, Truck, MoreHorizontal, MapPin, BadgeCheck, ShoppingBag, CalendarCheck, Sparkles, Flame } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import type { FeedItem, PostBadge } from "@/data/feed";
 import { useShopitt, shopitt } from "@/store/useShopittStore";
 import { usePostSocial } from "@/hooks/usePostSocial";
