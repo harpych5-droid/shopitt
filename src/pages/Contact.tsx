@@ -5,7 +5,7 @@ import { BottomNav } from "@/components/feed/BottomNav";
 
 const Contact = () => {
   useEffect(() => {
-    document.title = "Contact AETHØNN Inc. — Vylogue";
+    document.title = "Contact VYLOGUE ENTERPRISES — Shopitt";
   }, []);
 
   return (
@@ -27,9 +27,9 @@ const Contact = () => {
           <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-white/20 backdrop-blur">
             <Sparkles className="h-5 w-5 text-white" />
           </span>
-          <h2 className="mt-3 text-xl font-black text-white tracking-tight">AETHØNN Inc.</h2>
+          <h2 className="mt-3 text-xl font-black text-white tracking-tight">VYLOGUE ENTERPRISES</h2>
           <p className="mt-1 text-sm text-white/85">
-            Makers of Vylogue — built for the culture, shipped to the world.
+            Makers of Shopitt — built for the culture, shipped to the world.
           </p>
         </section>
 

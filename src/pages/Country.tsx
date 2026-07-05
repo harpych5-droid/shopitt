@@ -10,7 +10,7 @@ const Country = () => {
   const [selected, setSelected] = useState("ZM");
 
   useEffect(() => {
-    document.title = "Country & Region — Vylogue";
+    document.title = "Country & Region — Shopitt";
   }, []);
 
   const list = useMemo(() => {

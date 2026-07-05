@@ -3,7 +3,7 @@ import { Search, Film, MessageCircle, Menu as MenuIcon, Heart } from "lucide-rea
 import { Link, useNavigate } from "react-router-dom";
 import { useRef } from "react";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
-import logo from "@/assets/vylogue-logo.png.asset.json";
+import logo from "@/assets/shopitt-logo.png.asset.json";
 
 interface TopNavProps {
   hidden?: boolean;
@@ -37,13 +37,13 @@ export const TopNav = ({ hidden = false }: TopNavProps) => {
       <div className="flex items-center justify-between px-4 py-2.5 max-w-md mx-auto gap-2">
         <Link
           to="/"
-          aria-label="Vylogue home"
+          aria-label="Shopitt home"
           onClick={handleLogoClick}
           className="inline-flex items-center gap-2 shrink-0 select-none"
         >
-          <img src={logo.url} alt="Vylogue" className="h-8 w-8 rounded-lg object-contain" />
+          <img src={logo.url} alt="Shopitt" className="h-8 w-8 rounded-lg object-contain" />
           <span className="font-display text-lg font-black tracking-tight text-gradient-brand">
-            Vylogue
+            Shopitt
           </span>
         </Link>
 

@@ -3,7 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { useIdentity } from "./useIdentity";
 
 /**
- * Admin check against the external Vylogue Supabase schema.
+ * Admin check against the external Shopitt Supabase schema.
  *
  * That schema stores role directly on `profiles.role` (no separate
  * `user_roles` table). We query for `role = 'admin'` on the current

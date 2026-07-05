@@ -32,7 +32,7 @@ const Orders = () => {
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => { document.title = "Orders — Vylogue"; }, []);
+  useEffect(() => { document.title = "Orders — Shopitt"; }, []);
 
   useEffect(() => {
     if (!isAuthed || !user) { setLoading(false); return; }

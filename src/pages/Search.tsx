@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { postToFeedItem, type DbPost } from "@/services/postsService";
 import type { FeedItem } from "@/data/feed";
 
-const RECENT_KEY = "vylogue:recent-search";
+const RECENT_KEY = "shopitt:recent-search";
 const CATEGORIES = ["Fashion", "Beauty", "Tech", "Footwear", "Inspiration"];
 
 const SELECT = `
@@ -25,7 +25,7 @@ const Search = () => {
   const [trending, setTrending] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => { document.title = "Search — Vylogue"; }, []);
+  useEffect(() => { document.title = "Search — Shopitt"; }, []);
 
   // Trending: newest posts
   useEffect(() => {

@@ -15,7 +15,7 @@ const Chats = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    document.title = "Chats — Vylogue";
+    document.title = "Chats — Shopitt";
   }, []);
 
   useEffect(() => {
@@ -128,7 +128,7 @@ const EmptyChats = ({ title, body }: { title: string; body: string }) => (
     <p className="mt-1.5 text-sm text-muted-foreground leading-snug">{body}</p>
     <Link to="/" className="mt-5 inline-flex items-center gap-1.5 rounded-full gradient-brand px-5 py-3 text-sm font-bold text-white shadow-brand active:scale-95 transition-transform">
       <Sparkles className="h-4 w-4" />
-      Discover Vylogue Feed
+      Discover Shopitt Feed
     </Link>
   </div>
 );

@@ -31,7 +31,7 @@ const SECTIONS = [
 
 const Profile = () => {
   useEffect(() => {
-    document.title = "Profile — Vylogue";
+    document.title = "Profile — Shopitt";
   }, []);
 
   return (
@@ -42,7 +42,7 @@ const Profile = () => {
             <ArrowLeft className="h-5 w-5 text-foreground" />
           </Link>
           <span className="rounded-full gradient-brand px-4 py-1.5 text-sm font-extrabold text-white shadow-brand">
-            Vylogue
+            Shopitt
           </span>
           <span className="h-9 w-9" />
         </div>

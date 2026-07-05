@@ -50,7 +50,7 @@ const SECTIONS: { key: SectionKey; title: string; tag: string; items: Item[]; ct
   },
   {
     key: "shopitt",
-    title: "Vylogue",
+    title: "Shopitt",
     tag: "Commerce",
     items: [
       { icon: Wallet, label: "Wallet", hint: "Balance, payouts, withdraw", to: "/wallet" },
@@ -65,13 +65,13 @@ const SECTIONS: { key: SectionKey; title: string; tag: string; items: Item[]; ct
     tag: "Help",
     items: [
       { icon: HelpCircle, label: "Help Center", hint: "FAQs & guides", to: "/contact" },
-      { icon: Phone, label: "Call AETHØNN Inc.", hint: "0573105096", href: "tel:0573105096" },
+      { icon: Phone, label: "Call VYLOGUE ENTERPRISES", hint: "0573105096", href: "tel:0573105096" },
       { icon: Mail, label: "Email support", hint: "shopitt54@gmail.com", href: "mailto:shopitt54@gmail.com" },
       { icon: FileText, label: "Terms of Service", to: "/terms" },
       { icon: Shield, label: "Privacy Policy", to: "/privacy" },
       { icon: ShieldAlert, label: "Safety Center", to: "/safety" },
     ],
-    cta: { copy: "Need help fast? Tap call to reach AETHØNN support.", to: "/contact" },
+    cta: { copy: "Need help fast? Tap call to reach Shopitt support.", to: "/contact" },
   },
 ];
 
@@ -84,7 +84,7 @@ const Menu = () => {
   });
 
   useEffect(() => {
-    document.title = "Menu — Vylogue";
+    document.title = "Menu — Shopitt";
   }, []);
 
   const toggle = (k: SectionKey) => setOpen((s) => ({ ...s, [k]: !s[k] }));
@@ -118,7 +118,7 @@ const Menu = () => {
             <IdentityAvatar profile={profile} size={56} className="text-base" />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-extrabold text-foreground truncate">
-                {isAuthed && profile?.username ? `@${profile.username}` : "Sign in to Vylogue"}
+                {isAuthed && profile?.username ? `@${profile.username}` : "Sign in to Shopitt"}
               </p>
               <p className="text-xs text-muted-foreground">
                 {isAuthed ? "Tap to view your profile" : "Continue with Google to unlock"}
@@ -222,7 +222,7 @@ const Menu = () => {
 
         {/* Footer */}
         <div className="pt-4 text-center text-[11px] text-muted-foreground">
-          <p>Vylogue by <span className="font-bold text-foreground">AETHØNN Inc.</span></p>
+          <p>Shopitt by <span className="font-bold text-foreground">VYLOGUE ENTERPRISES</span></p>
           <p>v1.0 · Made for the culture</p>
         </div>
 

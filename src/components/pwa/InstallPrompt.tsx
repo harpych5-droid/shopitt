@@ -113,7 +113,7 @@ export const InstallPrompt = () => {
               >
                 <img
                   src="/icon-192.png"
-                  alt="Vylogue"
+                  alt="Shopitt"
                   width={88}
                   height={88}
                   className="h-22 w-22 rounded-2xl shadow-brand"
@@ -122,10 +122,10 @@ export const InstallPrompt = () => {
               </motion.div>
 
               <h2 className="text-xl font-extrabold tracking-tight text-foreground">
-                Get the <span className="text-gradient-brand">Vylogue</span> app
+                Get the <span className="text-gradient-brand">Shopitt</span> app
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Install Vylogue for the full immersive experience — feels like a real app, lives on your home screen.
+                Install Shopitt for the full immersive experience — feels like a real app, lives on your home screen.
               </p>
 
               <ul className="mt-4 grid w-full gap-2 text-left">
@@ -146,7 +146,7 @@ export const InstallPrompt = () => {
                   className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full gradient-brand px-6 py-3.5 text-sm font-bold text-white shadow-brand transition active:scale-[0.98]"
                 >
                   <Download className="h-4 w-4" />
-                  Install Vylogue
+                  Install Shopitt
                 </button>
               )}
 

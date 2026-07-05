@@ -49,7 +49,7 @@ const OrderTracking = () => {
   const currentIdx = STEPS.findIndex((s) => s.key === order.status);
 
   useEffect(() => {
-    document.title = `Tracking ${id ?? ""} — Vylogue`;
+    document.title = `Tracking ${id ?? ""} — Shopitt`;
   }, [id]);
 
   return (
@@ -130,7 +130,7 @@ const OrderTracking = () => {
               <Truck className="h-5 w-5 text-white" />
             </span>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold">Vylogue Courier</p>
+              <p className="text-sm font-bold">Shopitt Courier</p>
               <p className="text-[11px] text-muted-foreground">Live tracking syncs with carrier API.</p>
             </div>
           </div>

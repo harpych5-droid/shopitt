@@ -41,7 +41,7 @@ const Create = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    document.title = "Create Post — Vylogue";
+    document.title = "Create Post — Shopitt";
   }, []);
 
   // Cleanup preview URLs

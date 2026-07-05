@@ -11,7 +11,7 @@ export const IdentitySplash = () => (
       className="relative flex flex-col items-center gap-4"
     >
       <span className="rounded-full gradient-brand px-6 py-2.5 text-xl font-extrabold text-white tracking-tight shadow-brand">
-        Vylogue
+        Shopitt
       </span>
       <motion.span
         animate={{ opacity: [0.4, 1, 0.4] }}
