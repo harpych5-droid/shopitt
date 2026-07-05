@@ -21,6 +21,9 @@ export const PlaceOrderSheet = ({ open, product, onClose }: PlaceOrderSheetProps
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
+  const [province, setProvince] = useState("");
+  const [city, setCity] = useState("");
+  const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
@@ -29,13 +32,14 @@ export const PlaceOrderSheet = ({ open, product, onClose }: PlaceOrderSheetProps
     if (open) {
       setStage("form");
       setSubmitting(false);
+      setQuantity(1);
       setName(profile?.username ?? "");
     }
   }, [open, product?.id, profile]);
 
   if (!product) return null;
 
-  const canSubmit = name.trim() && phone.trim() && address.trim() && !submitting;
+  const canSubmit = name.trim() && phone.trim() && address.trim() && province.trim() && city.trim() && quantity > 0 && !submitting;
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,16 +53,17 @@ export const PlaceOrderSheet = ({ open, product, onClose }: PlaceOrderSheetProps
       return;
     }
     setSubmitting(true);
+    const fullAddress = `${address.trim()}, ${city.trim()}, ${province.trim()}` + (notes ? `\nNotes: ${notes.trim()}` : "");
     const { id, error } = await createOrder({
       buyerId: user.id,
       sellerId: product.userId,
       postId: product.id,
-      quantity: 1,
+      quantity,
       unitPrice: product.price,
       currency: (product.currency ?? "USD").trim(),
       buyerName: name.trim(),
       buyerPhone: phone.trim(),
-      deliveryAddress: address.trim() + (notes ? `\nNotes: ${notes.trim()}` : ""),
+      deliveryAddress: fullAddress,
       productSnapshot: { title: product.title, media_url: product.image },
     });
     setSubmitting(false);
