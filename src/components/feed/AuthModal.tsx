@@ -82,7 +82,7 @@ export const AuthModal = ({ open, onClose, action }: AuthModalProps) => {
                   S
                 </div>
                 <h3 className="text-2xl font-black tracking-tight">
-                  Unlock <span className="text-gradient-brand">Vylogue</span> 🔥
+                  Unlock <span className="text-gradient-brand">Shopitt</span> 🔥
                 </h3>
                 <p className="text-sm text-white/70 mt-1.5">
                   {action ? COPY[action] : "Sign in to continue."}
@@ -99,7 +99,7 @@ export const AuthModal = ({ open, onClose, action }: AuthModalProps) => {
               </button>
 
               <p className="text-[11px] text-white/40 text-center mt-4 leading-relaxed">
-                By continuing, you agree to Vylogue's Terms & Privacy Policy.
+                By continuing, you agree to Shopitt's Terms & Privacy Policy.
               </p>
             </div>
           </motion.div>

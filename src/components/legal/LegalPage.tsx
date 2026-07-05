@@ -15,7 +15,7 @@ interface LegalPageProps {
  */
 export const LegalPage = ({ title, updated, children }: LegalPageProps) => {
   useEffect(() => {
-    document.title = `${title} — Vylogue`;
+    document.title = `${title} — Shopitt`;
   }, [title]);
 
   return (
@@ -33,7 +33,7 @@ export const LegalPage = ({ title, updated, children }: LegalPageProps) => {
       <article className="max-w-md mx-auto px-5 pt-6 space-y-5">
         <div>
           <span className="inline-block rounded-full gradient-brand text-white text-[10px] uppercase tracking-[0.18em] font-bold px-3 py-1 shadow-brand">
-            AETHØNN Inc.
+            VYLOGUE ENTERPRISES
           </span>
           <h2 className="mt-3 text-2xl font-black tracking-tight">{title}</h2>
           <p className="mt-1 text-[11px] text-muted-foreground">Last updated · {updated}</p>

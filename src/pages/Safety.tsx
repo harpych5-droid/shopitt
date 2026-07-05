@@ -2,7 +2,7 @@ import { LegalPage } from "@/components/legal/LegalPage";
 import { ShieldCheck, Lock, AlertTriangle } from "lucide-react";
 
 const TIPS = [
-  { icon: ShieldCheck, title: "Buy with protection", desc: "Always pay through Vylogue — never via off-platform links." },
+  { icon: ShieldCheck, title: "Buy with protection", desc: "Always pay through Shopitt — never via off-platform links." },
   { icon: Lock, title: "Keep your account locked", desc: "Use a strong password and enable 2-step verification." },
   { icon: AlertTriangle, title: "Spot a scam?", desc: "Tap • • • on any post to report. Our team responds in under 1h." },
 ];
@@ -11,7 +11,7 @@ const Safety = () => (
   <LegalPage title="Safety Center" updated="April 2026">
     <p>
       Your safety powers everything we build. These are the basics of staying safe and
-      making the most of Vylogue's protections.
+      making the most of Shopitt's protections.
     </p>
 
     <ul className="not-prose space-y-2">
@@ -32,14 +32,14 @@ const Safety = () => (
       <h3 className="text-base font-extrabold text-foreground">Reporting & moderation</h3>
       <p className="mt-1">
         Reports are reviewed by humans on our Trust & Safety team. Repeat offenders lose
-        the ability to sell on Vylogue.
+        the ability to sell on Shopitt.
       </p>
     </section>
 
     <section>
       <h3 className="text-base font-extrabold text-foreground">Need help fast?</h3>
       <p className="mt-1">
-        Call AETHØNN Inc. on <a className="text-brand-pink font-bold" href="tel:0573105096">0573105096</a> or
+        Call Shopitt on <a className="text-brand-pink font-bold" href="tel:0573105096">0573105096</a> or
         email <a className="text-brand-pink font-bold" href="mailto:shopitt54@gmail.com">shopitt54@gmail.com</a>.
       </p>
     </section>

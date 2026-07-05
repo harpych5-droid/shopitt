@@ -3,9 +3,9 @@ import { LegalPage } from "@/components/legal/LegalPage";
 const Terms = () => (
   <LegalPage title="Terms of Service" updated="April 2026">
     <section>
-      <h3 className="text-base font-extrabold text-foreground">1. Welcome to Vylogue</h3>
+      <h3 className="text-base font-extrabold text-foreground">1. Welcome to Shopitt</h3>
       <p className="mt-1">
-        Vylogue is a social commerce platform operated by AETHØNN Inc. By creating an account or
+        Shopitt is a social commerce platform operated by VYLOGUE ENTERPRISES. By creating an account or
         using the app you agree to these Terms.
       </p>
     </section>
@@ -20,7 +20,7 @@ const Terms = () => (
       <h3 className="text-base font-extrabold text-foreground">3. Buying & selling</h3>
       <p className="mt-1">
         Sellers are responsible for the products and services they list. Buyers must pay for items
-        they order. Vylogue facilitates the transaction and offers buyer protection on eligible
+        they order. Shopitt facilitates the transaction and offers buyer protection on eligible
         purchases.
       </p>
     </section>
@@ -28,7 +28,7 @@ const Terms = () => (
       <h3 className="text-base font-extrabold text-foreground">4. Content</h3>
       <p className="mt-1">
         You retain ownership of the photos, videos and copy you post. By uploading content you grant
-        Vylogue a worldwide licence to host and display it inside the app.
+        Shopitt a worldwide licence to host and display it inside the app.
       </p>
     </section>
     <section>

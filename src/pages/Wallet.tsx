@@ -21,7 +21,7 @@ const TRANSACTIONS = [
 
 const Wallet = () => {
   useEffect(() => {
-    document.title = "Wallet — Vylogue";
+    document.title = "Wallet — Shopitt";
   }, []);
 
   return (
@@ -120,7 +120,7 @@ const Wallet = () => {
         {/* Footer note */}
         <p className="text-center text-[11px] text-muted-foreground pt-2">
           <WalletIcon className="inline h-3 w-3 mr-1" />
-          Payouts processed within 24h via AETHØNN Pay.
+          Payouts processed within 24h via Shopitt Pay.
         </p>
       </div>
 

@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Heart, Bookmark, MessageCircle, Send, Truck, MoreHorizontal, MapPin, BadgeCheck, ShoppingBag, CalendarCheck, Sparkles, Flame } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import type { FeedItem, PostBadge } from "@/data/feed";
 import { useShopitt, shopitt } from "@/store/useShopittStore";
 import { usePostSocial } from "@/hooks/usePostSocial";
@@ -34,8 +34,11 @@ const badgeIcon = (b: PostBadge) => {
 
 export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onOpenComments }: HomeFeedCardProps) => {
   const [burst, setBurst] = useState(false);
+  const [dtBurst, setDtBurst] = useState(false);
   const authed = useShopitt((s) => s.authed);
   const { liked, saved, likeCount, commentCount, toggleLike } = usePostSocial(item.id, item.likes, item.comments);
+  const lastTap = useRef(0);
+  const navigate = useNavigate();
 
   const isInspiration = item.postType === "inspiration";
   const isVideo = item.mediaType === "video";
@@ -57,6 +60,29 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
   const handleSave = () => guard("save", () => onOpenSaveSheet(item.id));
   const handleBuy = () => guard("buy", () => shopitt.addToBag(item));
   const handleComment = () => onOpenComments(item.id);
+
+  const handleMediaTap = (e: React.MouseEvent) => {
+    const now = Date.now();
+    if (now - lastTap.current < 300) {
+      e.preventDefault();
+      lastTap.current = 0;
+      guard("like", () => {
+        if (!liked) toggleLike();
+        setDtBurst(true);
+        setTimeout(() => setDtBurst(false), 700);
+      });
+      return;
+    }
+    lastTap.current = now;
+    // let single tap navigate after a short delay
+    setTimeout(() => {
+      if (Date.now() - lastTap.current >= 280 && lastTap.current !== 0) {
+        lastTap.current = 0;
+        navigate(`/p/${item.id}`);
+      }
+    }, 300);
+    e.preventDefault();
+  };
 
   const avatar = item.avatar;
   const initial = (item.brand?.[0] ?? "S").toUpperCase();
@@ -108,7 +134,21 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
       </header>
 
       {/* MEDIA — extended aspect ratio for Instagram-like feel */}
-      <Link to={`/p/${item.id}`} className="relative block w-full aspect-[4/5] bg-muted overflow-hidden">
+      <Link to={`/p/${item.id}`} onClick={handleMediaTap} className="relative block w-full aspect-[4/5] bg-muted overflow-hidden select-none">
+        <AnimatePresence>
+          {dtBurst && (
+            <motion.div
+              key="dt-heart"
+              initial={{ scale: 0.4, opacity: 0 }}
+              animate={{ scale: [0.4, 1.2, 1], opacity: [0, 1, 0] }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+              className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center"
+            >
+              <Heart className="h-24 w-24 fill-brand-pink text-brand-pink drop-shadow-2xl" />
+            </motion.div>
+          )}
+        </AnimatePresence>
         {isVideo ? (
           <video
             src={item.image}

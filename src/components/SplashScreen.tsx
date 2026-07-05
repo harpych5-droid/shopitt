@@ -47,7 +47,7 @@ export const SplashScreen = () => {
               className="rounded-3xl gradient-brand px-7 py-4 shadow-brand"
             >
               <span className="font-display text-4xl font-black tracking-tight text-white">
-                Vylogue
+                Shopitt
               </span>
             </motion.div>
 
@@ -57,7 +57,7 @@ export const SplashScreen = () => {
               transition={{ delay: 0.35, duration: 0.5 }}
             className="font-display text-[11px] font-bold tracking-[0.32em] text-foreground/80"
             >
-              LET THERE BE VYLOGUE.
+              LET THERE BE SHOPITT.
             </motion.p>
 
             <motion.div

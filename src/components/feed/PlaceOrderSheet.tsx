@@ -21,6 +21,9 @@ export const PlaceOrderSheet = ({ open, product, onClose }: PlaceOrderSheetProps
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
+  const [province, setProvince] = useState("");
+  const [city, setCity] = useState("");
+  const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
@@ -29,13 +32,14 @@ export const PlaceOrderSheet = ({ open, product, onClose }: PlaceOrderSheetProps
     if (open) {
       setStage("form");
       setSubmitting(false);
+      setQuantity(1);
       setName(profile?.username ?? "");
     }
   }, [open, product?.id, profile]);
 
   if (!product) return null;
 
-  const canSubmit = name.trim() && phone.trim() && address.trim() && !submitting;
+  const canSubmit = name.trim() && phone.trim() && address.trim() && province.trim() && city.trim() && quantity > 0 && !submitting;
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,16 +53,17 @@ export const PlaceOrderSheet = ({ open, product, onClose }: PlaceOrderSheetProps
       return;
     }
     setSubmitting(true);
+    const fullAddress = `${address.trim()}, ${city.trim()}, ${province.trim()}` + (notes ? `\nNotes: ${notes.trim()}` : "");
     const { id, error } = await createOrder({
       buyerId: user.id,
       sellerId: product.userId,
       postId: product.id,
-      quantity: 1,
+      quantity,
       unitPrice: product.price,
       currency: (product.currency ?? "USD").trim(),
       buyerName: name.trim(),
       buyerPhone: phone.trim(),
-      deliveryAddress: address.trim() + (notes ? `\nNotes: ${notes.trim()}` : ""),
+      deliveryAddress: fullAddress,
       productSnapshot: { title: product.title, media_url: product.image },
     });
     setSubmitting(false);
@@ -124,6 +129,27 @@ export const PlaceOrderSheet = ({ open, product, onClose }: PlaceOrderSheetProps
                 <div>
                   <label className="text-xs font-semibold text-foreground">Delivery address *</label>
                   <textarea value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Area, street, landmark" rows={2} className="mt-1.5 w-full rounded-2xl bg-card border border-border/60 px-4 py-3 text-sm focus:outline-none focus:border-brand-pink" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-semibold text-foreground">Province *</label>
+                    <input value={province} onChange={(e) => setProvince(e.target.value)} placeholder="Province" className="mt-1.5 w-full rounded-2xl bg-card border border-border/60 px-4 py-3 text-sm focus:outline-none focus:border-brand-pink" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-foreground">City *</label>
+                    <input value={city} onChange={(e) => setCity(e.target.value)} placeholder="City" className="mt-1.5 w-full rounded-2xl bg-card border border-border/60 px-4 py-3 text-sm focus:outline-none focus:border-brand-pink" />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-foreground">Quantity *</label>
+                  <div className="mt-1.5 flex items-center gap-3">
+                    <button type="button" onClick={() => setQuantity((q) => Math.max(1, q - 1))} className="h-11 w-11 rounded-full bg-card border border-border/60 text-lg font-bold">−</button>
+                    <span className="min-w-[3ch] text-center text-base font-extrabold tabular-nums">{quantity}</span>
+                    <button type="button" onClick={() => setQuantity((q) => Math.min(99, q + 1))} className="h-11 w-11 rounded-full bg-card border border-border/60 text-lg font-bold">+</button>
+                    <span className="ml-auto text-sm font-bold tabular-nums text-brand-pink">
+                      {product.currency}{(product.price * quantity).toFixed(2)}
+                    </span>
+                  </div>
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-foreground">Notes (optional)</label>
