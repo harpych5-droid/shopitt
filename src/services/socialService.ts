@@ -263,7 +263,11 @@ export type NotificationRow = {
   actor?: { username: string | null; avatar_url: string | null } | null;
 };
 
-export async function fetchNotifications(userId: string): Promise<NotificationRow[]> {
+export async function fetchNotifications(
+  userId: string,
+  limit = 20,
+  offset = 0,
+): Promise<NotificationRow[]> {
   const { data, error } = await supabase
     .from("notifications")
     .select(
@@ -272,18 +276,25 @@ export async function fetchNotifications(userId: string): Promise<NotificationRo
     )
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
-    .limit(50);
+    .range(offset, offset + limit - 1);
   if (error) {
-    // fallback without join (in case FK name differs)
     const { data: fallback } = await supabase
       .from("notifications")
       .select("id, user_id, actor_id, type, title, body, message, post_id, comment_id, is_read, created_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
-      .limit(50);
+      .range(offset, offset + limit - 1);
     return (fallback ?? []) as NotificationRow[];
   }
   return (data ?? []) as unknown as NotificationRow[];
+}
+
+export async function markNotificationRead(notificationId: string) {
+  const { error } = await supabase
+    .from("notifications")
+    .update({ is_read: true, read_at: new Date().toISOString() })
+    .eq("id", notificationId);
+  return { error: error?.message ?? null };
 }
 
 export async function markNotificationsRead(userId: string) {
