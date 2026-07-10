@@ -79,6 +79,7 @@ const SECTIONS: { key: SectionKey; title: string; tag: string; items: Item[]; ct
 
 const Menu = () => {
   const { profile, isAuthed } = useIdentity();
+  const { canInstall, installed } = useInstallPrompt();
   const [open, setOpen] = useState<Record<SectionKey, boolean>>({
     account: true,
     shopitt: false,
