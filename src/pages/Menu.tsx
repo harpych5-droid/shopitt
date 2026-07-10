@@ -19,11 +19,13 @@ import {
   Sparkles,
   Plus,
   ChevronRight,
+  Download,
   Settings as SettingsIcon,
 } from "lucide-react";
 import { BottomNav } from "@/components/feed/BottomNav";
 import { useIdentity } from "@/hooks/useIdentity";
 import { IdentityAvatar } from "@/components/identity/IdentityAvatar";
+import { useInstallPrompt, requestInstallPrompt } from "@/hooks/useInstallPrompt";
 
 type SectionKey = "account" | "shopitt" | "legal";
 
