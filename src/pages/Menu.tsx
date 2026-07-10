@@ -223,6 +223,25 @@ const Menu = () => {
           );
         })}
 
+        {/* Install Shopitt — only when supported and not already installed */}
+        {!installed && canInstall && (
+          <button
+            onClick={() => requestInstallPrompt()}
+            className="w-full glass rounded-3xl p-4 flex items-center gap-3 active:scale-[0.99] transition-transform border border-brand-pink/30"
+          >
+            <span className="h-11 w-11 rounded-2xl gradient-brand shadow-brand flex items-center justify-center shrink-0">
+              <Download className="h-5 w-5 text-white" />
+            </span>
+            <span className="flex-1 min-w-0 text-left">
+              <span className="block text-sm font-extrabold text-foreground">Install Shopitt</span>
+              <span className="block text-[11px] text-muted-foreground">
+                Add to home screen for the full app experience
+              </span>
+            </span>
+            <ChevronRight className="h-5 w-5 text-muted-foreground" />
+          </button>
+        )}
+
         {/* Footer */}
         <div className="pt-4 text-center text-[11px] text-muted-foreground">
           <p>Shopitt by <span className="font-bold text-foreground">VYLOGUE ENTERPRISES</span></p>
