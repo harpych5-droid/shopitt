@@ -282,25 +282,40 @@ const ProductDetail = () => {
               <span className="relative shrink-0">
                 <span className="absolute -inset-0.5 rounded-full gradient-brand" />
                 <span className="relative block h-11 w-11 rounded-full bg-background p-[2px]">
-                  <span className="block h-full w-full rounded-full gradient-brand flex items-center justify-center text-sm font-black text-white">
-                    {product.brand[0]}
-                  </span>
+                  {product.avatar ? (
+                    <img
+                      src={product.avatar}
+                      alt={product.brandHandle}
+                      referrerPolicy="no-referrer"
+                      className="h-full w-full rounded-full object-cover"
+                      onError={(e) => {
+                        const el = e.currentTarget as HTMLImageElement;
+                        el.style.display = "none";
+                        el.parentElement?.classList.add("fallback");
+                      }}
+                    />
+                  ) : (
+                    <span className="block h-full w-full rounded-full gradient-brand flex items-center justify-center text-sm font-black text-white">
+                      {(product.brand?.[0] ?? "S").toUpperCase()}
+                    </span>
+                  )}
                 </span>
               </span>
               <div className="min-w-0">
                 <div className="flex items-center gap-1">
-                  <p className="text-sm font-bold truncate">{product.brand}</p>
+                  <p className="text-sm font-bold truncate">@{product.brandHandle}</p>
                   <BadgeCheck className="h-4 w-4 text-brand-purple fill-brand-purple/20" />
                 </div>
                 <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
                   <MapPin className="h-3 w-3 text-brand-pink" />
-                  <span>{product.location}</span>
+                  <span>{product.location || "Shopitt seller"}</span>
                 </div>
               </div>
             </Link>
             <button
-              onClick={() => setFollowing((v) => !v)}
-              className={`rounded-full px-4 h-9 text-xs font-bold transition-colors ${
+              onClick={handleFollow}
+              disabled={!user || user.id === product.userId}
+              className={`rounded-full px-4 h-9 text-xs font-bold transition-colors disabled:opacity-50 ${
                 following
                   ? "bg-card border border-border/60 text-foreground"
                   : "gradient-brand text-white shadow-brand"
