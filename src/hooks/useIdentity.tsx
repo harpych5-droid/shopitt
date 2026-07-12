@@ -10,6 +10,7 @@ import {
 } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
+import { shopitt } from "@/store/useShopittStore";
 
 export type Profile = {
   id: string;
@@ -95,12 +96,20 @@ export const IdentityProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     let active = true;
+    let settled = false;
+
+    const finishLoading = () => {
+      if (!active || settled) return;
+      settled = true;
+      setLoading(false);
+    };
 
     // Subscribe FIRST (before getSession) to avoid missing events
     const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
       if (!active) return;
       setSession(newSession);
       setUser(newSession?.user ?? null);
+      shopitt.setAuthed(!!newSession);
       // Defer Supabase calls out of the auth callback
       setTimeout(() => {
         if (!active) return;
@@ -108,17 +117,30 @@ export const IdentityProvider = ({ children }: { children: ReactNode }) => {
       }, 0);
     });
 
+    const timeout = window.setTimeout(() => {
+      console.warn("[identity] session restore timed out; rendering safely");
+      finishLoading();
+    }, 4500);
+
     // THEN restore existing session
     supabase.auth.getSession().then(async ({ data }) => {
       if (!active) return;
       setSession(data.session);
       setUser(data.session?.user ?? null);
+      shopitt.setAuthed(!!data.session);
       await hydrate(data.session?.user ?? null);
-      setLoading(false);
+      window.clearTimeout(timeout);
+      finishLoading();
+    }).catch((error) => {
+      console.error("[identity] session restore failed", error);
+      shopitt.setAuthed(false);
+      window.clearTimeout(timeout);
+      finishLoading();
     });
 
     return () => {
       active = false;
+      window.clearTimeout(timeout);
       sub.subscription.unsubscribe();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

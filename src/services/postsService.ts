@@ -37,7 +37,7 @@ export type DbPost = {
 
 const SELECT = `
   id, user_id, title, description, media_url, media_urls, media, media_type,
-  price, currency, hashtags, post_type, category_name, is_available,
+  price, currency, hashtags, post_type, category_name, drop_title, is_available,
   stock_quantity, delivery_type, has_free_delivery, rating, review_count, created_at,
   profiles!posts_user_id_fkey ( username, avatar_url, full_name, country )
 `;
@@ -80,6 +80,11 @@ export function postToFeedItem(p: DbPost): FeedItem {
     (p.media_urls && p.media_urls[0]) ||
     (p.media && p.media[0]) ||
     "";
+  const mediaUrls = Array.from(new Set([
+    ...(p.media_url ? [p.media_url] : []),
+    ...((p.media_urls ?? []).filter(Boolean)),
+    ...((p.media ?? []).filter(Boolean)),
+  ]));
   const handle = p.profiles?.username ?? "shopitt";
   const brand = p.profiles?.full_name || handle;
   const isInspiration = (p.post_type ?? "").toLowerCase() === "inspiration";
@@ -93,6 +98,7 @@ export function postToFeedItem(p: DbPost): FeedItem {
     title: p.title ?? "Untitled drop",
     drop: (p.drop_title && p.drop_title.trim()) ? p.drop_title.trim() : "",
     image: firstMedia,
+    mediaUrls,
     price: Number(p.price ?? 0),
     currency: (p.currency ?? "USD") + " ",
     stockLeft: p.stock_quantity ?? 0,
@@ -111,7 +117,7 @@ export function postToFeedItem(p: DbPost): FeedItem {
         ? (p.delivery_type as FeedItem["deliveryType"])
         : undefined,
     postType: isInspiration ? "inspiration" : "product",
-    badge: isInspiration ? "Inspiration" : "Product",
+    badge: isInspiration ? "Inspiration" : (p.drop_title ? undefined : "Product"),
     mediaType: (p.media_type ?? "").toLowerCase() === "video" ? "video" : "image",
   };
 }

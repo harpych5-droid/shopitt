@@ -11,7 +11,7 @@ const CATEGORIES = ["Fashion", "Beauty", "Tech", "Footwear", "Inspiration"];
 
 const SELECT = `
   id, user_id, title, description, media_url, media_urls, media, media_type,
-  price, currency, hashtags, post_type, category_name, is_available,
+  price, currency, hashtags, post_type, category_name, drop_title, is_available,
   stock_quantity, delivery_type, has_free_delivery, rating, review_count, created_at,
   profiles!posts_user_id_fkey ( username, avatar_url, full_name, country )
 `;

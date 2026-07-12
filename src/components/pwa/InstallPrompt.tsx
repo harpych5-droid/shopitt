@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Download, X, Sparkles, Zap, Bell, Rocket, Wifi } from "lucide-react";
+import { Download, X, Sparkles, Zap, Bell, Rocket, MoreHorizontal } from "lucide-react";
 import { INSTALL_EVENT, isIOSDevice, isStandaloneApp, useInstallPrompt } from "@/hooks/useInstallPrompt";
 
 const DISMISS_KEY = "shopitt:install-dismissed-at";
@@ -12,23 +12,27 @@ function isIframe() {
 }
 function isPreviewHost() {
   const h = window.location.hostname;
-  return h.includes("id-preview--") || h.includes("lovableproject.com") || h.includes("lovable.app");
+  return h.startsWith("id-preview--") || h.startsWith("preview--") || h.includes("lovableproject.com") || h.includes("lovableproject-dev.com") || h.includes("beta.lovable.dev");
 }
 
 export const InstallPrompt = () => {
-  const { canInstall, installed, isIOS, promptInstall } = useInstallPrompt();
+  const { canInstall, hasNativePrompt, installed, isIOS, promptInstall } = useInstallPrompt();
   const [open, setOpen] = useState(false);
   const [forced, setForced] = useState(false);
+  const [unavailable, setUnavailable] = useState(false);
 
   useEffect(() => {
-    if (installed || isIframe() || isPreviewHost() || isStandaloneApp()) return;
-
     // Manual trigger from Menu → always opens
     const onForced = () => {
       setForced(true);
+      setUnavailable(false);
       setOpen(true);
     };
     window.addEventListener(INSTALL_EVENT, onForced);
+
+    if (installed || isIframe() || isPreviewHost() || isStandaloneApp()) {
+      return () => window.removeEventListener(INSTALL_EVENT, onForced);
+    }
 
     // Auto trigger after cooldown
     const dismissedAt = Number(localStorage.getItem(DISMISS_KEY) || 0);
@@ -57,6 +61,8 @@ export const InstallPrompt = () => {
       setForced(false);
     } else if (result === "dismissed") {
       dismiss();
+    } else {
+      setUnavailable(true);
     }
   };
 
@@ -117,15 +123,18 @@ export const InstallPrompt = () => {
                 <Feature icon={<Rocket className="h-4 w-4" />} text="Instant launch — no browser bars" />
                 <Feature icon={<Zap className="h-4 w-4" />} text="Faster loading & smoother scrolling" />
                 <Feature icon={<Bell className="h-4 w-4" />} text="Notifications for drops & orders" />
-                <Feature icon={<Wifi className="h-4 w-4" />} text="Works even on flaky connections" />
+                <Feature icon={<MoreHorizontal className="h-4 w-4" />} text="Quick access from your phone screen" />
                 <Feature icon={<Sparkles className="h-4 w-4" />} text="Native app feel across the culture" />
               </ul>
 
-              {isIOS && !canInstall ? (
+              {(isIOS || unavailable || !hasNativePrompt) ? (
                 <div className="mt-5 w-full rounded-2xl border border-white/10 bg-white/5 p-4 text-left text-xs text-muted-foreground">
-                  <p className="font-semibold text-foreground mb-1">Install on iPhone</p>
-                  Tap <span className="font-bold text-foreground">Share</span> ▵ in Safari, then{" "}
-                  <span className="font-bold text-foreground">Add to Home Screen</span>.
+                  <p className="font-semibold text-foreground mb-1">Install Shopitt</p>
+                  {isIOS ? (
+                    <>Tap <span className="font-bold text-foreground">Share</span> ▵ in Safari, then <span className="font-bold text-foreground">Add to Home Screen</span>.</>
+                  ) : (
+                    <>Open your browser menu and choose <span className="font-bold text-foreground">Install app</span> or <span className="font-bold text-foreground">Add to Home screen</span>.</>
+                  )}
                 </div>
               ) : (
                 <button

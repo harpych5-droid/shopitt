@@ -223,7 +223,7 @@ const Menu = () => {
           );
         })}
 
-        {/* Install Shopitt — only when supported and not already installed */}
+        {/* Install Shopitt */}
         {!installed && canInstall && (
           <button
             onClick={() => requestInstallPrompt()}
