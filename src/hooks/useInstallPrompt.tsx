@@ -37,7 +37,7 @@ export function isIOSDevice() {
 export function isInstallSupported() {
   if (typeof window === "undefined") return false;
   if (isStandaloneApp()) return false;
-  return !!deferredEvent || isIOSDevice();
+  return true;
 }
 
 export const INSTALL_EVENT = "shopitt:install-prompt";
@@ -74,7 +74,8 @@ export function useInstallPrompt() {
   }, [deferred]);
 
   return {
-    canInstall: !!deferred || isIOSDevice(),
+    canInstall: !installed,
+    hasNativePrompt: !!deferred,
     installed,
     isIOS: isIOSDevice(),
     promptInstall,

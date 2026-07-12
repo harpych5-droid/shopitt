@@ -45,7 +45,11 @@ const ProductDetail = () => {
     return () => { cancelled = true; };
   }, [id]);
 
-  const gallery = useMemo(() => (product ? [product.image] : []), [product]);
+  const gallery = useMemo(() => {
+    if (!product) return [];
+    const media = product.mediaUrls?.length ? product.mediaUrls : [product.image];
+    return media.filter(Boolean);
+  }, [product]);
 
   const [slide, setSlide] = useState(0);
   const [following, setFollowing] = useState(false);

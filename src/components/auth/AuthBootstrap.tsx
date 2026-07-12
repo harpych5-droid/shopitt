@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useAuth } from "@/hooks/useAuth";
+import { useIdentity } from "@/hooks/useIdentity";
 import { shopitt } from "@/store/useShopittStore";
 import { FEED } from "@/data/feed";
 import { toast } from "sonner";
@@ -11,7 +11,11 @@ import { toast } from "sonner";
  *   that was saved before the OAuth redirect.
  */
 export const AuthBootstrap = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, isAuthed } = useIdentity();
+
+  useEffect(() => {
+    shopitt.setAuthed(isAuthed);
+  }, [isAuthed]);
 
   useEffect(() => {
     if (loading || !user) return;

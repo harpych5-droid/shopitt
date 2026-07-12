@@ -47,6 +47,8 @@ export type FeedItem = {
   badge?: PostBadge;
   /** Media kind — 'video' renders an inline auto-playing <video>. */
   mediaType?: "image" | "video";
+  /** All media URLs for product detail swipe galleries. */
+  mediaUrls?: string[];
 };
 
 export const FEED: FeedItem[] = [

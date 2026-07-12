@@ -17,6 +17,7 @@ export type OrderRow = {
   size: string | null;
   color: string | null;
   price_snapshot: number | null;
+  unit_price?: number | null;
   total_price: number | null;
   currency: string | null;
   status: string | null;
@@ -33,14 +34,41 @@ const SELECT = `
   buyer_name, buyer_phone, delivery_address_snapshot, product_snapshot
 `;
 
+const FALLBACK_SELECT = `
+  id, buyer_id, seller_id, post_id, quantity, unit_price,
+  total_price, currency, status, created_at,
+  buyer_name, buyer_phone, province, city, address, notes
+`;
+
+function normalizeOrder(row: any): OrderRow {
+  const addressSnapshot = row.delivery_address_snapshot ?? {
+    province: row.province ?? null,
+    city: row.city ?? null,
+    address: row.address ?? null,
+    notes: row.notes ?? null,
+  };
+  return {
+    ...row,
+    price_snapshot: Number(row.price_snapshot ?? row.unit_price ?? 0),
+    total_price: Number(row.total_price ?? (Number(row.unit_price ?? row.price_snapshot ?? 0) * Number(row.quantity ?? 1))),
+    delivery_address_snapshot: addressSnapshot,
+    product_snapshot: row.product_snapshot ?? {},
+  } as OrderRow;
+}
+
 export async function fetchBuyerOrders(userId: string): Promise<OrderRow[]> {
   const { data, error } = await supabase
     .from("orders")
     .select(SELECT)
     .eq("buyer_id", userId)
     .order("created_at", { ascending: false });
-  if (error) return [];
-  return (data ?? []) as OrderRow[];
+  if (!error) return (data ?? []).map(normalizeOrder);
+  const { data: fallback } = await supabase
+    .from("orders")
+    .select(FALLBACK_SELECT)
+    .eq("buyer_id", userId)
+    .order("created_at", { ascending: false });
+  return (fallback ?? []).map(normalizeOrder);
 }
 
 export async function fetchSellerOrders(userId: string): Promise<OrderRow[]> {
@@ -49,8 +77,13 @@ export async function fetchSellerOrders(userId: string): Promise<OrderRow[]> {
     .select(SELECT)
     .eq("seller_id", userId)
     .order("created_at", { ascending: false });
-  if (error) return [];
-  return (data ?? []) as OrderRow[];
+  if (!error) return (data ?? []).map(normalizeOrder);
+  const { data: fallback } = await supabase
+    .from("orders")
+    .select(FALLBACK_SELECT)
+    .eq("seller_id", userId)
+    .order("created_at", { ascending: false });
+  return (fallback ?? []).map(normalizeOrder);
 }
 
 export async function fetchOrderById(id: string) {
@@ -59,7 +92,13 @@ export async function fetchOrderById(id: string) {
     .select(SELECT)
     .eq("id", id)
     .maybeSingle();
-  return { data: data as OrderRow | null, error: error?.message ?? null };
+  if (!error) return { data: data ? normalizeOrder(data) : null, error: null };
+  const { data: fallback, error: fallbackError } = await supabase
+    .from("orders")
+    .select(FALLBACK_SELECT)
+    .eq("id", id)
+    .maybeSingle();
+  return { data: fallback ? normalizeOrder(fallback) : null, error: fallbackError?.message ?? null };
 }
 
 export async function updateOrderStatus(orderId: string, status: OrderStatus) {
@@ -97,6 +136,7 @@ export async function createOrder(input: {
       seller_id: input.sellerId,
       post_id: input.postId,
       quantity: input.quantity,
+      unit_price: input.unitPrice,
       price_snapshot: input.unitPrice,
       total_price: total,
       currency: input.currency,
@@ -110,5 +150,24 @@ export async function createOrder(input: {
     })
     .select("id")
     .maybeSingle();
-  return { id: data?.id ?? null, error: error?.message ?? null };
+  if (!error) return { id: data?.id ?? null, error: null };
+
+  const { data: fallback, error: fallbackError } = await supabase
+    .from("orders")
+    .insert({
+      buyer_id: input.buyerId,
+      seller_id: input.sellerId,
+      post_id: input.postId,
+      quantity: input.quantity,
+      unit_price: input.unitPrice,
+      total_price: total,
+      currency: input.currency,
+      status: "pending",
+      buyer_name: input.buyerName,
+      buyer_phone: input.buyerPhone,
+      address: input.deliveryAddress,
+    })
+    .select("id")
+    .maybeSingle();
+  return { id: fallback?.id ?? null, error: fallbackError?.message ?? null };
 }

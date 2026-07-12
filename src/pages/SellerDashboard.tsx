@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -16,23 +16,77 @@ import {
   Camera,
   Truck,
   ChevronRight,
+  Loader2,
 } from "lucide-react";
 import { BottomNav } from "@/components/feed/BottomNav";
-import { FEED } from "@/data/feed";
 import { useIdentity } from "@/hooks/useIdentity";
+import { fetchSellerOrders, updateOrderStatus, type OrderRow } from "@/services/ordersService";
+import { fetchUserPosts, postToFeedItem } from "@/services/postsService";
+import { fetchWalletBalance, type WalletBalance } from "@/services/walletService";
+import { supabase } from "@/lib/supabase";
+import type { FeedItem } from "@/data/feed";
+import { toast } from "sonner";
 
 const SellerDashboard = () => {
-  const { profile } = useIdentity();
-  const [hasProducts, setHasProducts] = useState(true);
-  // Showcase data (production would pull from API)
-  const products = hasProducts ? FEED.slice(0, 4) : [];
-  const stats = hasProducts
-    ? { sales: 336960, orders: 7, listed: products.length, growth: 18 }
-    : { sales: 0, orders: 0, listed: 0, growth: 0 };
+  const { user, profile, isAuthed } = useIdentity();
+  const [products, setProducts] = useState<FeedItem[]>([]);
+  const [orders, setOrders] = useState<OrderRow[]>([]);
+  const [wallet, setWallet] = useState<WalletBalance>({ balance: 0, available_balance: 0, pending_balance: 0, currency: "ZMW" });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     document.title = "Seller Dashboard — Shopitt";
   }, []);
+
+  useEffect(() => {
+    if (!isAuthed || !user) {
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    const load = async () => {
+      const [postRows, orderRows, walletRow] = await Promise.all([
+        fetchUserPosts(user.id),
+        fetchSellerOrders(user.id),
+        fetchWalletBalance(user.id),
+      ]);
+      if (cancelled) return;
+      setProducts(postRows.data.map(postToFeedItem));
+      setOrders(orderRows);
+      setWallet(walletRow);
+      setLoading(false);
+    };
+    load();
+    const channel = supabase
+      .channel(`seller-dashboard-${user.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "posts", filter: `user_id=eq.${user.id}` }, load)
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders", filter: `seller_id=eq.${user.id}` }, load)
+      .on("postgres_changes", { event: "*", schema: "public", table: "wallets", filter: `user_id=eq.${user.id}` }, load)
+      .subscribe();
+    return () => { cancelled = true; supabase.removeChannel(channel); };
+  }, [isAuthed, user]);
+
+  const stats = useMemo(() => {
+    const totalSales = orders
+      .filter((o) => !["cancelled"].includes((o.status ?? "").toLowerCase()))
+      .reduce((sum, o) => sum + Number(o.total_price ?? 0), 0);
+    const pending = orders.filter((o) => ["pending", "received", "preparing", "ready"].includes((o.status ?? "pending").toLowerCase())).length;
+    const delivered = orders.filter((o) => (o.status ?? "").toLowerCase() === "delivered").length;
+    const growth = orders.length ? Math.min(99, Math.round((delivered / Math.max(orders.length, 1)) * 100)) : 0;
+    return { sales: totalSales, orders: pending, listed: products.length, growth };
+  }, [orders, products.length]);
+
+  const money = useMemo(() => new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }), []);
+  const hasProducts = products.length > 0;
+
+  const advanceOrder = async (order: OrderRow) => {
+    const current = (order.status ?? "pending").toLowerCase();
+    const next = current === "pending" || current === "received" ? "preparing" : current === "preparing" ? "ready" : current === "ready" ? "delivered" : null;
+    if (!next) return;
+    const { error } = await updateOrderStatus(order.id, next as any);
+    if (error) toast.error(error);
+    else toast.success(`Order marked ${next}`);
+  };
 
   return (
     <main className="min-h-[100dvh] bg-background">
@@ -49,6 +103,16 @@ const SellerDashboard = () => {
       </header>
 
       <div className="max-w-md mx-auto px-4 pb-32 pt-4 space-y-5">
+        {!isAuthed ? (
+          <div className="rounded-3xl glass p-6 text-center">
+            <Sparkles className="mx-auto h-8 w-8 text-brand-pink" />
+            <h2 className="mt-3 text-base font-extrabold">Sign in to manage selling</h2>
+            <p className="mt-1 text-xs text-muted-foreground">Your products, orders and wallet will appear here.</p>
+          </div>
+        ) : loading ? (
+          <div className="py-16 flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+        ) : (
+          <>
         {/* Seller header / wallet */}
         <section className="relative overflow-hidden rounded-3xl gradient-brand p-5 shadow-brand">
           <div className="absolute -top-8 -right-8 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
@@ -76,31 +140,25 @@ const SellerDashboard = () => {
                 Verified Seller{profile?.country ? ` · ${profile.country}` : ""}
               </p>
             </div>
-            <button
-              onClick={() => setHasProducts((v) => !v)}
-              className="rounded-full bg-white/15 hover:bg-white/25 px-3 py-1.5 text-[10px] font-bold text-white"
-              aria-label="Toggle demo data"
-            >
-              {hasProducts ? "Demo: empty" : "Demo: filled"}
-            </button>
+            <Link to="/wallet" className="rounded-full bg-white/15 hover:bg-white/25 px-3 py-1.5 text-[10px] font-bold text-white">Wallet</Link>
           </div>
           <div className="relative mt-5 flex items-end justify-between">
             <div>
               <p className="text-[11px] uppercase tracking-[0.18em] font-bold text-white/80">Wallet balance</p>
               <p className="mt-1 text-3xl font-black text-white tracking-tight tabular-nums">
-                ZMW {stats.sales.toLocaleString()}.00
+                {wallet.currency} {money.format(wallet.available_balance)}
               </p>
             </div>
-            <button className="rounded-full bg-white text-foreground px-4 py-2 text-xs font-extrabold flex items-center gap-1.5 active:scale-95 transition-transform">
+            <Link to="/wallet" className="rounded-full bg-white text-foreground px-4 py-2 text-xs font-extrabold flex items-center gap-1.5 active:scale-95 transition-transform">
               <Wallet className="h-3.5 w-3.5" />
               Withdraw
-            </button>
+            </Link>
           </div>
         </section>
 
         {/* Stats grid */}
         <section className="grid grid-cols-2 gap-3">
-          <StatCard icon={DollarSign} label="Total sales" value={`ZMW ${stats.sales.toLocaleString()}`} delta={`+${stats.growth}%`} />
+          <StatCard icon={DollarSign} label="Total sales" value={`${wallet.currency} ${money.format(stats.sales)}`} delta={`${stats.growth}% done`} />
           <StatCard icon={Package} label="Pending orders" value={stats.orders.toString()} delta={stats.orders ? "Action needed" : "All clear"} />
           <StatCard icon={Boxes} label="Listed" value={stats.listed.toString()} delta="Live now" />
           <StatCard icon={TrendingUp} label="Growth" value={`${stats.growth}%`} delta="vs last week" />
@@ -111,7 +169,7 @@ const SellerDashboard = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Revenue</p>
-              <p className="mt-1 text-xl font-extrabold tracking-tight">ZMW {stats.sales.toLocaleString()}</p>
+              <p className="mt-1 text-xl font-extrabold tracking-tight">{wallet.currency} {money.format(stats.sales)}</p>
             </div>
             <div className="flex gap-1.5 text-[11px] font-bold">
               {["7D", "1M", "3M", "1Y"].map((p, i) => (
@@ -126,14 +184,14 @@ const SellerDashboard = () => {
               ))}
             </div>
           </div>
-          <RevenueChart filled={hasProducts} />
+          <RevenueChart orders={orders} />
         </section>
 
         {/* Quick actions */}
         <section className="grid grid-cols-3 gap-3">
           {[
             { icon: Plus, label: "New post", to: "/create", primary: true },
-            { icon: ListOrdered, label: "Orders", to: "#orders" },
+            { icon: ListOrdered, label: "Orders", to: "#seller-orders" },
             { icon: Boxes, label: "Inventory", to: "#inventory" },
           ].map((a) => (
             <Link
@@ -149,9 +207,46 @@ const SellerDashboard = () => {
           ))}
         </section>
 
+        {/* Live seller orders */}
+        <section id="seller-orders">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-sm font-extrabold uppercase tracking-wider text-muted-foreground">Seller orders</h2>
+            <Link to="/orders" className="text-xs font-bold text-brand-pink">Buyer orders</Link>
+          </div>
+          {orders.length === 0 ? (
+            <div className="rounded-3xl bg-card border border-border/60 p-5 text-center">
+              <p className="text-sm font-bold">No seller orders yet</p>
+              <p className="mt-1 text-xs text-muted-foreground">New orders will appear here in realtime.</p>
+            </div>
+          ) : (
+            <ul className="space-y-2">
+              {orders.slice(0, 6).map((o) => {
+                const snap = (o.product_snapshot ?? {}) as { title?: string; media_url?: string };
+                const status = (o.status ?? "pending").toLowerCase();
+                return (
+                  <li key={o.id} className="rounded-2xl bg-card border border-border/60 p-3">
+                    <div className="flex items-center gap-3">
+                      <div className="h-12 w-12 rounded-xl overflow-hidden bg-muted shrink-0">
+                        {snap.media_url && <img src={snap.media_url} alt={snap.title ?? "Order"} className="h-full w-full object-cover" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold truncate">{snap.title ?? `Order #${o.id.slice(0, 8)}`}</p>
+                        <p className="text-[11px] text-muted-foreground">{o.currency ?? wallet.currency} {money.format(Number(o.total_price ?? 0))} · {status}</p>
+                      </div>
+                      <button onClick={() => advanceOrder(o)} disabled={["delivered", "cancelled"].includes(status)} className="rounded-full bg-muted/60 px-3 py-1.5 text-[11px] font-bold disabled:opacity-40">
+                        Advance
+                      </button>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+
         {/* Products / onboarding */}
         {hasProducts ? (
-          <section>
+          <section id="inventory">
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-sm font-extrabold uppercase tracking-wider text-muted-foreground">
                 Your products
@@ -159,7 +254,7 @@ const SellerDashboard = () => {
               <Link to="#inventory" className="text-xs font-bold text-brand-pink">View all</Link>
             </div>
             <ul className="space-y-2">
-              {products.map((p) => (
+                  {products.slice(0, 8).map((p) => (
                 <li key={p.id}>
                   <Link
                     to={`/p/${p.id}`}
@@ -186,6 +281,8 @@ const SellerDashboard = () => {
           </section>
         ) : (
           <Onboarding />
+        )}
+          </>
         )}
       </div>
 
@@ -219,8 +316,14 @@ const StatCard = ({
   </div>
 );
 
-const RevenueChart = ({ filled }: { filled: boolean }) => {
-  const data = filled ? [22, 35, 28, 48, 40, 62, 78] : [4, 6, 5, 8, 6, 9, 7];
+const RevenueChart = ({ orders }: { orders: OrderRow[] }) => {
+  const buckets = Array.from({ length: 7 }, () => 0);
+  orders.forEach((o) => {
+    const d = new Date(o.created_at);
+    const daysAgo = Math.floor((Date.now() - d.getTime()) / 86400000);
+    if (daysAgo >= 0 && daysAgo < 7) buckets[6 - daysAgo] += Number(o.total_price ?? 0);
+  });
+  const data = buckets.some(Boolean) ? buckets : [1, 1, 1, 1, 1, 1, 1];
   const max = Math.max(...data);
   return (
     <div className="mt-5 h-32 flex items-end gap-2">
