@@ -204,58 +204,53 @@ function KpiCard({ label, value, delta, deltaTone = "green", icon: Icon }: any) 
 }
 
 const Overview = () => {
-  const [counts, setCounts] = useState({ users: 0, products: 0, posts: 0 });
+  const [c, setC] = useState<AdminCounts | null>(null);
+
   useEffect(() => {
-    (async () => {
-      const [u, p, po] = await Promise.all([
-        supabase.from("profiles").select("id", { count: "exact", head: true }),
-        supabase.from("products").select("id", { count: "exact", head: true }),
-        supabase.from("posts").select("id", { count: "exact", head: true }),
-      ]);
-      setCounts({ users: u.count ?? 0, products: p.count ?? 0, posts: po.count ?? 0 });
-    })();
+    fetchAdminCounts().then(setC);
   }, []);
 
   const fmt = (n: number) => n.toLocaleString();
+  const v = (n?: number) => (c ? fmt(n ?? 0) : "—");
 
   return (
     <>
       <SectionHeader
         title="Operations Overview"
-        subtitle="Realtime snapshot of the Shopitt platform."
-        action={<Pill tone="green"><span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" /> Systems healthy</Pill>}
+        subtitle="Live snapshot of the Shopitt platform."
+        action={<Pill tone="green"><span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" /> Live data</Pill>}
       />
 
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
-        <KpiCard label="Total Users" value={fmt(counts.users || 12480)} delta="+8.2% wk" icon={Users} />
-        <KpiCard label="Total Sellers" value={fmt(1284)} delta="+3.1% wk" icon={Store} />
-        <KpiCard label="Total Creators" value={fmt(842)} delta="+12.4% wk" icon={Sparkles} />
-        <KpiCard label="Total Orders" value={fmt(38219)} delta="+5.6% wk" icon={ShoppingBag} />
-        <KpiCard label="Total Posts" value={fmt(counts.posts || 7320)} delta="+2.9% wk" icon={FileImage} />
-        <KpiCard label="Total Reels" value={fmt(2104)} delta="+14.7% wk" icon={Activity} />
-        <KpiCard label="Total Comments" value={fmt(54820)} delta="+6.0% wk" icon={ChevronRight} />
-        <KpiCard label="Total Messages" value={fmt(98412)} delta="+9.3% wk" icon={ChevronRight} />
+        <KpiCard label="Total Users" value={v(c?.users)} icon={Users} />
+        <KpiCard label="Total Sellers" value={v(c?.sellers)} icon={Store} />
+        <KpiCard label="Total Products" value={v(c?.products)} icon={Package} />
+        <KpiCard label="Total Orders" value={v(c?.orders)} icon={ShoppingBag} />
+        <KpiCard label="Total Posts" value={v(c?.posts)} icon={FileImage} />
+        <KpiCard label="Total Reels" value={v(c?.reels)} icon={Activity} />
+        <KpiCard label="Total Comments" value={v(c?.comments)} icon={ChevronRight} />
+        <KpiCard label="Total Messages" value={v(c?.messages)} icon={ChevronRight} />
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
-        <KpiCard label="Total Revenue" value="$482,910" delta="+11.4% mo" icon={CreditCard} />
-        <KpiCard label="Growth Plan" value="$118,402" delta="+7.8% mo" icon={CreditCard} />
-        <KpiCard label="Business Plan" value="$214,778" delta="+12.1% mo" icon={CreditCard} />
-        <KpiCard label="Brand Plan" value="$98,210" delta="+4.5% mo" icon={CreditCard} />
-        <KpiCard label="CJ Product Revenue" value="$51,520" delta="+18.2% mo" icon={Package} />
-        <KpiCard label="Active Today" value="3,841" delta="+2.4%" icon={Activity} />
-        <KpiCard label="Active This Week" value="9,820" delta="+6.7%" icon={Activity} />
-        <KpiCard label="Active This Month" value="22,140" delta="+10.1%" icon={Activity} />
+        <KpiCard
+          label="Gross Order Value"
+          value={c ? `$${Math.round(c.revenue).toLocaleString()}` : "—"}
+          icon={CreditCard}
+        />
+        <KpiCard label="Active Today" value={v(c?.activeToday)} icon={Activity} />
+        <KpiCard label="Avg Order Value" value={c && c.orders ? `$${(c.revenue / c.orders).toFixed(2)}` : "$0.00"} icon={CreditCard} />
+        <KpiCard label="Posts / Seller" value={c && c.sellers ? (c.posts / c.sellers).toFixed(1) : "0"} icon={FileImage} />
       </div>
 
       <div className="grid lg:grid-cols-3 gap-4 mt-5">
         <Card className="lg:col-span-2 p-5">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-semibold">Revenue (last 30 days)</h3>
-              <p className="text-xs text-muted-foreground">Subscription + CJ + commerce fees</p>
+              <h3 className="font-semibold">Order volume</h3>
+              <p className="text-xs text-muted-foreground">Rolling trend of platform order value</p>
             </div>
-            <Pill tone="green"><ArrowUpRight className="h-3 w-3" /> +11.4%</Pill>
+            <Pill tone="pink"><Activity className="h-3 w-3" /> Live</Pill>
           </div>
           <SparkChart />
         </Card>
@@ -264,6 +259,7 @@ const Overview = () => {
     </>
   );
 };
+
 
 const SparkChart = () => {
   const points = useMemo(() => Array.from({ length: 30 }, () => 30 + Math.random() * 70), []);
