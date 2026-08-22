@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Search, Film, MessageCircle, Menu as MenuIcon, Heart } from "lucide-react";
+import { Search, MessageCircle, Menu as MenuIcon } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useRef } from "react";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
@@ -47,15 +47,10 @@ export const TopNav = ({ hidden = false }: TopNavProps) => {
           </span>
         </Link>
 
+        {/* SBB 20 — AppBar: logo, Search, Chats, Menu. No avatar here. */}
         <div className="flex items-center gap-0.5 shrink-0">
           <Link to="/search" aria-label="Search" className="h-10 w-10 rounded-full hover:bg-muted/50 transition-colors flex items-center justify-center">
             <Search className="h-5 w-5 text-foreground" />
-          </Link>
-          <Link to="/shorts" aria-label="Reels" className="h-10 w-10 rounded-full hover:bg-muted/50 transition-colors flex items-center justify-center">
-            <Film className="h-5 w-5 text-foreground" />
-          </Link>
-          <Link to="/saved" aria-label="Saved" className="h-10 w-10 rounded-full hover:bg-muted/50 transition-colors flex items-center justify-center">
-            <Heart className="h-5 w-5 text-foreground" />
           </Link>
           <Link to="/chats" aria-label="Chats" className="h-10 w-10 rounded-full hover:bg-muted/50 transition-colors flex items-center justify-center">
             <MessageCircle className="h-5 w-5 text-foreground" />
@@ -64,6 +59,7 @@ export const TopNav = ({ hidden = false }: TopNavProps) => {
             <MenuIcon className="h-5 w-5 text-foreground" />
           </Link>
         </div>
+
       </div>
     </motion.header>
   );
