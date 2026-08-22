@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { TopNav } from "@/components/feed/TopNav";
 import { CategoryTabs } from "@/components/feed/CategoryTabs";
 import { HomeFeedCard } from "@/components/feed/HomeFeedCard";
+import { CreatorsRail } from "@/components/feed/CreatorsRail";
+
 import { FloatingBag } from "@/components/feed/FloatingBag";
 import { AuthModal } from "@/components/feed/AuthModal";
 import { BagSheet } from "@/components/feed/BagSheet";
@@ -105,7 +107,9 @@ const Index = () => {
       <div ref={scrollRef} className="h-[100dvh] w-full overflow-y-auto no-scrollbar">
         <div className="h-[108px]" />
         <div className="max-w-md mx-auto pb-28">
+          <CreatorsRail items={dbItems} />
           {items.map((item, i) => (
+
             <HomeFeedCard
               key={item.id}
               item={item}

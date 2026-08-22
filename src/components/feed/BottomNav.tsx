@@ -1,12 +1,14 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { Home, Compass, Bell, User, Plus } from "lucide-react";
+import { Home, Compass, Film, Bell, User } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNotifications } from "@/hooks/useNotifications";
 
+// SBB 18 — Primary bottom navigation: Home, Discovery, Shorts, Alerts, Profile.
+// No Create FAB here; Create lives in the Creator space.
 const baseItems = [
   { to: "/", label: "Home", icon: Home, end: true },
-  { to: "/discover", label: "Discover", icon: Compass, end: false },
-  { to: "/create", label: "", icon: Plus, end: false, primary: true },
+  { to: "/discover", label: "Discovery", icon: Compass, end: false },
+  { to: "/shorts", label: "Shorts", icon: Film, end: false },
   { to: "/alerts", label: "Alerts", icon: Bell, end: false, badgeKey: "unread" as const },
   { to: "/profile", label: "Profile", icon: User, end: false },
 ];
@@ -30,23 +32,10 @@ export const BottomNav = ({ hidden = false }: BottomNavProps) => {
       className="fixed bottom-0 inset-x-0 z-40 bg-background/95 backdrop-blur-xl border-t border-border/60 safe-bottom lg:hidden"
       aria-label="Primary"
     >
-      <ul className="grid grid-cols-5 max-w-md mx-auto px-2 pt-1.5 pb-1.5">
+      <ul className="grid grid-cols-5 max-w-md mx-auto px-2 pt-2 pb-1.5">
         {items.map((item) => {
           const Icon = item.icon;
           const active = item.end ? pathname === item.to : pathname.startsWith(item.to);
-          if (item.primary) {
-            return (
-              <li key={item.to} className="flex items-center justify-center">
-                <NavLink
-                  to={item.to}
-                  aria-label="Create post"
-                  className="-mt-5 h-14 w-14 rounded-full gradient-brand shadow-brand flex items-center justify-center active:scale-95 transition-transform"
-                >
-                  <Plus className="h-7 w-7 text-white" strokeWidth={2.4} />
-                </NavLink>
-              </li>
-            );
-          }
           return (
             <li key={item.to} className="flex">
               <NavLink

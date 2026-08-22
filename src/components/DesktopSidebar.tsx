@@ -7,19 +7,21 @@ import {
   Bookmark,
   MessageCircle,
   User,
-  Settings,
+  Bell,
 } from "lucide-react";
+
 
 const items = [
   { to: "/", label: "Home", icon: Home, end: true },
-  { to: "/discover", label: "Discover", icon: Compass },
-  { to: "/reels", label: "Reels", icon: Film },
-  { to: "/create", label: "Create", icon: Plus, primary: true },
-  { to: "/saved", label: "Saved", icon: Bookmark },
-  { to: "/chats", label: "Messages", icon: MessageCircle },
+  { to: "/discover", label: "Discovery", icon: Compass },
+  { to: "/shorts", label: "Shorts", icon: Film },
+  { to: "/alerts", label: "Alerts", icon: Bell },
   { to: "/profile", label: "Profile", icon: User },
-  { to: "/settings", label: "Settings", icon: Settings },
+  { to: "/saved", label: "Saved", icon: Bookmark },
+  { to: "/chats", label: "Chats", icon: MessageCircle },
+  { to: "/create", label: "Create", icon: Plus, primary: true },
 ];
+
 
 export const DesktopSidebar = () => {
   return (
