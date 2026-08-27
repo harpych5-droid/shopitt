@@ -247,7 +247,7 @@ export async function fetchAdminPosts(
 ): Promise<AdminPost[]> {
   let q = (supabase as any)
     .from("posts")
-    .select("id, title, drop_title, media_url, media_urls, media_type, price, currency, is_featured, created_at, profiles!posts_user_id_fkey ( username )")
+    .select("id, title, category_name, media_url, media_urls, media_type, price, currency, admin_score, created_at, profiles!posts_user_id_fkey ( username )")
     .order("created_at", { ascending: false })
     .limit(limit);
   if (kind === "video") q = q.eq("media_type", "video");
@@ -257,12 +257,12 @@ export async function fetchAdminPosts(
   return (data ?? []).map((p: any) => ({
     id: p.id,
     title: p.title,
-    drop_title: p.drop_title,
+    drop_title: p.category_name,
     media_url: p.media_url ?? p.media_urls?.[0] ?? null,
     media_type: p.media_type,
     price: p.price,
     currency: p.currency ?? "$",
-    is_featured: p.is_featured ?? false,
+    is_featured: (p.admin_score ?? 0) > 0,
     created_at: p.created_at,
     username: p.profiles?.username ?? null,
   }));
@@ -271,7 +271,7 @@ export async function fetchAdminPosts(
 export async function setPostFeatured(postId: string, featured: boolean) {
   const { error } = await (supabase as any)
     .from("posts")
-    .update({ is_featured: featured })
+    .update({ admin_score: featured ? 100 : 0 })
     .eq("id", postId);
   return error?.message ?? null;
 }
@@ -321,7 +321,7 @@ export type AdminActivity = {
 export async function fetchAdminActivity(): Promise<AdminActivity[]> {
   const [users, posts, orders, comments] = await Promise.all([
     (supabase as any).from("profiles").select("id, username, created_at").order("created_at", { ascending: false }).limit(5),
-    (supabase as any).from("posts").select("id, title, drop_title, created_at, profiles!posts_user_id_fkey ( username )").order("created_at", { ascending: false }).limit(5),
+    (supabase as any).from("posts").select("id, title, category_name, created_at, profiles!posts_user_id_fkey ( username )").order("created_at", { ascending: false }).limit(5),
     (supabase as any).from("orders").select("id, total_price, currency, created_at, buyer_name").order("created_at", { ascending: false }).limit(5),
     (supabase as any).from("comments").select("id, content, created_at, profiles!comments_user_id_fkey ( username )").order("created_at", { ascending: false }).limit(5),
   ]);
@@ -330,7 +330,7 @@ export async function fetchAdminActivity(): Promise<AdminActivity[]> {
   (users.data ?? []).forEach((u: any) =>
     rows.push({ id: `u-${u.id}`, kind: "user", text: "New user registered", who: `@${u.username ?? "user"}`, at: u.created_at }));
   (posts.data ?? []).forEach((p: any) =>
-    rows.push({ id: `p-${p.id}`, kind: "post", text: "Post published", who: `@${p.profiles?.username ?? "seller"} · ${p.drop_title ?? p.title ?? "Drop"}`, at: p.created_at }));
+    rows.push({ id: `p-${p.id}`, kind: "post", text: "Post published", who: `@${p.profiles?.username ?? "seller"} · ${p.category_name ?? p.title ?? "Drop"}`, at: p.created_at }));
   (orders.data ?? []).forEach((o: any) =>
     rows.push({ id: `o-${o.id}`, kind: "order", text: "Order received", who: `${o.buyer_name ?? "Buyer"} · ${o.currency ?? "$"}${Number(o.total_price ?? 0).toLocaleString()}`, at: o.created_at }));
   (comments.data ?? []).forEach((c: any) =>
