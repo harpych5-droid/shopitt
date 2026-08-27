@@ -19,7 +19,8 @@ export type DbPost = {
   hashtags: string[] | null;
   post_type: string | null;
   category_name: string | null;
-  drop_title: string | null;
+  content_type: string | null;
+  post_badges: { label: string | null; badge_type: string | null }[] | null;
   is_available: boolean | null;
   stock_quantity: number | null;
   delivery_type: string | null;
@@ -37,9 +38,10 @@ export type DbPost = {
 
 const SELECT = `
   id, user_id, title, description, media_url, media_urls, media, media_type,
-  price, currency, hashtags, post_type, category_name, drop_title, is_available,
+  price, currency, hashtags, post_type, category_name, content_type, is_available,
   stock_quantity, delivery_type, has_free_delivery, rating, review_count, created_at,
-  profiles!posts_user_id_fkey ( username, avatar_url, full_name, country )
+  profiles!posts_user_id_fkey ( username, avatar_url, full_name, country ),
+  post_badges ( label, badge_type )
 `;
 
 export async function fetchFeedPosts(limit = 20, offset = 0) {
@@ -87,7 +89,10 @@ export function postToFeedItem(p: DbPost): FeedItem {
   ]));
   const handle = p.profiles?.username ?? "shopitt";
   const brand = p.profiles?.full_name || handle;
-  const isInspiration = (p.post_type ?? "").toLowerCase() === "inspiration";
+  const isInspiration =
+    (p.content_type ?? p.post_type ?? "").toLowerCase() === "inspiration";
+  const badge = (p.post_badges ?? [])[0] ?? null;
+  const dropLabel = (badge?.label ?? "").trim() || (p.category_name ?? "").trim();
 
   return {
     id: p.id,
@@ -96,7 +101,7 @@ export function postToFeedItem(p: DbPost): FeedItem {
     brandHandle: handle,
     avatar: p.profiles?.avatar_url ?? null,
     title: p.title ?? "Untitled drop",
-    drop: (p.drop_title && p.drop_title.trim()) ? p.drop_title.trim() : "",
+    drop: dropLabel,
     image: firstMedia,
     mediaUrls,
     price: Number(p.price ?? 0),
@@ -117,7 +122,7 @@ export function postToFeedItem(p: DbPost): FeedItem {
         ? (p.delivery_type as FeedItem["deliveryType"])
         : undefined,
     postType: isInspiration ? "inspiration" : "product",
-    badge: isInspiration ? "Inspiration" : (p.drop_title ? undefined : "Product"),
+    badge: isInspiration ? "Inspiration" : (dropLabel ? undefined : "Product"),
     mediaType: (p.media_type ?? "").toLowerCase() === "video" ? "video" : "image",
   };
 }

@@ -9,6 +9,9 @@ import {
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useIdentity } from "@/hooks/useIdentity";
 import { supabase } from "@/lib/supabase";
+import * as adminSvc from "@/services/adminService";
+import type { AdminCounts } from "@/services/adminService";
+const { fetchAdminCounts } = adminSvc;
 
 type Section =
   | "overview" | "users" | "sellers" | "content" | "orders"
