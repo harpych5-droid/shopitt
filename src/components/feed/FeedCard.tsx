@@ -37,12 +37,14 @@ export const FeedCard = ({ item, index, onAuthRequired }: FeedCardProps) => {
   const [loaded, setLoaded] = useState(false);
   const [burst, setBurst] = useState(false);
   const [dtBurst, setDtBurst] = useState(false);
+  const [shopOpen, setShopOpen] = useState(false);
   const liked = useShopitt((s) => s.liked.has(item.id));
   const saved = useShopitt((s) => s.saved.has(item.id));
   const authed = useShopitt((s) => s.authed);
   const { muted, toggle: toggleMute } = useReelMute();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const lastTap = useRef(0);
+  const isShoppable = item.postType === "product";
 
   useEffect(() => {
     if (item.mediaType === "video") { setLoaded(true); return; }
@@ -166,7 +168,7 @@ export const FeedCard = ({ item, index, onAuthRequired }: FeedCardProps) => {
       </motion.div>
 
       {/* STOCK PILL — TOP RIGHT, safe spacing */}
-      {item.stockLeft <= 10 && (
+      {isShoppable && item.stockLeft > 0 && item.stockLeft <= 10 && (
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -277,33 +279,42 @@ export const FeedCard = ({ item, index, onAuthRequired }: FeedCardProps) => {
             <h2 className="text-base font-medium text-white/95 leading-snug mb-2 line-clamp-2">
               {item.title}
             </h2>
-            <div className="flex items-baseline gap-2 mb-1.5">
-              <span className="text-3xl font-black text-white tracking-tight">
-                {item.currency}
-                {item.price}
-              </span>
-              {item.oldPrice && (
-                <span className="text-sm font-medium text-white/50 line-through">
-                  {item.currency}
-                  {item.oldPrice}
-                </span>
-              )}
-            </div>
-            {item.freeDelivery && (
-              <div className="flex items-center gap-1.5 text-white/70">
-                <Truck className="h-3.5 w-3.5" />
-                <span className="text-xs font-medium">Free Delivery Available</span>
-              </div>
+            {isShoppable && shopOpen && (
+              <>
+                <div className="flex items-baseline gap-2 mb-1.5">
+                  <span className="text-3xl font-black text-white tracking-tight">
+                    {item.currency}
+                    {item.price}
+                  </span>
+                  {item.oldPrice && (
+                    <span className="text-sm font-medium text-white/50 line-through">
+                      {item.currency}
+                      {item.oldPrice}
+                    </span>
+                  )}
+                </div>
+                {item.freeDelivery && (
+                  <div className="flex items-center gap-1.5 text-white/70">
+                    <Truck className="h-3.5 w-3.5" />
+                    <span className="text-xs font-medium">Free Delivery Available</span>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
-          <motion.button
-            onClick={handleBuy}
-            whileTap={{ scale: 0.94 }}
-            className="relative shrink-0 rounded-full gradient-brand px-6 py-3.5 text-sm font-bold text-white shadow-brand animate-glow-pulse"
-          >
-            <span className="relative z-10">Buy Now</span>
-          </motion.button>
+          {isShoppable && (
+            <motion.button
+              onClick={() => {
+                if (shopOpen) handleBuy();
+                else setShopOpen(true);
+              }}
+              whileTap={{ scale: 0.94 }}
+              className="relative shrink-0 rounded-full gradient-brand px-6 py-3.5 text-sm font-bold text-white shadow-brand animate-glow-pulse"
+            >
+              <span className="relative z-10">{shopOpen ? "Add to Bag" : "SHOP"}</span>
+            </motion.button>
+          )}
         </motion.div>
       </div>
     </article>

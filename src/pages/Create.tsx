@@ -10,6 +10,11 @@ import { toast } from "sonner";
 type Mode = null | "product" | "short" | "service";
 type PostType = "product" | "inspiration";
 
+const POST_EXPERIENCES: { key: PostType; icon: typeof Box; title: string; desc: string; color: string }[] = [
+  { key: "inspiration", icon: Video, title: "Inspiration", desc: "Express your style, story or creativity.", color: "from-brand-purple to-brand-pink" },
+  { key: "product", icon: Box, title: "Shoppable", desc: "Share fashion and connect it to products.", color: "from-brand-pink to-brand-purple" },
+];
+
 const TYPES = [
   { key: "product" as const, icon: Box, title: "Post Product", desc: "Sell fashion, sneakers, accessories…", color: "from-brand-pink to-brand-purple" },
   { key: "short" as const, icon: Video, title: "Post Short Video", desc: "Vertical 9:16 — appears in Shorts", color: "from-brand-pink to-brand-purple" },
@@ -104,7 +109,7 @@ const Create = () => {
       toast.error("Add at least one photo or video");
       return;
     }
-    if (mode !== "short" && postType === "product" && !price.trim()) {
+    if (postType === "product" && !price.trim()) {
       toast.error("Add a price");
       return;
     }
@@ -122,8 +127,7 @@ const Create = () => {
       const mediaUrls = uploads.map((u) => u.secure_url);
       const isVideo =
         primary.resource_type === "video" || media[0].kind === "video";
-      const finalPostType: PostType =
-        mode === "short" ? "inspiration" : postType;
+      const finalPostType = postType;
 
       // 2. Insert into posts using ONLY columns known to exist in the schema
       const payload: Record<string, any> = {
@@ -134,10 +138,11 @@ const Create = () => {
         media_urls: mediaUrls,
         media_type: isVideo ? "video" : "image",
         post_type: finalPostType,
+        content_type: finalPostType,
         hashtags: parseHashtags(hashtags),
         price:
           finalPostType === "product" && price ? Number(price) : null,
-        stock_quantity: stock ? Number(stock) : null,
+        stock_quantity: finalPostType === "product" && stock ? Number(stock) : null,
         currency: "ZMW",
         is_available: true,
       };
@@ -192,10 +197,13 @@ const Create = () => {
             <p className="text-sm text-muted-foreground mt-1">Choose your post type to get started</p>
 
             <ul className="mt-6 space-y-3">
-              {TYPES.map((t) => (
+              {POST_EXPERIENCES.map((t) => (
                 <li key={t.key}>
                   <button
-                    onClick={() => setMode(t.key)}
+                    onClick={() => {
+                      setPostType(t.key);
+                      setMode("product");
+                    }}
                     className="w-full flex items-center gap-3 rounded-2xl bg-card border border-border/60 p-4 hover:bg-muted/40 transition-colors text-left"
                   >
                     <span className={`h-12 w-12 rounded-2xl bg-gradient-to-br ${t.color} flex items-center justify-center shadow-brand`}>
@@ -240,7 +248,7 @@ const Create = () => {
                           active ? "gradient-brand text-white shadow-brand" : "text-muted-foreground"
                         }`}
                       >
-                        {t}
+                          {t === "inspiration" ? "Creative / Inspiration" : "Shoppable"}
                       </button>
                     );
                   })}

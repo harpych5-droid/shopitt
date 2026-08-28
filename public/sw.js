@@ -1,21 +1,18 @@
-function isShopittAppCache(name) {
-  return /(^|-)precache-v\d+-|(^|-)runtime-|(^|-)googleAnalytics-|^html$|^assets$|^images$/.test(name);
-}
+const CACHE_NAME = "shopitt-shell-v1";
+const APP_SHELL = ["/", "/manifest.webmanifest", "/icon-192.png", "/icon-512.png"];
 
-self.addEventListener("install", () => self.skipWaiting());
+self.addEventListener("install", (event) => {
+  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
+  self.skipWaiting();
+});
 
-self.addEventListener("activate", (event) =>
+self.addEventListener("activate", (event) => {
   event.waitUntil(
-    (async () => {
-      try {
-        const cacheNames = await caches.keys();
-        await Promise.allSettled(cacheNames.filter(isShopittAppCache).map((name) => caches.delete(name)));
-        await self.clients.claim();
-        const clients = await self.clients.matchAll({ type: "window" });
-        await Promise.allSettled(clients.map((client) => client.navigate(client.url)));
-      } finally {
-        await self.registration.unregister();
-      }
-    })(),
-  ),
-);
+    caches.keys().then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)))).then(() => self.clients.claim()),
+  );
+});
+
+self.addEventListener("fetch", (event) => {
+  if (event.request.method !== "GET" || event.request.url.startsWith("chrome-extension:")) return;
+  event.respondWith(caches.match(event.request).then((cached) => cached || fetch(event.request)));
+});

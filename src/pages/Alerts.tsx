@@ -77,15 +77,17 @@ const Alerts = () => {
       setItems([]); setUnread(0); setLoading(false); return;
     }
     refresh();
+    // A unique channel avoids React development-mode remounts trying to add a
+    // callback to a previous channel while its asynchronous cleanup finishes.
     const channel = supabase
-      .channel(`me-notifs-${user.id}`)
+      .channel(`me-notifs-${user.id}-${crypto.randomUUID()}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
         refresh,
       )
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => { void supabase.removeChannel(channel); };
   }, [isAuthed, user, refresh]);
 
   // infinite scroll

@@ -1,9 +1,11 @@
 import { motion } from "framer-motion";
-import { Search, MessageCircle, Menu as MenuIcon } from "lucide-react";
+import { Search, MessageCircle, Menu as MenuIcon, Plus } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useRef } from "react";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
-import logo from "@/assets/shopitt-logo.png.asset.json";
+import { useTheme } from "@/hooks/useTheme";
+import lightLogo from "@/assets/shopitt-app-logo.png";
+import darkLogo from "@/assets/shopitt-app-logo1.png";
 
 interface TopNavProps {
   hidden?: boolean;
@@ -12,7 +14,9 @@ interface TopNavProps {
 export const TopNav = ({ hidden = false }: TopNavProps) => {
   const navigate = useNavigate();
   const { isAdmin } = useIsAdmin();
+  const { applied } = useTheme();
   const clicks = useRef<number[]>([]);
+  const logo = applied === "dark" ? darkLogo : lightLogo;
 
   const handleLogoClick = (e: React.MouseEvent) => {
     const now = Date.now();
@@ -41,14 +45,14 @@ export const TopNav = ({ hidden = false }: TopNavProps) => {
           onClick={handleLogoClick}
           className="inline-flex items-center gap-2 shrink-0 select-none"
         >
-          <img src={logo.url} alt="Shopitt" className="h-8 w-8 rounded-lg object-contain" />
-          <span className="font-display text-lg font-black tracking-tight text-gradient-brand">
-            Shopitt
-          </span>
+          <img src={logo} alt="Shopitt" className="h-10 w-auto object-contain" />
         </Link>
 
         {/* SBB 20 — AppBar: logo, Search, Chats, Menu. No avatar here. */}
         <div className="flex items-center gap-0.5 shrink-0">
+          <Link to="/create" aria-label="Create post" className="h-10 w-10 rounded-full hover:bg-muted/50 transition-colors flex items-center justify-center">
+            <Plus className="h-5 w-5 text-foreground" />
+          </Link>
           <Link to="/search" aria-label="Search" className="h-10 w-10 rounded-full hover:bg-muted/50 transition-colors flex items-center justify-center">
             <Search className="h-5 w-5 text-foreground" />
           </Link>

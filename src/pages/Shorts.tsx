@@ -4,11 +4,11 @@ import { FloatingBag } from "@/components/feed/FloatingBag";
 import { AuthModal } from "@/components/feed/AuthModal";
 import { BagSheet } from "@/components/feed/BagSheet";
 import { BottomNav } from "@/components/feed/BottomNav";
-import { FEED, type FeedItem } from "@/data/feed";
+import type { FeedItem } from "@/data/feed";
 import { shopitt } from "@/store/useShopittStore";
 import { fetchFeedPosts, postToFeedItem } from "@/services/postsService";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Play } from "lucide-react";
 
 const Shorts = () => {
   const [authOpen, setAuthOpen] = useState(false);
@@ -28,12 +28,7 @@ const Shorts = () => {
       const videos = (data ?? [])
         .map(postToFeedItem)
         .filter((it) => it.mediaType === "video" && it.image);
-      if (videos.length > 0) {
-        setItems(videos);
-      } else {
-        // Fallback: show all posts so Shorts is never empty for the demo
-        setItems(FEED);
-      }
+      setItems(videos);
     })();
     return () => {
       cancelled = true;
@@ -66,7 +61,7 @@ const Shorts = () => {
         <div className="h-full w-full flex items-center justify-center">
           <Loader2 className="h-6 w-6 text-white animate-spin" />
         </div>
-      ) : (
+      ) : items.length > 0 ? (
         <div className="feed-snap h-full w-full overflow-y-auto no-scrollbar">
           {items.map((item, i) => (
             <FeedCard
@@ -77,9 +72,19 @@ const Shorts = () => {
             />
           ))}
         </div>
+      ) : (
+        <div className="h-full w-full px-6 flex items-center justify-center text-center">
+          <div>
+            <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl gradient-brand shadow-brand">
+              <Play className="h-6 w-6 text-white" />
+            </span>
+            <h2 className="mt-4 text-lg font-extrabold text-white">No Shorts yet</h2>
+            <p className="mt-1 text-sm text-white/65">Fresh video stories will appear here as creators share them.</p>
+          </div>
+        </div>
       )}
 
-      <FloatingBag onClick={() => setBagOpen(true)} bottomOffset={88} side="right" />
+      <FloatingBag onClick={() => setBagOpen(true)} bottomOffset={88} side="left" />
       <BottomNav />
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} action={authAction} />
       <BagSheet open={bagOpen} onClose={() => setBagOpen(false)} />

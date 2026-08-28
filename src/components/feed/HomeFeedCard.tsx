@@ -213,6 +213,7 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
                 <button
                   onClick={(e) => {
                     e.preventDefault();
+                    e.stopPropagation();
                     setShopOpen(true);
                   }}
                   className="rounded-full glass-dark px-4 py-2.5 flex items-center gap-2 active:scale-95 transition-transform"
@@ -291,7 +292,7 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
                       }}
                       className="rounded-full bg-white/10 px-3.5 py-2.5 text-[12px] font-semibold text-white"
                     >
-                      View
+                      View Product
                     </button>
                   </div>
                 </motion.div>

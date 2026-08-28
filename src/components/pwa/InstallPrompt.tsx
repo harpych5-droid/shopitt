@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Download, X, Sparkles, Zap, Bell, Rocket, MoreHorizontal } from "lucide-react";
 import { INSTALL_EVENT, isIOSDevice, isStandaloneApp, useInstallPrompt } from "@/hooks/useInstallPrompt";
+import { useTheme } from "@/hooks/useTheme";
+import lightLogo from "@/assets/shopitt-app-logo.png";
+import darkLogo from "@/assets/shopitt-app-logo1.png";
 
 const DISMISS_KEY = "shopitt:install-dismissed-at";
 const COOLDOWN_MS = 1000 * 60 * 60 * 24 * 3; // 3 days
@@ -17,6 +20,8 @@ function isPreviewHost() {
 
 export const InstallPrompt = () => {
   const { canInstall, hasNativePrompt, installed, isIOS, promptInstall } = useInstallPrompt();
+  const { applied } = useTheme();
+  const appLogo = applied === "dark" ? darkLogo : lightLogo;
   const [open, setOpen] = useState(false);
   const [forced, setForced] = useState(false);
   const [unavailable, setUnavailable] = useState(false);
@@ -113,7 +118,7 @@ export const InstallPrompt = () => {
               </motion.div>
 
               <h2 className="text-xl font-extrabold tracking-tight text-foreground">
-                Install <span className="text-gradient-brand">Shopitt</span>
+                <img src={appLogo} alt="Install Shopitt" className="mx-auto h-7 w-auto object-contain" />
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 A faster, full-screen shopping experience that lives on your home screen.

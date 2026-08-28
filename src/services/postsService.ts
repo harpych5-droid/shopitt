@@ -36,6 +36,14 @@ export type DbPost = {
   } | null;
 };
 
+/**
+ * `posts.content_type` is the database-enforced source of truth for a post
+ * experience. Commerce is available only to the `product` experience.
+ */
+export function getPostExperience(post: Pick<DbPost, "content_type">): "inspiration" | "product" {
+  return post.content_type === "inspiration" ? "inspiration" : "product";
+}
+
 const SELECT = `
   id, user_id, title, description, media_url, media_urls, media, media_type,
   price, currency, hashtags, post_type, category_name, content_type, is_available,
@@ -89,8 +97,7 @@ export function postToFeedItem(p: DbPost): FeedItem {
   ]));
   const handle = p.profiles?.username ?? "shopitt";
   const brand = p.profiles?.full_name || handle;
-  const isInspiration =
-    (p.content_type ?? p.post_type ?? "").toLowerCase() === "inspiration";
+  const isInspiration = getPostExperience(p) === "inspiration";
   const badge = (p.post_badges ?? [])[0] ?? null;
   const dropLabel = (badge?.label ?? "").trim() || (p.category_name ?? "").trim();
 

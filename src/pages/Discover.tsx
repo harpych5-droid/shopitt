@@ -3,7 +3,8 @@ import { Link } from "react-router-dom";
 import { Sparkles, Flame, TrendingUp, Bookmark, Users, Star, Compass } from "lucide-react";
 import { BottomNav } from "@/components/feed/BottomNav";
 import { TopNav } from "@/components/feed/TopNav";
-import { FEED, type FeedItem } from "@/data/feed";
+import type { FeedItem } from "@/data/feed";
+import { useFeedPosts } from "@/hooks/useFeedPosts";
 
 type Section = {
   id: string;
@@ -52,7 +53,7 @@ const ProductCard = ({ item }: { item: FeedItem }) => (
 
 const CreatorChip = ({ item }: { item: FeedItem }) => (
   <Link
-    to={`/u/${item.brandHandle}`}
+    to={`/u/${item.userId}`}
     className="shrink-0 flex flex-col items-center gap-2 w-[80px] active:scale-95 transition-transform"
   >
     <div className="relative">
@@ -68,17 +69,18 @@ const CreatorChip = ({ item }: { item: FeedItem }) => (
 );
 
 const Discover = () => {
+  const { items, loading } = useFeedPosts();
   const sections: Section[] = useMemo(() => {
-    const products = FEED.filter((f) => f.postType !== "inspiration");
-    const inspirations = FEED.filter((f) => f.postType === "inspiration");
+    const products = items.filter((f) => f.postType !== "inspiration");
+    const inspirations = items.filter((f) => f.postType === "inspiration");
 
     const trending = [...products].sort((a, b) => b.likes - a.likes).slice(0, 8);
-    const creatorPicks = FEED.filter((f) => f.badge === "Creator Pick");
+    const creatorPicks = items.filter((f) => f.badge === "Creator Pick");
     const mostSaved = [...products].sort((a, b) => b.sold - a.sold).slice(0, 8);
     const outfitIdeas = inspirations.filter((i) => i.hashtags.some((h) => /outfit|fit|style/i.test(h)));
     const newCreators = inspirations.slice(0, 6);
     const trends = inspirations.filter((i) => i.badge === "Trend");
-    const featured = FEED.filter((f) => f.badge === "Featured");
+    const featured = items.filter((f) => f.badge === "Featured");
 
     return [
       { id: "trending", title: "Trending Fits", subtitle: "What everyone's loving right now", icon: Flame, items: trending },
@@ -89,7 +91,7 @@ const Discover = () => {
       { id: "new-creators", title: "New Creators", subtitle: "Voices defining the new wave", icon: Users, items: newCreators, layout: "creator" },
       { id: "featured", title: "Shopitt Featured", subtitle: "Drops worth your attention", icon: Compass, items: featured },
     ].filter((s) => s.items.length > 0) as Section[];
-  }, []);
+  }, [items]);
 
   useEffect(() => {
     document.title = "Discover — Shopitt";
@@ -150,6 +152,13 @@ const Discover = () => {
             </section>
           );
         })}
+        {!loading && sections.length === 0 && (
+          <div className="mx-4 mt-8 rounded-3xl border border-border bg-card p-7 text-center">
+            <Compass className="mx-auto h-6 w-6 text-brand-pink" />
+            <h2 className="mt-3 font-display text-base font-extrabold">Discovery is warming up</h2>
+            <p className="mt-1 text-sm text-muted-foreground">New creator stories and drops will appear here.</p>
+          </div>
+        )}
       </div>
 
       <BottomNav />

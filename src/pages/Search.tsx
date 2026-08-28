@@ -125,7 +125,7 @@ const Search = () => {
                     </div>
                     <div className="p-2.5">
                       <p className="text-xs font-bold truncate">{p.title}</p>
-                      <p className="text-sm font-extrabold tabular-nums mt-0.5">{p.currency}{p.price}</p>
+                      {p.postType === "product" && <p className="text-sm font-extrabold tabular-nums mt-0.5">{p.currency}{p.price}</p>}
                     </div>
                   </Link>
                 ))}
@@ -182,7 +182,7 @@ const Search = () => {
                     </div>
                     <div className="p-2.5">
                       <p className="text-xs font-bold truncate">{p.title}</p>
-                      <p className="text-sm font-extrabold tabular-nums mt-0.5">{p.currency}{p.price}</p>
+                      {p.postType === "product" && <p className="text-sm font-extrabold tabular-nums mt-0.5">{p.currency}{p.price}</p>}
                     </div>
                   </Link>
                 ))}

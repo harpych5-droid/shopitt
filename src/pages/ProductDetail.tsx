@@ -115,6 +115,8 @@ const ProductDetail = () => {
     run();
   };
 
+  const isShoppable = product.postType === "product";
+
   const handleBuy = () => guard("buy", () => setOrderOpen(true));
   const handleAddBag = () => guard("buy", () => shopitt.addToBag(product));
   const handleLike = () => guard("like", () => toggleLike());
@@ -182,7 +184,7 @@ const ProductDetail = () => {
           )}
 
           {/* Stock urgency — top-right with safe spacing */}
-          {product.stockLeft <= 10 && (
+          {isShoppable && product.stockLeft > 0 && product.stockLeft <= 10 && (
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -239,7 +241,7 @@ const ProductDetail = () => {
             {product.title}
           </h1>
 
-          <div className="mt-3 flex items-end gap-3">
+          {isShoppable && <div className="mt-3 flex items-end gap-3">
             <span className="text-3xl font-black tracking-tight tabular-nums">
               {product.currency}
               {product.price}
@@ -255,9 +257,9 @@ const ProductDetail = () => {
                 Save {Math.round((1 - product.price / product.oldPrice) * 100)}%
               </span>
             )}
-          </div>
+          </div>}
 
-          {(() => {
+          {isShoppable && (() => {
             const dKey = product.deliveryType ?? "country";
             const D = DELIVERY_META[dKey];
             return product.freeDelivery ? (
@@ -386,7 +388,7 @@ const ProductDetail = () => {
       </div>
 
       {/* STICKY ACTIONS — dynamic Buy / Book based on item kind */}
-      <div className="fixed bottom-0 inset-x-0 z-40 bg-background/95 backdrop-blur-xl border-t border-border/60 safe-bottom">
+      {isShoppable && <div className="fixed bottom-0 inset-x-0 z-40 bg-background/95 backdrop-blur-xl border-t border-border/60 safe-bottom">
         <div className="max-w-md mx-auto px-4 py-3 flex items-center gap-2">
           {(() => {
             const isService = product.kind === "service";
@@ -415,7 +417,7 @@ const ProductDetail = () => {
             );
           })()}
         </div>
-      </div>
+      </div>}
 
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} action={authAction} />
       <BagSheet open={bagOpen} onClose={() => setBagOpen(false)} />

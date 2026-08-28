@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { TopNav } from "@/components/feed/TopNav";
-import { CategoryTabs } from "@/components/feed/CategoryTabs";
 import { HomeFeedCard } from "@/components/feed/HomeFeedCard";
 import { CreatorsRail } from "@/components/feed/CreatorsRail";
 
@@ -10,7 +9,6 @@ import { BagSheet } from "@/components/feed/BagSheet";
 import { SaveSheet } from "@/components/feed/SaveSheet";
 import { CommentsSheet } from "@/components/feed/CommentsSheet";
 import { BottomNav } from "@/components/feed/BottomNav";
-import { CATEGORY_MAP, type FeedItem } from "@/data/feed";
 import { shopitt } from "@/store/useShopittStore";
 import { useFeedPosts } from "@/hooks/useFeedPosts";
 import { Sparkles } from "lucide-react";
@@ -21,7 +19,6 @@ const Index = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const lastScroll = useRef(0);
   const [navHidden, setNavHidden] = useState(false);
-  const [category, setCategory] = useState<string>("All");
   const [authOpen, setAuthOpen] = useState(false);
   const [authAction, setAuthAction] = useState<"like" | "save" | "buy" | "comment" | null>(null);
   const [bagOpen, setBagOpen] = useState(false);
@@ -29,17 +26,6 @@ const Index = () => {
   const [commentsPostId, setCommentsPostId] = useState<string | null>(null);
 
   const { items: dbItems, loading, hasMore, loadMore } = useFeedPosts();
-
-  const items = useMemo<FeedItem[]>(() => {
-    const allowed = CATEGORY_MAP[category];
-    if (!allowed) return dbItems;
-    return dbItems.filter((f) => allowed.includes(f.category));
-  }, [dbItems, category]);
-
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (el) el.scrollTo({ top: 0, behavior: "auto" });
-  }, [category]);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -95,20 +81,19 @@ const Index = () => {
     setAuthOpen(true);
   };
 
-  const isEmpty = !loading && items.length === 0;
+  const isEmpty = !loading && dbItems.length === 0;
 
   return (
     <main className="relative min-h-[100dvh] w-full bg-background">
       <TopNav hidden={navHidden} />
-      <CategoryTabs active={category} onChange={setCategory} hidden={navHidden} />
 
       <h1 className="sr-only">Shopitt — Discover drops, shop instantly</h1>
 
       <div ref={scrollRef} className="h-[100dvh] w-full overflow-y-auto no-scrollbar">
-        <div className="h-[108px]" />
+        <div className="h-[60px]" />
         <div className="max-w-md mx-auto pb-28">
           <CreatorsRail items={dbItems} />
-          {items.map((item, i) => (
+          {dbItems.map((item, i) => (
 
             <HomeFeedCard
               key={item.id}
@@ -147,7 +132,7 @@ const Index = () => {
               </div>
             </div>
           )}
-          {!hasMore && items.length > 0 && (
+          {!hasMore && dbItems.length > 0 && (
             <div className="py-6 text-center text-[11px] text-muted-foreground">
               You're all caught up ✨
             </div>

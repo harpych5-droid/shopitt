@@ -4,6 +4,9 @@ import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { shopitt } from "@/store/useShopittStore";
 import { toast } from "sonner";
+import { useTheme } from "@/hooks/useTheme";
+import lightLogo from "@/assets/shopitt-app-logo.png";
+import darkLogo from "@/assets/shopitt-app-logo1.png";
 
 interface AuthModalProps {
   open: boolean;
@@ -20,6 +23,8 @@ const COPY: Record<string, string> = {
 
 export const AuthModal = ({ open, onClose, action }: AuthModalProps) => {
   const [loading, setLoading] = useState(false);
+  const { applied } = useTheme();
+  const appLogo = applied === "dark" ? darkLogo : lightLogo;
 
   const persistPending = () => {
     const pending = shopitt.get().pendingAction;
@@ -78,9 +83,7 @@ export const AuthModal = ({ open, onClose, action }: AuthModalProps) => {
               </button>
 
               <div className="mb-5">
-                <div className="inline-flex h-12 w-12 rounded-2xl gradient-brand items-center justify-center text-xl font-black mb-4 shadow-brand text-white">
-                  S
-                </div>
+                <img src={appLogo} alt="Shopitt" className="mb-4 h-12 w-auto object-contain" />
                 <h3 className="text-2xl font-black tracking-tight">
                   Unlock <span className="text-gradient-brand">Shopitt</span> 🔥
                 </h3>
