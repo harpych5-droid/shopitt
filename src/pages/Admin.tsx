@@ -722,7 +722,7 @@ const FeaturedPage = () => (
   <>
     <SectionHeader title="Featured Content" subtitle="Homepage placements and editor picks." />
     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {["Hero banner", "Trending row", "Featured creators", "Top sellers", "New drops", "Editor's pick"].map((slot) => (
+      {["Hero banner", "Trending row", "Featured creators", "Top sellers", "Editor's pick"].map((slot) => (
         <Card key={slot} className="p-4">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold">{slot}</h3>

@@ -12,3 +12,15 @@ Allow: /
 
 User-agent: *
 Allow: /
+Disallow: /admin
+Disallow: /chats
+Disallow: /alerts
+Disallow: /wallet
+Disallow: /orders
+Disallow: /saved
+Disallow: /settings
+Disallow: /edit-profile
+Disallow: /dashboard
+Disallow: /seller
+
+Sitemap: https://shopitt.shop/sitemap.xml

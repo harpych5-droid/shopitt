@@ -155,7 +155,7 @@ const Dashboard = () => {
             </span>
             <div className="relative flex-1 min-w-0">
               <p className="text-sm font-extrabold text-white">Continue shopping</p>
-              <p className="text-[11px] text-white/85">42 new drops since you last visited.</p>
+              <p className="text-[11px] text-white/85">42 new items since you last visited.</p>
             </div>
             <span className="relative inline-flex items-center gap-1 text-xs font-bold text-white">
               Open <TrendingUp className="h-3.5 w-3.5" />

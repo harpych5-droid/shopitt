@@ -14,10 +14,24 @@ import { useFeedPosts } from "@/hooks/useFeedPosts";
 import { Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 
+const FEED_POSITION_KEY = "shopitt:feed-position";
+type FeedPosition = { postId: string; offset: number; loadedCount: number };
+
+const readFeedPosition = (): FeedPosition | null => {
+  try {
+    const value = sessionStorage.getItem(FEED_POSITION_KEY);
+    return value ? JSON.parse(value) as FeedPosition : null;
+  } catch { return null; }
+};
+
 const Index = () => {
   const sentinelRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const postRefs = useRef(new Map<string, HTMLElement>());
+  const restored = useRef(false);
+  const savedPosition = useRef(readFeedPosition());
   const lastScroll = useRef(0);
+  const pullStart = useRef<number | null>(null);
   const [navHidden, setNavHidden] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [authAction, setAuthAction] = useState<"like" | "save" | "buy" | "comment" | null>(null);
@@ -25,7 +39,47 @@ const Index = () => {
   const [saveSheetPostId, setSaveSheetPostId] = useState<string | null>(null);
   const [commentsPostId, setCommentsPostId] = useState<string | null>(null);
 
-  const { items: dbItems, loading, hasMore, loadMore } = useFeedPosts();
+  const { items: dbItems, loading, hasMore, loadMore, refresh } = useFeedPosts(savedPosition.current?.loadedCount);
+
+  const refreshFeed = async () => {
+    await refresh();
+    window.dispatchEvent(new CustomEvent("shopitt:feed-seen"));
+  };
+
+  useEffect(() => {
+    const onRefresh = () => { void refreshFeed(); };
+    window.addEventListener("shopitt:feed-refresh", onRefresh);
+    return () => window.removeEventListener("shopitt:feed-refresh", onRefresh);
+  });
+
+  useEffect(() => {
+    const root = scrollRef.current;
+    if (!root) return;
+    const ratios = new Map<string, number>();
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => ratios.set(entry.target.id, entry.isIntersecting ? entry.intersectionRatio : 0));
+      const active = [...ratios.entries()].reduce((best, current) => current[1] > best[1] ? current : best, ["", 0]);
+      if (!active[0]) return;
+      const post = postRefs.current.get(active[0]);
+      if (!post) return;
+      sessionStorage.setItem(FEED_POSITION_KEY, JSON.stringify({
+        postId: active[0], offset: root.scrollTop - post.offsetTop, loadedCount: dbItems.length,
+      }));
+    }, { root, threshold: [0.25, 0.5, 0.75] });
+    postRefs.current.forEach((post) => observer.observe(post));
+    return () => observer.disconnect();
+  }, [dbItems]);
+
+  useEffect(() => {
+    const saved = savedPosition.current;
+    const root = scrollRef.current;
+    const post = saved && postRefs.current.get(saved.postId);
+    if (restored.current || !root || !post) return;
+    restored.current = true;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      root.scrollTop = Math.max(0, post.offsetTop + saved.offset);
+    }));
+  }, [dbItems]);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -89,20 +143,30 @@ const Index = () => {
 
       <h1 className="sr-only">Shopitt — Discover drops, shop instantly</h1>
 
-      <div ref={scrollRef} className="h-[100dvh] w-full overflow-y-auto no-scrollbar">
+      <div
+        ref={scrollRef}
+        className="h-[100dvh] w-full overflow-y-auto no-scrollbar"
+        onTouchStart={(event) => { pullStart.current = scrollRef.current?.scrollTop === 0 ? event.touches[0]?.clientY ?? null : null; }}
+        onTouchEnd={(event) => {
+          const start = pullStart.current;
+          pullStart.current = null;
+          if (start !== null && (event.changedTouches[0]?.clientY ?? start) - start > 80 && !loading) void refreshFeed();
+        }}
+      >
         <div className="h-[60px]" />
         <div className="max-w-md mx-auto pb-28">
           <CreatorsRail items={dbItems} />
           {dbItems.map((item, i) => (
 
-            <HomeFeedCard
-              key={item.id}
-              item={item}
-              index={i}
-              onAuthRequired={handleAuthRequired}
-              onOpenSaveSheet={(id) => setSaveSheetPostId(id)}
-              onOpenComments={(id) => setCommentsPostId(id)}
-            />
+            <div key={item.id} id={item.id} ref={(node) => { if (node) postRefs.current.set(item.id, node); else postRefs.current.delete(item.id); }}>
+              <HomeFeedCard
+                item={item}
+                index={i}
+                onAuthRequired={handleAuthRequired}
+                onOpenSaveSheet={(id) => setSaveSheetPostId(id)}
+                onOpenComments={(id) => setCommentsPostId(id)}
+              />
+            </div>
           ))}
 
           {isEmpty && (

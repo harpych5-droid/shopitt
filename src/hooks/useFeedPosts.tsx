@@ -10,21 +10,26 @@ const PAGE_SIZE = 12;
  * - Infinite scroll: keeps fetching pages until the server returns < PAGE_SIZE.
  * - Realtime: prepends new posts inserted anywhere in the app.
  */
-export function useFeedPosts() {
+export function useFeedPosts(initialCount = PAGE_SIZE) {
   const [items, setItems] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const offsetRef = useRef(0);
   const inflight = useRef(false);
+  const hasMoreRef = useRef(true);
 
   const loadMore = useCallback(async () => {
-    if (inflight.current || !hasMore) return;
+    if (inflight.current || !hasMoreRef.current) return;
     inflight.current = true;
     setLoading(true);
-    const { data, error } = await fetchFeedPosts(PAGE_SIZE, offsetRef.current);
+    const limit = offsetRef.current === 0 ? Math.max(PAGE_SIZE, initialCount) : PAGE_SIZE;
+    const { data, error } = await fetchFeedPosts(limit, offsetRef.current);
     if (error) setError(error);
-    if (data.length < PAGE_SIZE) setHasMore(false);
+    if (data.length < limit) {
+      hasMoreRef.current = false;
+      setHasMore(false);
+    }
     offsetRef.current += data.length;
     setItems((prev) => {
       const seen = new Set(prev.map((p) => p.id));
@@ -33,10 +38,11 @@ export function useFeedPosts() {
     });
     setLoading(false);
     inflight.current = false;
-  }, [hasMore]);
+  }, [initialCount]);
 
   const refresh = useCallback(async () => {
     offsetRef.current = 0;
+    hasMoreRef.current = true;
     setHasMore(true);
     setItems([]);
     inflight.current = false;
@@ -56,14 +62,18 @@ export function useFeedPosts() {
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "posts" },
         (payload) => {
-          const row = payload.new as any;
+          const row = payload.new as { id?: string; is_available?: boolean };
           if (!row?.is_available) return;
           // We need the profile join — fetch just this one enriched row
           fetchFeedPosts(1, 0).then(({ data }) => {
             const match = data.find((d) => d.id === row.id);
             if (!match) return;
-            const item = postToFeedItem(match);
-            setItems((prev) => (prev.some((p) => p.id === item.id) ? prev : [item, ...prev]));
+          const item = postToFeedItem(match);
+            setItems((prev) => {
+              if (prev.some((p) => p.id === item.id)) return prev;
+              window.dispatchEvent(new CustomEvent("shopitt:feed-new-post"));
+              return [item, ...prev];
+            });
             offsetRef.current += 1;
           });
         },

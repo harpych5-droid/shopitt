@@ -67,7 +67,7 @@ const SECTIONS: { key: SectionKey; title: string; tag: string; items: Item[]; ct
     tag: "Help",
     items: [
       { icon: HelpCircle, label: "Help Center", hint: "FAQs & guides", to: "/contact" },
-      { icon: Phone, label: "Call VYLOGUE ENTERPRISES", hint: "0573105096", href: "tel:0573105096" },
+      { icon: Phone, label: "Call H&D CREATION", hint: "0573105096", href: "tel:0573105096" },
       { icon: Mail, label: "Email support", hint: "shopitt54@gmail.com", href: "mailto:shopitt54@gmail.com" },
       { icon: FileText, label: "Terms of Service", to: "/terms" },
       { icon: Shield, label: "Privacy Policy", to: "/privacy" },
@@ -244,7 +244,7 @@ const Menu = () => {
 
         {/* Footer */}
         <div className="pt-4 text-center text-[11px] text-muted-foreground">
-          <p>Shopitt by <span className="font-bold text-foreground">VYLOGUE ENTERPRISES</span></p>
+          <p>Shopitt by <span className="font-bold text-foreground">H&amp;D CREATION</span></p>
           <p>v1.0 · Made for the culture</p>
         </div>
 

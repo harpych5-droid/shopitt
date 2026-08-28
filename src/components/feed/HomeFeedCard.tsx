@@ -1,10 +1,14 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useRef, useState } from "react";
-import { Heart, Bookmark, MessageCircle, Send, Truck, MoreHorizontal, MapPin, BadgeCheck, ShoppingBag, CalendarCheck, Sparkles, Flame, X } from "lucide-react";
+import { Heart, Bookmark, MessageCircle, Send, Truck, MoreHorizontal, MapPin, BadgeCheck, ShoppingBag, CalendarCheck, X } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import type { FeedItem, PostBadge } from "@/data/feed";
+import type { FeedItem } from "@/data/feed";
 import { useShopitt, shopitt } from "@/store/useShopittStore";
 import { usePostSocial } from "@/hooks/usePostSocial";
+import { sharePost } from "@/lib/sharePost";
+import { toast } from "sonner";
+import { useIdentity } from "@/hooks/useIdentity";
+import { supabase } from "@/lib/supabase";
 
 interface HomeFeedCardProps {
   item: FeedItem;
@@ -14,30 +18,14 @@ interface HomeFeedCardProps {
   onOpenComments: (postId: string) => void;
 }
 
-const badgeStyles: Record<PostBadge, string> = {
-  Product: "bg-foreground/10 text-foreground",
-  Inspiration: "bg-brand-purple/15 text-brand-purple",
-  Trend: "bg-brand-pink/15 text-brand-pink",
-  "Creator Pick": "bg-warning/15 text-warning",
-  Featured: "gradient-brand text-white",
-  "New Drop": "bg-success/15 text-success",
-};
-
-const badgeIcon = (b: PostBadge) => {
-  switch (b) {
-    case "Inspiration": return <Sparkles className="h-3 w-3" />;
-    case "Trend": return <Flame className="h-3 w-3" />;
-    case "Featured": return <BadgeCheck className="h-3 w-3" />;
-    default: return null;
-  }
-};
-
 export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onOpenComments }: HomeFeedCardProps) => {
   const [burst, setBurst] = useState(false);
   const [dtBurst, setDtBurst] = useState(false);
   const [shopOpen, setShopOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
 
   const authed = useShopitt((s) => s.authed);
+  const { user } = useIdentity();
   const { liked, saved, likeCount, commentCount, toggleLike } = usePostSocial(item.id, item.likes, item.comments);
   const lastTap = useRef(0);
   const navigate = useNavigate();
@@ -62,6 +50,30 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
   const handleSave = () => guard("save", () => onOpenSaveSheet(item.id));
   const handleBuy = () => guard("buy", () => shopitt.addToBag(item));
   const handleComment = () => onOpenComments(item.id);
+  const handleShare = async () => {
+    try {
+      const result = await sharePost(item.id, item.title);
+      toast.success(result === "copied" ? "Post link copied" : "Post shared");
+    } catch (error) {
+      if ((error as DOMException).name !== "AbortError") toast.error("Could not share this post");
+    }
+  };
+  const editPost = async () => {
+    const title = window.prompt("Edit post title", item.title);
+    if (title === null || !title.trim()) return;
+    const description = window.prompt("Edit caption", item.caption);
+    const { error } = await supabase.from("posts").update({ title: title.trim(), description: description ?? item.caption }).eq("id", item.id);
+    if (error) toast.error("Could not update post");
+    else { toast.success("Post updated"); window.dispatchEvent(new CustomEvent("shopitt:feed-refresh")); }
+    setMoreOpen(false);
+  };
+  const deletePost = async () => {
+    if (!window.confirm("Delete this post? This cannot be undone.")) return;
+    const { error } = await supabase.from("posts").delete().eq("id", item.id);
+    if (error) toast.error("Could not delete post");
+    else { toast.success("Post deleted"); window.dispatchEvent(new CustomEvent("shopitt:feed-refresh")); }
+    setMoreOpen(false);
+  };
 
   const handleMediaTap = (e: React.MouseEvent) => {
     const now = Date.now();
@@ -80,7 +92,7 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
     setTimeout(() => {
       if (Date.now() - lastTap.current >= 280 && lastTap.current !== 0) {
         lastTap.current = 0;
-        navigate(`/p/${item.id}`);
+        navigate(isVideo ? `/shorts?video=${encodeURIComponent(item.id)}` : `/p/${item.id}`);
       }
     }, 300);
     e.preventDefault();
@@ -130,9 +142,17 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
             </div>
           </div>
         </Link>
-        <button aria-label="More" className="h-8 w-8 rounded-full hover:bg-muted/50 flex items-center justify-center">
+        <div className="relative">
+        <button onClick={() => setMoreOpen((open) => !open)} aria-label="More" className="h-8 w-8 rounded-full hover:bg-muted/50 flex items-center justify-center">
           <MoreHorizontal className="h-5 w-5 text-muted-foreground" />
         </button>
+        {moreOpen && user?.id === item.userId && (
+          <div className="absolute right-0 top-10 z-30 w-32 rounded-xl border border-border bg-popover p-1 shadow-lg">
+            <button onClick={() => void editPost()} className="w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-muted">Edit</button>
+            <button onClick={() => void deletePost()} className="w-full rounded-lg px-3 py-2 text-left text-sm text-destructive hover:bg-muted">Delete</button>
+          </div>
+        )}
+        </div>
       </header>
 
       {/* MEDIA — extended aspect ratio for Instagram-like feel */}
@@ -173,14 +193,9 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
           )
         )}
 
-        {item.drop && (
-          <div className="absolute top-3 left-3 z-10 max-w-[65%]">
-            <div className="rounded-full glass-dark backdrop-blur-xl bg-black/40 border border-white/10 px-3 py-1.5 flex items-center gap-1">
-              {item.badge && badgeIcon(item.badge)}
-              <span className="text-[11px] font-bold tracking-wide text-white truncate">
-                {item.drop}
-              </span>
-            </div>
+        {item.mediaUrls.length > 1 && (
+          <div className="absolute top-3 right-3 z-10 rounded-full bg-black/60 px-2 py-1 text-[11px] font-bold text-white">
+            1/{item.mediaUrls.length}
           </div>
         )}
 
@@ -328,7 +343,7 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
           <button onClick={handleComment} aria-label="Comment" className="active:scale-90 transition-transform">
             <MessageCircle className="h-6 w-6 text-foreground" strokeWidth={2} />
           </button>
-          <button aria-label="Share" className="active:scale-90 transition-transform">
+          <button onClick={handleShare} aria-label="Share" className="active:scale-90 transition-transform">
             <Send className="h-6 w-6 text-foreground" strokeWidth={2} />
           </button>
         </div>

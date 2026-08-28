@@ -1,4 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { Home, Compass, Film, Bell, User } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -20,9 +21,21 @@ interface BottomNavProps {
 export const BottomNav = ({ hidden = false }: BottomNavProps) => {
   const { pathname } = useLocation();
   const { unread } = useNotifications();
+  const [newPosts, setNewPosts] = useState(0);
+
+  useEffect(() => {
+    const onNewPost = () => setNewPosts((count) => count + 1);
+    const onFeedSeen = () => setNewPosts(0);
+    window.addEventListener("shopitt:feed-new-post", onNewPost);
+    window.addEventListener("shopitt:feed-seen", onFeedSeen);
+    return () => {
+      window.removeEventListener("shopitt:feed-new-post", onNewPost);
+      window.removeEventListener("shopitt:feed-seen", onFeedSeen);
+    };
+  }, []);
   const items = baseItems.map((it) => ({
     ...it,
-    badge: "badgeKey" in it && it.badgeKey === "unread" ? unread : 0,
+    badge: it.label === "Home" ? newPosts : ("badgeKey" in it && it.badgeKey === "unread" ? unread : 0),
   }));
   return (
     <motion.nav
@@ -41,6 +54,7 @@ export const BottomNav = ({ hidden = false }: BottomNavProps) => {
               <NavLink
                 to={item.to}
                 end={item.end}
+                onClick={() => { if (item.label === "Home") window.dispatchEvent(new CustomEvent("shopitt:feed-refresh")); }}
                 className="flex-1 flex flex-col items-center gap-0.5 py-1 relative"
               >
                 <div className="relative">

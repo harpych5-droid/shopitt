@@ -24,6 +24,8 @@ export type MessageRow = {
   created_at: string;
 };
 
+type ChatProfile = NonNullable<ConversationRow["other"]>;
+
 export async function fetchConversations(userId: string): Promise<ConversationRow[]> {
   const { data, error } = await supabase
     .from("conversations")
@@ -33,7 +35,7 @@ export async function fetchConversations(userId: string): Promise<ConversationRo
   if (error || !data) return [];
 
   const otherIds = Array.from(
-    new Set(data.map((c: any) => (c.user_1_id === userId ? c.user_2_id : c.user_1_id))),
+    new Set((data as ConversationRow[]).map((c) => (c.user_1_id === userId ? c.user_2_id : c.user_1_id))),
   );
   if (otherIds.length === 0) return data as ConversationRow[];
 
@@ -41,29 +43,22 @@ export async function fetchConversations(userId: string): Promise<ConversationRo
     .from("profiles")
     .select("id, username, avatar_url, full_name")
     .in("id", otherIds);
-  const map = new Map((profiles ?? []).map((p: any) => [p.id, p]));
-  return (data as any[]).map((c) => {
+  const map = new Map<string, ChatProfile>((profiles ?? []).map((p) => [p.id, p as ChatProfile]));
+  return (data as ConversationRow[]).map((c) => {
     const otherId = c.user_1_id === userId ? c.user_2_id : c.user_1_id;
     return { ...c, other: map.get(otherId) ?? null } as ConversationRow;
   });
 }
 
 export async function findOrCreateConversation(userA: string, userB: string) {
-  const [u1, u2] = [userA, userB].sort();
-  const { data: existing } = await supabase
-    .from("conversations")
-    .select("id")
-    .or(
-      `and(user_1_id.eq.${u1},user_2_id.eq.${u2}),and(user_1_id.eq.${u2},user_2_id.eq.${u1})`,
-    )
-    .maybeSingle();
-  if (existing?.id) return { id: existing.id as string, error: null };
-  const { data: created, error } = await supabase
-    .from("conversations")
-    .insert({ user_1_id: u1, user_2_id: u2 })
-    .select("id")
-    .maybeSingle();
-  return { id: created?.id ?? null, error: error?.message ?? null };
+  const { data: sessionData } = await supabase.auth.getUser();
+  if (!sessionData.user || sessionData.user.id !== userA) {
+    return { id: null, error: "Authentication required" };
+  }
+  const { data, error } = await supabase.rpc("create_or_get_conversation", {
+    other_user_id: userB,
+  });
+  return { id: (data as string | null) ?? null, error: error?.message ?? null };
 }
 
 export async function fetchMessages(conversationId: string): Promise<MessageRow[]> {

@@ -3,10 +3,13 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Heart, Bookmark, MessageCircle, Share2, Truck, Sparkles, Volume2, VolumeX } from "lucide-react";
 import type { FeedItem } from "@/data/feed";
 import { useShopitt, shopitt } from "@/store/useShopittStore";
+import { sharePost } from "@/lib/sharePost";
+import { toast } from "sonner";
 
 interface FeedCardProps {
   item: FeedItem;
   index: number;
+  isActive: boolean;
   onAuthRequired: (action: "like" | "save" | "buy" | "comment", itemId: string) => void;
 }
 
@@ -33,7 +36,7 @@ const useReelMute = () => {
   return { muted, toggle };
 };
 
-export const FeedCard = ({ item, index, onAuthRequired }: FeedCardProps) => {
+export const FeedCard = ({ item, index, isActive, onAuthRequired }: FeedCardProps) => {
   const [loaded, setLoaded] = useState(false);
   const [burst, setBurst] = useState(false);
   const [dtBurst, setDtBurst] = useState(false);
@@ -57,6 +60,23 @@ export const FeedCard = ({ item, index, onAuthRequired }: FeedCardProps) => {
     if (videoRef.current) videoRef.current.muted = muted;
   }, [muted]);
 
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (!isActive) {
+      video.pause();
+      return;
+    }
+
+    void video.play().catch(() => {
+      // Browsers can reject autoplay after an explicit unmute; leave playback
+      // paused rather than allowing another Short to continue in the background.
+    });
+
+    return () => video.pause();
+  }, [isActive, item.mediaType]);
+
   const guard = (action: "like" | "save" | "buy" | "comment", run: () => void) => {
     if (!authed) { onAuthRequired(action, item.id); return; }
     run();
@@ -72,6 +92,14 @@ export const FeedCard = ({ item, index, onAuthRequired }: FeedCardProps) => {
   const handleSave = () => guard("save", () => shopitt.toggleSave(item.id));
   const handleBuy = () => guard("buy", () => shopitt.addToBag(item));
   const handleComment = () => guard("comment", () => {});
+  const handleShare = async () => {
+    try {
+      const result = await sharePost(item.id, item.title);
+      toast.success(result === "copied" ? "Post link copied" : "Post shared");
+    } catch (error) {
+      if ((error as DOMException).name !== "AbortError") toast.error("Could not share this post");
+    }
+  };
 
   const handleMediaTap = () => {
     const now = Date.now();
@@ -106,7 +134,6 @@ export const FeedCard = ({ item, index, onAuthRequired }: FeedCardProps) => {
             ref={videoRef}
             src={item.image}
             className="h-full w-full object-cover"
-            autoPlay
             muted={muted}
             loop
             playsInline
@@ -251,7 +278,7 @@ export const FeedCard = ({ item, index, onAuthRequired }: FeedCardProps) => {
           <span className="text-[11px] font-semibold text-white drop-shadow">128</span>
         </button>
 
-        <button className="flex flex-col items-center gap-1" aria-label="Share">
+        <button onClick={handleShare} className="flex flex-col items-center gap-1" aria-label="Share">
           <div className="h-12 w-12 rounded-full glass-dark flex items-center justify-center active:scale-90 transition-transform">
             <Share2 className="h-6 w-6 text-white" strokeWidth={2} />
           </div>
@@ -268,8 +295,11 @@ export const FeedCard = ({ item, index, onAuthRequired }: FeedCardProps) => {
         >
           <div className="flex-1 min-w-0 pr-2">
             <div className="flex items-center gap-2 mb-2">
-              <div className="h-7 w-7 rounded-full gradient-brand flex items-center justify-center text-[11px] font-black">
-                {item.brand[0]}
+              <div className="relative h-7 w-7 rounded-full gradient-brand overflow-hidden flex items-center justify-center text-[11px] font-black">
+                <span>{item.brand[0]}</span>
+                {item.avatar && (
+                  <img src={item.avatar} alt="" className="absolute inset-0 h-full w-full object-cover" onError={(event) => { event.currentTarget.style.display = "none"; }} />
+                )}
               </div>
               <span className="text-sm font-semibold text-white">@{item.brandHandle}</span>
               <button className="ml-1 px-2.5 py-0.5 rounded-full border border-white/40 text-[11px] font-semibold text-white hover:bg-white/10 transition-colors">

@@ -94,7 +94,7 @@ const Orders = () => {
               <Package className="h-6 w-6 text-white" />
             </span>
             <h3 className="mt-3 text-base font-extrabold">No {tab} orders</h3>
-            <p className="mt-1 text-xs text-muted-foreground">Discover new drops and your orders will land here.</p>
+            <p className="mt-1 text-xs text-muted-foreground">Discover products and your orders will land here.</p>
             <Link to="/" className="mt-4 inline-flex items-center gap-1.5 rounded-full gradient-brand px-5 py-2.5 text-sm font-bold text-white shadow-brand">
               <Sparkles className="h-4 w-4" />
               Discover
