@@ -16,6 +16,7 @@ import { usePostSocial } from "@/hooks/usePostSocial";
 import { useIdentity } from "@/hooks/useIdentity";
 import { followUser, unfollowUser } from "@/services/socialService";
 import { supabase } from "@/lib/supabase";
+import { sharePost } from "@/lib/sharePost";
 import { toast } from "sonner";
 
 const DELIVERY_META = {
@@ -121,6 +122,14 @@ const ProductDetail = () => {
   const handleAddBag = () => guard("buy", () => shopitt.addToBag(product));
   const handleLike = () => guard("like", () => toggleLike());
   const handleSave = () => guard("save", () => toggleSave());
+  const handleShare = async () => {
+    try {
+      const result = await sharePost(product.id, product.title);
+      toast.success(result === "copied" ? "Post link copied" : "Post shared");
+    } catch (error) {
+      if ((error as DOMException).name !== "AbortError") toast.error("Could not share this post");
+    }
+  };
   const handleFollow = async () => {
     if (!user || !product.userId) return;
     const next = !following;
@@ -151,7 +160,7 @@ const ProductDetail = () => {
             >
               <Bookmark className={`h-5 w-5 ${saved ? "fill-white text-white" : "text-white"}`} />
             </button>
-            <button aria-label="Share" className="h-10 w-10 rounded-full glass-dark flex items-center justify-center">
+            <button onClick={handleShare} aria-label="Share" className="h-10 w-10 rounded-full glass-dark flex items-center justify-center">
               <Send className="h-5 w-5 text-white" />
             </button>
           </div>
@@ -167,7 +176,17 @@ const ProductDetail = () => {
           >
             {gallery.map((src, i) => (
               <div key={i} className="relative shrink-0 w-full aspect-[4/5] snap-center bg-muted">
-                <img src={src} alt={`${product.title} ${i + 1}`} className="h-full w-full object-cover" />
+                {product.mediaType === "video" && i === 0 ? (
+                  <video
+                    src={src}
+                    className="h-full w-full object-cover"
+                    controls
+                    playsInline
+                    preload="metadata"
+                  />
+                ) : (
+                  <img src={src} alt={`${product.title} ${i + 1}`} className="h-full w-full object-cover" />
+                )}
               </div>
             ))}
           </div>
@@ -365,7 +384,7 @@ const ProductDetail = () => {
               <MessageCircle className="h-6 w-6 text-foreground" />
               <span className="text-sm font-bold tabular-nums">{commentCount}</span>
             </button>
-            <button aria-label="Share" className="active:scale-90 transition-transform">
+            <button onClick={handleShare} aria-label="Share" className="active:scale-90 transition-transform">
               <Send className="h-6 w-6 text-foreground" />
             </button>
           </div>

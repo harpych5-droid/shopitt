@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { useRef, useState } from "react";
-import { Heart, Bookmark, MessageCircle, Send, Truck, MoreHorizontal, MapPin, BadgeCheck, ShoppingBag, CalendarCheck, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Heart, Bookmark, MessageCircle, Send, Truck, MoreHorizontal, MapPin, BadgeCheck, ShoppingBag, CalendarCheck, X, Volume2, VolumeX } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import type { FeedItem } from "@/data/feed";
 import { useShopitt, shopitt } from "@/store/useShopittStore";
@@ -28,10 +28,46 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
   const { user } = useIdentity();
   const { liked, saved, likeCount, commentCount, toggleLike } = usePostSocial(item.id, item.likes, item.comments);
   const lastTap = useRef(0);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [muted, setMuted] = useState(true);
   const navigate = useNavigate();
 
   const isInspiration = item.postType === "inspiration";
   const isVideo = item.mediaType === "video";
+
+  // Feed cards coordinate through this event so an explicit unmute never
+  // leaves audio playing from another post.
+  useEffect(() => {
+    if (!isVideo) return;
+    const onAnotherVideoAudible = (event: Event) => {
+      if ((event as CustomEvent<string>).detail === item.id) return;
+      setMuted(true);
+    };
+    window.addEventListener("shopitt:feed-video-audible", onAnotherVideoAudible);
+    return () => window.removeEventListener("shopitt:feed-video-audible", onAnotherVideoAudible);
+  }, [isVideo, item.id]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.muted = muted;
+  }, [muted]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) setMuted(true);
+    }, { threshold: 0.25 });
+    observer.observe(video);
+    return () => observer.disconnect();
+  }, [isVideo]);
+
+  const toggleMute = () => {
+    const nextMuted = !muted;
+    setMuted(nextMuted);
+    if (!nextMuted) window.dispatchEvent(new CustomEvent("shopitt:feed-video-audible", { detail: item.id }));
+  };
 
   const guard = (action: "like" | "save" | "buy" | "comment", run: () => void) => {
     if (!authed) {
@@ -173,10 +209,11 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
         </AnimatePresence>
         {isVideo ? (
           <video
+            ref={videoRef}
             src={item.image}
             className="h-full w-full object-cover"
             autoPlay
-            muted
+            muted={muted}
             loop
             playsInline
             preload="metadata"
@@ -191,6 +228,21 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
               className="h-full w-full object-cover"
             />
           )
+        )}
+
+        {isVideo && (
+          <button
+            type="button"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              toggleMute();
+            }}
+            aria-label={muted ? "Unmute video" : "Mute video"}
+            className="absolute right-3 top-3 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm active:scale-90 transition-transform"
+          >
+            {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+          </button>
         )}
 
         {item.mediaUrls.length > 1 && (
