@@ -64,6 +64,19 @@ export async function fetchFeedPosts(limit = 20, offset = 0) {
   return { data: (data ?? []) as DbPost[], error: null as string | null };
 }
 
+/** Fetch Shorts from the server, rather than filtering an arbitrary Home page. */
+export async function fetchShortsPosts(limit = 12, offset = 0) {
+  const { data, error } = await (supabase as any)
+    .from("posts")
+    .select(SELECT)
+    .eq("is_available", true)
+    .eq("media_type", "video")
+    .order("created_at", { ascending: false })
+    .range(offset, offset + limit - 1);
+  if (error) return { data: [] as DbPost[], error: error.message };
+  return { data: (data ?? []) as DbPost[], error: null as string | null };
+}
+
 export async function fetchUserPosts(userId: string) {
   const { data, error } = await (supabase as any)
     .from("posts")

@@ -32,6 +32,7 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
   const videoRef = useRef<HTMLVideoElement>(null);
   const [muted, setMuted] = useState(true);
   const [videoVisible, setVideoVisible] = useState(false);
+  const [mediaRatio, setMediaRatio] = useState<number | null>(null);
   const navigate = useNavigate();
 
   const isInspiration = item.postType === "inspiration";
@@ -211,7 +212,12 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
       </header>
 
       {/* MEDIA — extended aspect ratio for Instagram-like feel */}
-      <Link to={`/p/${item.id}`} onClick={handleMediaTap} className="relative block w-full aspect-[4/5] bg-muted overflow-hidden select-none">
+      <Link
+        to={`/p/${item.id}`}
+        onClick={handleMediaTap}
+        className="relative block w-full bg-muted overflow-hidden select-none"
+        style={{ aspectRatio: mediaRatio ?? "4 / 5" }}
+      >
         <AnimatePresence>
           {dtBurst && (
             <motion.div
@@ -230,11 +236,15 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
           <video
             ref={videoRef}
             src={videoVisible ? item.image : undefined}
-            className="h-full w-full object-cover"
+            className="h-full w-full object-contain"
             muted={muted}
             loop
             playsInline
             preload="none"
+            onLoadedMetadata={(event) => {
+              const { videoWidth, videoHeight } = event.currentTarget;
+              if (videoWidth && videoHeight) setMediaRatio(videoWidth / videoHeight);
+            }}
           />
         ) : (
           item.image && (
@@ -244,7 +254,11 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
               loading={index < 2 ? "eager" : "lazy"}
               decoding="async"
               sizes="(max-width: 768px) 100vw, 448px"
-              className="h-full w-full object-cover"
+              className="h-full w-full object-contain"
+              onLoad={(event) => {
+                const { naturalWidth, naturalHeight } = event.currentTarget;
+                if (naturalWidth && naturalHeight) setMediaRatio(naturalWidth / naturalHeight);
+              }}
             />
           )
         )}

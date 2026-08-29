@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Home, Compass, Film, Bell, User } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNotifications } from "@/hooks/useNotifications";
+import { useScrollDirection } from "@/hooks/useScrollDirection";
 
 // SBB 18 — Primary bottom navigation: Home, Discovery, Shorts, Alerts, Profile.
 // No Create FAB here; Create lives in the Creator space.
@@ -22,6 +23,7 @@ export const BottomNav = ({ hidden = false }: BottomNavProps) => {
   const { pathname } = useLocation();
   const { unread } = useNotifications();
   const [newPosts, setNewPosts] = useState(0);
+  const windowScrollHidden = useScrollDirection();
 
   useEffect(() => {
     const onNewPost = () => setNewPosts((count) => count + 1);
@@ -40,7 +42,7 @@ export const BottomNav = ({ hidden = false }: BottomNavProps) => {
   return (
     <motion.nav
       initial={false}
-      animate={{ y: hidden ? 110 : 0, opacity: hidden ? 0 : 1 }}
+      animate={{ y: hidden || windowScrollHidden ? 110 : 0, opacity: hidden || windowScrollHidden ? 0 : 1 }}
       transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
       className="fixed bottom-0 inset-x-0 z-40 bg-background/95 backdrop-blur-xl border-t border-border/60 safe-bottom lg:hidden"
       aria-label="Primary"

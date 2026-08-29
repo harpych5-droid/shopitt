@@ -134,7 +134,7 @@ export const FeedCard = ({ item, index, isActive, onAuthRequired }: FeedCardProp
           <video
             ref={videoRef}
             src={isActive ? item.image : undefined}
-            className="h-full w-full object-cover"
+            className="h-full w-full object-contain"
             muted={muted}
             loop
             playsInline
@@ -147,7 +147,7 @@ export const FeedCard = ({ item, index, isActive, onAuthRequired }: FeedCardProp
             loading={index < 2 ? "eager" : "lazy"}
             decoding="async"
             sizes="100vw"
-            className="h-full w-full object-cover"
+            className="h-full w-full object-contain"
           />
         )}
         {/* Top + bottom gradient overlays for readability */}

@@ -33,6 +33,7 @@ const Index = () => {
   const restored = useRef(false);
   const savedPosition = useRef(readFeedPosition());
   const lastScroll = useRef(0);
+  const scrollTicking = useRef(false);
   const pullStart = useRef<number | null>(null);
   const [pullDistance, setPullDistance] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
@@ -110,12 +111,17 @@ const Index = () => {
     const el = scrollRef.current;
     if (!el) return;
     const onScroll = () => {
-      const y = el.scrollTop;
-      const delta = y - lastScroll.current;
-      if (Math.abs(delta) > 8) {
-        setNavHidden(delta > 0 && y > 80);
-        lastScroll.current = y;
-      }
+      if (scrollTicking.current) return;
+      scrollTicking.current = true;
+      requestAnimationFrame(() => {
+        const y = el.scrollTop;
+        const delta = y - lastScroll.current;
+        if (Math.abs(delta) > 8) {
+          setNavHidden(delta > 0 && y > 80);
+          lastScroll.current = y;
+        }
+        scrollTicking.current = false;
+      });
     };
     el.addEventListener("scroll", onScroll, { passive: true });
     return () => el.removeEventListener("scroll", onScroll);

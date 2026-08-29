@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useRef } from "react";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useTheme } from "@/hooks/useTheme";
+import { useScrollDirection } from "@/hooks/useScrollDirection";
 import lightLogo from "@/assets/shopitt-app-logo.png";
 import darkLogo from "@/assets/shopitt-app-logo1.png";
 
@@ -17,6 +18,7 @@ export const TopNav = ({ hidden = false }: TopNavProps) => {
   const { applied } = useTheme();
   const clicks = useRef<number[]>([]);
   const logo = applied === "dark" ? darkLogo : lightLogo;
+  const windowScrollHidden = useScrollDirection();
 
   const handleLogoClick = (e: React.MouseEvent) => {
     const now = Date.now();
@@ -34,7 +36,7 @@ export const TopNav = ({ hidden = false }: TopNavProps) => {
   return (
     <motion.header
       initial={false}
-      animate={{ y: hidden ? -90 : 0, opacity: hidden ? 0 : 1 }}
+      animate={{ y: hidden || windowScrollHidden ? -90 : 0, opacity: hidden || windowScrollHidden ? 0 : 1 }}
       transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
       className="fixed top-0 inset-x-0 z-40 bg-background/90 backdrop-blur-xl border-b border-border/40"
     >

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { FeedCard } from "@/components/feed/FeedCard";
 import { FloatingBag } from "@/components/feed/FloatingBag";
 import { AuthModal } from "@/components/feed/AuthModal";
@@ -6,7 +6,7 @@ import { BagSheet } from "@/components/feed/BagSheet";
 import { BottomNav } from "@/components/feed/BottomNav";
 import type { FeedItem } from "@/data/feed";
 import { shopitt } from "@/store/useShopittStore";
-import { fetchFeedPosts, fetchPostById, postToFeedItem } from "@/services/postsService";
+import { fetchShortsPosts, fetchPostById, postToFeedItem } from "@/services/postsService";
 import { Link, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Loader2, Play } from "lucide-react";
 import { setPageMetadata } from "@/lib/seo";
@@ -16,6 +16,7 @@ const Shorts = () => {
   const [authAction, setAuthAction] = useState<"like" | "save" | "buy" | "comment" | null>(null);
   const [bagOpen, setBagOpen] = useState(false);
   const [items, setItems] = useState<FeedItem[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const feedRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef(new Map<number, HTMLDivElement>());
@@ -66,21 +67,22 @@ const Shorts = () => {
     cardRefs.current.get(index)?.scrollIntoView({ block: "start" });
   }, [items, selectedVideoId]);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      // A single screen only needs a small initial window. FeedCard loads media
-      // only for the active Short, preventing 40 concurrent video fetches.
-      const { data } = await fetchFeedPosts(12, 0);
-      if (cancelled) return;
-      let videos = (data ?? [])
-        .map(postToFeedItem)
-        .filter((it) => it.mediaType === "video" && it.image);
+  const loadShorts = useCallback(async () => {
+    setError(null);
+    setItems(null);
+    // A single screen only needs a small initial window. FeedCard loads media
+    // only for the active Short, preventing concurrent video downloads.
+    const { data, error: requestError } = await fetchShortsPosts(12, 0);
+    if (requestError) {
+      setError(requestError);
+      setItems([]);
+      return;
+    }
+    let videos = data.map(postToFeedItem).filter((it) => it.image);
       // A direct link from a deeper Home item still opens that exact Short
       // without making every Shorts visit download a large feed window.
       if (selectedVideoId && !videos.some((item) => item.id === selectedVideoId)) {
         const { data: selected } = await fetchPostById(selectedVideoId);
-        if (cancelled) return;
         if (selected) {
           const item = postToFeedItem(selected);
           if (item.mediaType === "video" && item.image) videos = [item, ...videos];
@@ -89,13 +91,11 @@ const Shorts = () => {
       const selectedIndex = selectedVideoId
         ? videos.findIndex((item) => item.id === selectedVideoId)
         : -1;
-      setActiveIndex(selectedIndex >= 0 ? selectedIndex : 0);
-      setItems(videos);
-    })();
-    return () => {
-      cancelled = true;
-    };
+    setActiveIndex(selectedIndex >= 0 ? selectedIndex : 0);
+    setItems(videos);
   }, [selectedVideoId]);
+
+  useEffect(() => { void loadShorts(); }, [loadShorts]);
 
   const handleAuthRequired = (action: "like" | "save" | "buy" | "comment", itemId: string) => {
     shopitt.setPending({ type: action, itemId });
@@ -122,6 +122,13 @@ const Shorts = () => {
       {items === null ? (
         <div className="h-full w-full flex items-center justify-center">
           <Loader2 className="h-6 w-6 text-white animate-spin" />
+        </div>
+      ) : error ? (
+        <div className="h-full w-full px-6 flex items-center justify-center text-center">
+          <div>
+            <h2 className="text-lg font-extrabold text-white">Couldn't load Shorts</h2>
+            <button type="button" onClick={() => void loadShorts()} className="mt-3 rounded-full gradient-brand px-5 py-2.5 text-sm font-bold text-white">Try again</button>
+          </div>
         </div>
       ) : items.length > 0 ? (
         <div ref={feedRef} className="feed-snap h-full w-full overflow-y-auto no-scrollbar">
