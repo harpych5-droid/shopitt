@@ -13,6 +13,7 @@ import { shopitt } from "@/store/useShopittStore";
 import { useFeedPosts } from "@/hooks/useFeedPosts";
 import { Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
+import { setPageMetadata } from "@/lib/seo";
 
 const FEED_POSITION_KEY = "shopitt:feed-position";
 type FeedPosition = { postId: string; offset: number; loadedCount: number };
@@ -136,6 +137,14 @@ const Index = () => {
   };
 
   const isEmpty = !loading && dbItems.length === 0;
+
+  useEffect(() => {
+    setPageMetadata({
+      title: "Shopitt — Fashion, Culture & Discovery",
+      description: "Shopitt is a social fashion platform for discovering style, culture, creativity and inspiration. Explore fashion through people, ideas, stories and the moments that make style feel alive.",
+      path: "/",
+    });
+  }, []);
 
   return (
     <main className="relative min-h-[100dvh] w-full bg-background">

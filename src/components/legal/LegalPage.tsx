@@ -1,7 +1,8 @@
 import { useEffect, type ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { BottomNav } from "@/components/feed/BottomNav";
+import { setPageMetadata } from "@/lib/seo";
 
 interface LegalPageProps {
   title: string;
@@ -14,9 +15,18 @@ interface LegalPageProps {
  * visually consistent and on-brand without rebuilding chrome each time.
  */
 export const LegalPage = ({ title, updated, children }: LegalPageProps) => {
+  const location = useLocation();
   useEffect(() => {
     document.title = `${title} — Shopitt`;
   }, [title]);
+
+  useEffect(() => {
+    setPageMetadata({
+      title: `${title} — Shopitt`,
+      description: `${title} for Shopitt, the social fashion platform for culture, discovery and creative expression.`,
+      path: location.pathname,
+    });
+  }, [location.pathname, title]);
 
   return (
     <main className="min-h-[100dvh] bg-background pb-32">

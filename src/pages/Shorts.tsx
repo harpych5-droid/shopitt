@@ -9,6 +9,7 @@ import { shopitt } from "@/store/useShopittStore";
 import { fetchFeedPosts, postToFeedItem } from "@/services/postsService";
 import { Link, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Loader2, Play } from "lucide-react";
+import { setPageMetadata } from "@/lib/seo";
 
 const Shorts = () => {
   const [authOpen, setAuthOpen] = useState(false);
@@ -23,6 +24,14 @@ const Shorts = () => {
 
   useEffect(() => {
     document.title = "Shopitt Shorts — Vertical Drops";
+  }, []);
+
+  useEffect(() => {
+    setPageMetadata({
+      title: "Fashion Shorts — Shopitt",
+      description: "Discover short-form fashion culture, creativity, style and inspiration on Shopitt.",
+      path: "/shorts",
+    });
   }, []);
 
   useEffect(() => {

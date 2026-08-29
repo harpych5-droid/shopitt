@@ -18,6 +18,7 @@ import { followUser, unfollowUser } from "@/services/socialService";
 import { supabase } from "@/lib/supabase";
 import { sharePost } from "@/lib/sharePost";
 import { toast } from "sonner";
+import { setPageMetadata } from "@/lib/seo";
 
 const DELIVERY_META = {
   international: { icon: Globe, label: "International delivery" },
@@ -45,6 +46,16 @@ const ProductDetail = () => {
     })();
     return () => { cancelled = true; };
   }, [id]);
+
+  useEffect(() => {
+    if (!product || !id) return;
+    setPageMetadata({
+      title: `${product.title} — Shopitt`,
+      description: product.caption || "Fashion culture and inspiration from the Shopitt community.",
+      path: `/p/${encodeURIComponent(id)}`,
+      image: product.image || undefined,
+    });
+  }, [id, product]);
 
   const gallery = useMemo(() => {
     if (!product) return [];

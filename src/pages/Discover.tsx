@@ -5,6 +5,7 @@ import { BottomNav } from "@/components/feed/BottomNav";
 import { TopNav } from "@/components/feed/TopNav";
 import type { FeedItem } from "@/data/feed";
 import { useFeedPosts } from "@/hooks/useFeedPosts";
+import { setPageMetadata } from "@/lib/seo";
 
 type Section = {
   id: string;
@@ -103,6 +104,14 @@ const Discover = () => {
       document.head.appendChild(meta);
     }
     meta.setAttribute("content", desc);
+  }, []);
+
+  useEffect(() => {
+    setPageMetadata({
+      title: "Discover Fashion, Culture & Inspiration — Shopitt",
+      description: "Discover fashion, creative expression, style inspiration and culture from the Shopitt community.",
+      path: "/discover",
+    });
   }, []);
 
   return (

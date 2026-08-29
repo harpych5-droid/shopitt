@@ -21,6 +21,7 @@ import { supabase } from "@/lib/supabase";
 import { signInWithGoogle } from "@/hooks/useAuth";
 import { useIdentity } from "@/hooks/useIdentity";
 import { toast } from "sonner";
+import { setPageMetadata } from "@/lib/seo";
 
 type Tab = "posts" | "shorts" | "saved";
 
@@ -189,6 +190,16 @@ const UserProfile = () => {
       ? `@${profile.username} — Shopitt`
       : "Profile — Shopitt";
   }, [profile?.username]);
+
+  useEffect(() => {
+    if (!handle || !profile?.username) return;
+    setPageMetadata({
+      title: `@${profile.username} — Shopitt`,
+      description: `Explore fashion, culture and creative expression from @${profile.username} on Shopitt.`,
+      path: `/u/${encodeURIComponent(handle)}`,
+      image: profile.avatar_url || undefined,
+    });
+  }, [handle, profile?.avatar_url, profile?.username]);
 
   const handleFollowToggle = async () => {
     if (!authedUserId || !profile || authedUserId === profile.id) return;

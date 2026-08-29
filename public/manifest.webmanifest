@@ -1,6 +1,7 @@
 {
   "name": "Shopitt",
   "short_name": "Shopitt",
+  "description": "A social fashion platform for culture, discovery, creativity and inspiration.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
