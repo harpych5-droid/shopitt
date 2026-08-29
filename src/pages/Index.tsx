@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { TopNav } from "@/components/feed/TopNav";
 import { HomeFeedCard } from "@/components/feed/HomeFeedCard";
 import { CreatorsRail } from "@/components/feed/CreatorsRail";
@@ -16,6 +16,7 @@ import { Link } from "react-router-dom";
 import { setPageMetadata } from "@/lib/seo";
 
 const FEED_POSITION_KEY = "shopitt:feed-position";
+const HOME_INTENT_KEY = "shopitt:feed-home-intent";
 type FeedPosition = { postId: string; offset: number; loadedCount: number };
 
 const readFeedPosition = (): FeedPosition | null => {
@@ -33,6 +34,8 @@ const Index = () => {
   const savedPosition = useRef(readFeedPosition());
   const lastScroll = useRef(0);
   const pullStart = useRef<number | null>(null);
+  const [pullDistance, setPullDistance] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
   const [navHidden, setNavHidden] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [authAction, setAuthAction] = useState<"like" | "save" | "buy" | "comment" | null>(null);
@@ -40,18 +43,35 @@ const Index = () => {
   const [saveSheetPostId, setSaveSheetPostId] = useState<string | null>(null);
   const [commentsPostId, setCommentsPostId] = useState<string | null>(null);
 
-  const { items: dbItems, loading, hasMore, loadMore, refresh } = useFeedPosts(savedPosition.current?.loadedCount);
+  const { items: dbItems, loading, error, hasMore, loadMore, refresh } = useFeedPosts(savedPosition.current?.loadedCount);
 
-  const refreshFeed = async () => {
-    await refresh();
-    window.dispatchEvent(new CustomEvent("shopitt:feed-seen"));
-  };
+  const refreshFeed = useCallback(async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    const succeeded = await refresh();
+    if (succeeded) window.dispatchEvent(new CustomEvent("shopitt:feed-seen"));
+    setRefreshing(false);
+  }, [refresh, refreshing]);
 
   useEffect(() => {
-    const onRefresh = () => { void refreshFeed(); };
-    window.addEventListener("shopitt:feed-refresh", onRefresh);
-    return () => window.removeEventListener("shopitt:feed-refresh", onRefresh);
-  });
+    const onHomeTap = () => {
+      const root = scrollRef.current;
+      if (root) root.scrollTo({ top: 0, behavior: "smooth" });
+      void refreshFeed();
+    };
+    window.addEventListener("shopitt:feed-home-tap", onHomeTap);
+    return () => window.removeEventListener("shopitt:feed-home-tap", onHomeTap);
+  }, [refreshFeed]);
+
+  useEffect(() => {
+    if (sessionStorage.getItem(HOME_INTENT_KEY) !== "true") return;
+    sessionStorage.removeItem(HOME_INTENT_KEY);
+    restored.current = true;
+    requestAnimationFrame(() => scrollRef.current?.scrollTo({ top: 0 }));
+    void refreshFeed();
+    // This only handles a deliberate Home navigation, never browser Back.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const root = scrollRef.current;
@@ -155,13 +175,33 @@ const Index = () => {
       <div
         ref={scrollRef}
         className="h-[100dvh] w-full overflow-y-auto no-scrollbar"
+        aria-busy={refreshing}
         onTouchStart={(event) => { pullStart.current = scrollRef.current?.scrollTop === 0 ? event.touches[0]?.clientY ?? null : null; }}
+        onTouchMove={(event) => {
+          const start = pullStart.current;
+          if (start === null) return;
+          setPullDistance(Math.max(0, Math.min(88, (event.touches[0]?.clientY ?? start) - start)));
+        }}
         onTouchEnd={(event) => {
           const start = pullStart.current;
           pullStart.current = null;
-          if (start !== null && (event.changedTouches[0]?.clientY ?? start) - start > 80 && !loading) void refreshFeed();
+          const pulledFarEnough = start !== null && (event.changedTouches[0]?.clientY ?? start) - start > 80;
+          setPullDistance(0);
+          if (pulledFarEnough && !refreshing) void refreshFeed();
         }}
       >
+        <div
+          className="pointer-events-none absolute inset-x-0 top-2 z-30 flex justify-center transition-transform duration-200"
+          style={{ transform: `translateY(${refreshing ? 48 : pullDistance * 0.65}px)` }}
+          role="status"
+          aria-live="polite"
+        >
+          {(refreshing || pullDistance > 0) && (
+            <span className="rounded-full bg-background/95 px-3 py-1.5 text-xs font-semibold text-muted-foreground shadow-sm ring-1 ring-border/60">
+              {refreshing ? "Refreshing feed…" : pullDistance >= 80 ? "Release to refresh" : "Pull to refresh"}
+            </span>
+          )}
+        </div>
         <div className="h-[60px]" />
         <div className="max-w-md mx-auto pb-28">
           <CreatorsRail items={dbItems} />
@@ -208,6 +248,11 @@ const Index = () => {
           {!hasMore && dbItems.length > 0 && (
             <div className="py-6 text-center text-[11px] text-muted-foreground">
               You're all caught up ✨
+            </div>
+          )}
+          {error && dbItems.length > 0 && (
+            <div className="mx-4 mb-4 rounded-2xl border border-border/60 bg-card px-4 py-3 text-center text-xs text-muted-foreground">
+              Couldn't refresh right now. <button type="button" onClick={() => void refreshFeed()} className="font-bold text-brand-pink">Try again</button>
             </div>
           )}
         </div>

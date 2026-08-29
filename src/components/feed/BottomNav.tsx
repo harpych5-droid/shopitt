@@ -54,7 +54,21 @@ export const BottomNav = ({ hidden = false }: BottomNavProps) => {
               <NavLink
                 to={item.to}
                 end={item.end}
-                onClick={() => { if (item.label === "Home") window.dispatchEvent(new CustomEvent("shopitt:feed-refresh")); }}
+                onClick={(event) => {
+                  if (item.label !== "Home") return;
+
+                  if (pathname === "/") {
+                    // Already home: do not push another history entry. The feed
+                    // owns this event and scrolls to its beginning before refresh.
+                    event.preventDefault();
+                    window.dispatchEvent(new CustomEvent("shopitt:feed-home-tap"));
+                    return;
+                  }
+
+                  // An explicit Home selection is different from browser Back:
+                  // Index consumes this one-shot intent after it mounts.
+                  sessionStorage.setItem("shopitt:feed-home-intent", "true");
+                }}
                 className="flex-1 flex flex-col items-center gap-0.5 py-1 relative"
               >
                 <div className="relative">

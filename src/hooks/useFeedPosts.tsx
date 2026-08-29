@@ -18,6 +18,11 @@ export function useFeedPosts(initialCount = PAGE_SIZE) {
   const offsetRef = useRef(0);
   const inflight = useRef(false);
   const hasMoreRef = useRef(true);
+  const itemsRef = useRef<FeedItem[]>([]);
+
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
 
   const loadMore = useCallback(async () => {
     if (inflight.current || !hasMoreRef.current) return;
@@ -25,7 +30,12 @@ export function useFeedPosts(initialCount = PAGE_SIZE) {
     setLoading(true);
     const limit = offsetRef.current === 0 ? Math.max(PAGE_SIZE, initialCount) : PAGE_SIZE;
     const { data, error } = await fetchFeedPosts(limit, offsetRef.current);
-    if (error) setError(error);
+    if (error) {
+      setError(error);
+      setLoading(false);
+      inflight.current = false;
+      return;
+    }
     if (data.length < limit) {
       hasMoreRef.current = false;
       setHasMore(false);
@@ -41,13 +51,34 @@ export function useFeedPosts(initialCount = PAGE_SIZE) {
   }, [initialCount]);
 
   const refresh = useCallback(async () => {
-    offsetRef.current = 0;
-    hasMoreRef.current = true;
-    setHasMore(true);
-    setItems([]);
+    // Keep the current feed painted while Supabase revalidates it. Re-fetching
+    // the loaded window also removes posts deleted since the last visit.
+    if (inflight.current) return false;
+    inflight.current = true;
+    setLoading(true);
+    setError(null);
+
+    const limit = Math.max(PAGE_SIZE, itemsRef.current.length, initialCount);
+    const { data, error } = await fetchFeedPosts(limit, 0);
+    if (error) {
+      setError(error);
+      setLoading(false);
+      inflight.current = false;
+      return false;
+    }
+
+    const fresh = data.map(postToFeedItem);
+    // A fresh query replaces, rather than prepends to, the cached window.
+    // This retains server ordering and makes duplicate ids impossible.
+    setItems(fresh);
+    offsetRef.current = fresh.length;
+    const nextHasMore = data.length === limit;
+    hasMoreRef.current = nextHasMore;
+    setHasMore(nextHasMore);
+    setLoading(false);
     inflight.current = false;
-    await loadMore();
-  }, [loadMore]);
+    return true;
+  }, [initialCount]);
 
   useEffect(() => {
     loadMore();
