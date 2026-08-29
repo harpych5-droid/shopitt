@@ -60,7 +60,11 @@ const Index = () => {
       void refreshFeed();
     };
     window.addEventListener("shopitt:feed-home-tap", onHomeTap);
-    return () => window.removeEventListener("shopitt:feed-home-tap", onHomeTap);
+    window.addEventListener("shopitt:feed-refresh", refreshFeed);
+    return () => {
+      window.removeEventListener("shopitt:feed-home-tap", onHomeTap);
+      window.removeEventListener("shopitt:feed-refresh", refreshFeed);
+    };
   }, [refreshFeed]);
 
   useEffect(() => {

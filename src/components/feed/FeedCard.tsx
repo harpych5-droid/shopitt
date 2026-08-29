@@ -5,6 +5,7 @@ import type { FeedItem } from "@/data/feed";
 import { useShopitt, shopitt } from "@/store/useShopittStore";
 import { sharePost } from "@/lib/sharePost";
 import { toast } from "sonner";
+import { optimizedImageUrl } from "@/lib/media";
 
 interface FeedCardProps {
   item: FeedItem;
@@ -132,19 +133,20 @@ export const FeedCard = ({ item, index, isActive, onAuthRequired }: FeedCardProp
         {item.mediaType === "video" ? (
           <video
             ref={videoRef}
-            src={item.image}
+            src={isActive ? item.image : undefined}
             className="h-full w-full object-cover"
             muted={muted}
             loop
             playsInline
-            preload="metadata"
+            preload="none"
           />
         ) : (
           <img
-            src={item.image}
+            src={optimizedImageUrl(item.image, 900)}
             alt={item.title}
             loading={index < 2 ? "eager" : "lazy"}
             decoding="async"
+            sizes="100vw"
             className="h-full w-full object-cover"
           />
         )}

@@ -6,6 +6,7 @@ import { TopNav } from "@/components/feed/TopNav";
 import type { FeedItem } from "@/data/feed";
 import { useFeedPosts } from "@/hooks/useFeedPosts";
 import { setPageMetadata } from "@/lib/seo";
+import { optimizedImageUrl } from "@/lib/media";
 
 type Section = {
   id: string;
@@ -21,7 +22,7 @@ const InspirationCard = ({ item }: { item: FeedItem }) => (
     to={`/p/${item.id}`}
     className="relative shrink-0 w-[170px] aspect-[3/4] rounded-2xl overflow-hidden bg-muted active:scale-[0.97] transition-transform shadow-card"
   >
-    <img src={item.image} alt={item.title} loading="lazy" className="h-full w-full object-cover" />
+    <img src={optimizedImageUrl(item.image, 400)} alt={item.title} loading="lazy" decoding="async" sizes="170px" className="h-full w-full object-cover" />
     <div className="absolute inset-0 overlay-bottom" />
     {item.badge && (
       <span className="absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-black/50 text-white backdrop-blur-md">
@@ -41,7 +42,7 @@ const ProductCard = ({ item }: { item: FeedItem }) => (
     className="shrink-0 w-[160px] active:scale-[0.97] transition-transform"
   >
     <div className="aspect-square rounded-2xl overflow-hidden bg-muted shadow-card">
-      <img src={item.image} alt={item.title} loading="lazy" className="h-full w-full object-cover" />
+      <img src={optimizedImageUrl(item.image, 400)} alt={item.title} loading="lazy" decoding="async" sizes="160px" className="h-full w-full object-cover" />
     </div>
     <div className="pt-2 px-0.5">
       <p className="text-xs font-semibold truncate">{item.title}</p>
@@ -61,7 +62,7 @@ const CreatorChip = ({ item }: { item: FeedItem }) => (
       <span className="absolute -inset-0.5 rounded-full gradient-brand" />
       <div className="relative h-16 w-16 rounded-full bg-background p-[2px]">
         <div className="h-full w-full rounded-full overflow-hidden bg-muted">
-          <img src={item.image} alt={item.brand} className="h-full w-full object-cover" />
+          <img src={optimizedImageUrl(item.image, 160)} alt={item.brand} loading="lazy" decoding="async" sizes="64px" className="h-full w-full object-cover" />
         </div>
       </div>
     </div>

@@ -6,7 +6,7 @@ import { BagSheet } from "@/components/feed/BagSheet";
 import { BottomNav } from "@/components/feed/BottomNav";
 import type { FeedItem } from "@/data/feed";
 import { shopitt } from "@/store/useShopittStore";
-import { fetchFeedPosts, postToFeedItem } from "@/services/postsService";
+import { fetchFeedPosts, fetchPostById, postToFeedItem } from "@/services/postsService";
 import { Link, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Loader2, Play } from "lucide-react";
 import { setPageMetadata } from "@/lib/seo";
@@ -69,11 +69,23 @@ const Shorts = () => {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data } = await fetchFeedPosts(40, 0);
+      // A single screen only needs a small initial window. FeedCard loads media
+      // only for the active Short, preventing 40 concurrent video fetches.
+      const { data } = await fetchFeedPosts(12, 0);
       if (cancelled) return;
-      const videos = (data ?? [])
+      let videos = (data ?? [])
         .map(postToFeedItem)
         .filter((it) => it.mediaType === "video" && it.image);
+      // A direct link from a deeper Home item still opens that exact Short
+      // without making every Shorts visit download a large feed window.
+      if (selectedVideoId && !videos.some((item) => item.id === selectedVideoId)) {
+        const { data: selected } = await fetchPostById(selectedVideoId);
+        if (cancelled) return;
+        if (selected) {
+          const item = postToFeedItem(selected);
+          if (item.mediaType === "video" && item.image) videos = [item, ...videos];
+        }
+      }
       const selectedIndex = selectedVideoId
         ? videos.findIndex((item) => item.id === selectedVideoId)
         : -1;

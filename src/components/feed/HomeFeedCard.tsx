@@ -9,6 +9,7 @@ import { sharePost } from "@/lib/sharePost";
 import { toast } from "sonner";
 import { useIdentity } from "@/hooks/useIdentity";
 import { supabase } from "@/lib/supabase";
+import { optimizedImageUrl } from "@/lib/media";
 
 interface HomeFeedCardProps {
   item: FeedItem;
@@ -30,6 +31,7 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
   const lastTap = useRef(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [muted, setMuted] = useState(true);
+  const [videoVisible, setVideoVisible] = useState(false);
   const navigate = useNavigate();
 
   const isInspiration = item.postType === "inspiration";
@@ -56,9 +58,26 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
+    if (!videoVisible) {
+      video.pause();
+      return;
+    }
+    void video.play().catch(() => undefined);
+  }, [videoVisible]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
     const observer = new IntersectionObserver(([entry]) => {
-      if (!entry.isIntersecting) setMuted(true);
-    }, { threshold: 0.25 });
+      const visible = entry.isIntersecting && entry.intersectionRatio >= 0.5;
+      setVideoVisible(visible);
+      if (!visible) {
+        video.pause();
+        setMuted(true);
+        return;
+      }
+      // Visibility, rather than mounting, determines video network/playback.
+    }, { threshold: [0, 0.5] });
     observer.observe(video);
     return () => observer.disconnect();
   }, [isVideo]);
@@ -147,7 +166,7 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
             <div className="relative h-9 w-9 rounded-full bg-background p-[2px]">
               {avatar ? (
                 <img
-                  src={avatar}
+                  src={optimizedImageUrl(avatar, 96)}
                   alt={item.brandHandle}
                   referrerPolicy="no-referrer"
                   className="h-full w-full rounded-full object-cover"
@@ -210,21 +229,21 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
         {isVideo ? (
           <video
             ref={videoRef}
-            src={item.image}
+            src={videoVisible ? item.image : undefined}
             className="h-full w-full object-cover"
-            autoPlay
             muted={muted}
             loop
             playsInline
-            preload="metadata"
+            preload="none"
           />
         ) : (
           item.image && (
             <img
-              src={item.image}
+              src={optimizedImageUrl(item.image, 900)}
               alt={item.title}
               loading={index < 2 ? "eager" : "lazy"}
               decoding="async"
+              sizes="(max-width: 768px) 100vw, 448px"
               className="h-full w-full object-cover"
             />
           )
