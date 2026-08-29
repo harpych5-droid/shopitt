@@ -76,7 +76,7 @@ const Dashboard = () => {
                 </span>
                 <ChevronRight className="h-4 w-4 text-white/80" />
               </div>
-              <p className="relative mt-3 text-2xl font-black text-white tabular-nums">ZMW 6,710</p>
+              <p className="relative mt-3 text-2xl font-black text-white tabular-nums">K 6,710</p>
               <p className="relative text-[11px] text-white/85 font-medium">Wallet preview</p>
             </Link>
           </section>

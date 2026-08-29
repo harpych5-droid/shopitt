@@ -363,7 +363,7 @@ const Create = () => {
             {(mode === "product" && postType === "product") || mode === "service" ? (
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-sm font-semibold">Price (ZMW) *</label>
+                  <label className="text-sm font-semibold">Price (K) *</label>
                   <input
                     type="number"
                     inputMode="decimal"

@@ -15,6 +15,7 @@ import { fetchTransactions, fetchWalletBalance, requestWithdrawal, type WalletBa
 import { supabase } from "@/lib/supabase";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
+import { currencyLabel } from "@/lib/currency";
 
 const Wallet = () => {
   const { user, isAuthed } = useIdentity();
@@ -55,6 +56,7 @@ const Wallet = () => {
 
   const money = useMemo(() => new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }), []);
   const currency = balance.currency || "ZMW";
+  const displayCurrency = currencyLabel(currency);
 
   const withdrawAll = async () => {
     if (!user || balance.available_balance <= 0 || withdrawing) return;
@@ -99,15 +101,15 @@ const Wallet = () => {
           <div className="absolute -bottom-12 -left-8 h-40 w-40 rounded-full bg-white/10 blur-3xl" />
           <div className="relative">
             <p className="text-[11px] uppercase tracking-[0.18em] font-bold text-white/85">Total balance</p>
-            <p className="mt-1 text-4xl font-black text-white tabular-nums tracking-tight">{currency} {money.format(balance.balance)}</p>
+            <p className="mt-1 text-4xl font-black text-white tabular-nums tracking-tight">{displayCurrency} {money.format(balance.balance)}</p>
             <div className="mt-4 grid grid-cols-2 gap-3">
               <div className="rounded-2xl bg-white/15 backdrop-blur p-3">
                 <p className="text-[10px] uppercase tracking-wider font-bold text-white/80">Pending</p>
-                <p className="mt-0.5 text-lg font-extrabold text-white tabular-nums">{currency} {money.format(balance.pending_balance)}</p>
+                <p className="mt-0.5 text-lg font-extrabold text-white tabular-nums">{displayCurrency} {money.format(balance.pending_balance)}</p>
               </div>
               <div className="rounded-2xl bg-white/15 backdrop-blur p-3">
                 <p className="text-[10px] uppercase tracking-wider font-bold text-white/80">Available</p>
-                <p className="mt-0.5 text-lg font-extrabold text-white tabular-nums">{currency} {money.format(balance.available_balance)}</p>
+                <p className="mt-0.5 text-lg font-extrabold text-white tabular-nums">{displayCurrency} {money.format(balance.available_balance)}</p>
               </div>
             </div>
           </div>
@@ -171,7 +173,7 @@ const Wallet = () => {
                     isIn ? "text-success" : "text-warning"
                   }`}
                 >
-                  {isIn ? "+" : "−"}{t.currency ?? currency} {money.format(Math.abs(Number(t.amount ?? 0)))}
+                  {isIn ? "+" : "−"}{currencyLabel(t.currency ?? currency)} {money.format(Math.abs(Number(t.amount ?? 0)))}
                 </span>
               </li>
             );})}

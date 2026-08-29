@@ -26,6 +26,7 @@ import { fetchWalletBalance, type WalletBalance } from "@/services/walletService
 import { supabase } from "@/lib/supabase";
 import type { FeedItem } from "@/data/feed";
 import { toast } from "sonner";
+import { currencyLabel } from "@/lib/currency";
 
 const SellerDashboard = () => {
   const { user, profile, isAuthed } = useIdentity();
@@ -33,6 +34,7 @@ const SellerDashboard = () => {
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [wallet, setWallet] = useState<WalletBalance>({ balance: 0, available_balance: 0, pending_balance: 0, currency: "ZMW" });
   const [loading, setLoading] = useState(true);
+  const displayCurrency = currencyLabel(wallet.currency);
 
   useEffect(() => {
     document.title = "Seller Dashboard — Shopitt";
@@ -146,7 +148,7 @@ const SellerDashboard = () => {
             <div>
               <p className="text-[11px] uppercase tracking-[0.18em] font-bold text-white/80">Wallet balance</p>
               <p className="mt-1 text-3xl font-black text-white tracking-tight tabular-nums">
-                {wallet.currency} {money.format(wallet.available_balance)}
+                {displayCurrency} {money.format(wallet.available_balance)}
               </p>
             </div>
             <Link to="/wallet" className="rounded-full bg-white text-foreground px-4 py-2 text-xs font-extrabold flex items-center gap-1.5 active:scale-95 transition-transform">
@@ -158,7 +160,7 @@ const SellerDashboard = () => {
 
         {/* Stats grid */}
         <section className="grid grid-cols-2 gap-3">
-          <StatCard icon={DollarSign} label="Total sales" value={`${wallet.currency} ${money.format(stats.sales)}`} delta={`${stats.growth}% done`} />
+          <StatCard icon={DollarSign} label="Total sales" value={`${displayCurrency} ${money.format(stats.sales)}`} delta={`${stats.growth}% done`} />
           <StatCard icon={Package} label="Pending orders" value={stats.orders.toString()} delta={stats.orders ? "Action needed" : "All clear"} />
           <StatCard icon={Boxes} label="Listed" value={stats.listed.toString()} delta="Live now" />
           <StatCard icon={TrendingUp} label="Growth" value={`${stats.growth}%`} delta="vs last week" />
@@ -169,7 +171,7 @@ const SellerDashboard = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Revenue</p>
-              <p className="mt-1 text-xl font-extrabold tracking-tight">{wallet.currency} {money.format(stats.sales)}</p>
+              <p className="mt-1 text-xl font-extrabold tracking-tight">{displayCurrency} {money.format(stats.sales)}</p>
             </div>
             <div className="flex gap-1.5 text-[11px] font-bold">
               {["7D", "1M", "3M", "1Y"].map((p, i) => (
@@ -231,7 +233,7 @@ const SellerDashboard = () => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-bold truncate">{snap.title ?? `Order #${o.id.slice(0, 8)}`}</p>
-                        <p className="text-[11px] text-muted-foreground">{o.currency ?? wallet.currency} {money.format(Number(o.total_price ?? 0))} · {status}</p>
+                        <p className="text-[11px] text-muted-foreground">{currencyLabel(o.currency ?? wallet.currency)} {money.format(Number(o.total_price ?? 0))} · {status}</p>
                       </div>
                       <button onClick={() => advanceOrder(o)} disabled={["delivered", "cancelled"].includes(status)} className="rounded-full bg-muted/60 px-3 py-1.5 text-[11px] font-bold disabled:opacity-40">
                         Advance

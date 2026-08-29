@@ -10,7 +10,7 @@ interface BagSheetProps {
 export const BagSheet = ({ open, onClose }: BagSheetProps) => {
   const bag = useShopitt((s) => s.bag);
   const total = bag.reduce((sum, b) => sum + b.item.price * b.qty, 0);
-  const currency = bag[0]?.item.currency ?? "ZMW ";
+  const currency = bag[0]?.item.currency ?? "K ";
 
   return (
     <AnimatePresence>

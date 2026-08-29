@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { currencyLabel } from "@/lib/currency";
 import type { FeedItem } from "@/data/feed";
 
 /**
@@ -112,7 +113,7 @@ export function postToFeedItem(p: DbPost): FeedItem {
     image: firstMedia,
     mediaUrls,
     price: Number(p.price ?? 0),
-    currency: (p.currency ?? "USD") + " ",
+    currency: currencyLabel(p.currency) + " ",
     stockLeft: p.stock_quantity ?? 0,
     freeDelivery: !!p.has_free_delivery,
     category: isInspiration ? "Inspiration" : "Fashion",
