@@ -13,6 +13,7 @@ import { InstallPrompt } from "./components/pwa/InstallPrompt";
 import { ThemeProvider } from "./hooks/useTheme";
 import { SplashScreen } from "./components/SplashScreen";
 import { DesktopSidebar } from "./components/DesktopSidebar";
+import { Analytics } from "@vercel/analytics/react";
 
 // Lazy-loaded routes for faster initial paint
 const Shorts = lazy(() => import("./pages/Shorts.tsx"));
@@ -63,6 +64,7 @@ const App = () => (
         <Sonner />
         <SplashScreen />
         <InstallPrompt />
+        <Analytics />
         <BrowserRouter>
           <IdentityProvider>
             <AuthBootstrap />
