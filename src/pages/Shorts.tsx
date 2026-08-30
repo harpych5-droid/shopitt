@@ -11,6 +11,11 @@ import { Link, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Loader2, Play } from "lucide-react";
 import { setPageMetadata } from "@/lib/seo";
 
+const SHORTS_POSITION_KEY = "shopitt:shorts-position";
+const readShortsPosition = () => {
+  try { return sessionStorage.getItem(SHORTS_POSITION_KEY); } catch { return null; }
+};
+
 const Shorts = () => {
   const [authOpen, setAuthOpen] = useState(false);
   const [authAction, setAuthAction] = useState<"like" | "save" | "buy" | "comment" | null>(null);
@@ -20,6 +25,7 @@ const Shorts = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const feedRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef(new Map<number, HTMLDivElement>());
+  const savedShortId = useRef(readShortsPosition());
   const [searchParams] = useSearchParams();
   const selectedVideoId = searchParams.get("video");
 
@@ -59,12 +65,29 @@ const Shorts = () => {
     return () => observer.disconnect();
   }, [items]);
 
+  const persistPosition = useCallback(() => {
+    const item = items?.[activeIndex];
+    if (!item) return;
+    try { sessionStorage.setItem(SHORTS_POSITION_KEY, item.id); } catch { /* storage is optional */ }
+  }, [activeIndex, items]);
+
+  useEffect(() => () => persistPosition(), [persistPosition]);
+
   useEffect(() => {
-    if (!items?.length || !selectedVideoId) return;
-    const index = items.findIndex((item) => item.id === selectedVideoId);
+    window.addEventListener("pagehide", persistPosition);
+    return () => window.removeEventListener("pagehide", persistPosition);
+  }, [persistPosition]);
+
+  useEffect(() => {
+    if (!items?.length) return;
+    const requestedId = selectedVideoId ?? savedShortId.current;
+    if (!requestedId) return;
+    const index = items.findIndex((item) => item.id === requestedId);
     if (index < 0) return;
     setActiveIndex(index);
-    cardRefs.current.get(index)?.scrollIntoView({ block: "start" });
+    const card = cardRefs.current.get(index);
+    const feed = feedRef.current;
+    if (card && feed) feed.scrollTo({ top: card.offsetTop, behavior: "auto" });
   }, [items, selectedVideoId]);
 
   const loadShorts = useCallback(async () => {

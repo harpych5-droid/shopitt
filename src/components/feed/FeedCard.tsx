@@ -5,7 +5,7 @@ import type { FeedItem } from "@/data/feed";
 import { useShopitt, shopitt } from "@/store/useShopittStore";
 import { sharePost } from "@/lib/sharePost";
 import { toast } from "sonner";
-import { optimizedImageUrl } from "@/lib/media";
+import { optimizedImageUrl, videoPosterUrl } from "@/lib/media";
 
 interface FeedCardProps {
   item: FeedItem;
@@ -144,12 +144,16 @@ export const FeedCard = ({ item, index, isActive, onAuthRequired }: FeedCardProp
           <video
             ref={videoRef}
             src={isActive ? item.image : undefined}
+            poster={videoPosterUrl(item.image)}
             className="h-full w-full object-contain"
             autoPlay={isActive}
             muted={muted}
             loop
             playsInline
             preload={isActive ? "metadata" : "none"}
+            onCanPlay={() => {
+              if (isActive && videoRef.current?.paused) void videoRef.current.play().catch(() => undefined);
+            }}
             onError={(event) => {
               setVideoError(true);
               console.error("Short video failed to load", { postId: item.id, src: event.currentTarget.currentSrc || item.image, error: event.currentTarget.error?.message });

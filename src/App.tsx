@@ -14,6 +14,7 @@ import { ThemeProvider } from "./hooks/useTheme";
 import { SplashScreen } from "./components/SplashScreen";
 import { DesktopSidebar } from "./components/DesktopSidebar";
 import { Analytics } from "@vercel/analytics/react";
+import { ShortsErrorBoundary } from "./components/ShortsErrorBoundary";
 
 // Lazy-loaded routes for faster initial paint
 const Shorts = lazy(() => import("./pages/Shorts.tsx"));
@@ -75,8 +76,8 @@ const App = () => (
               <Suspense fallback={<RouteFallback />}>
                 <Routes>
                   <Route path="/" element={<Index />} />
-                  <Route path="/shorts" element={<Shorts />} />
-                  <Route path="/reels" element={<Shorts />} />
+                  <Route path="/shorts" element={<ShortsErrorBoundary><Shorts /></ShortsErrorBoundary>} />
+                  <Route path="/reels" element={<ShortsErrorBoundary><Shorts /></ShortsErrorBoundary>} />
                   <Route path="/discover" element={<Discover />} />
                   <Route path="/search" element={<Search />} />
                   <Route path="/create" element={<Create />} />
