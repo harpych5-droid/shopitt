@@ -10,15 +10,16 @@ import darkLogo from "@/assets/shopitt-app-logo1.png";
 
 interface TopNavProps {
   hidden?: boolean;
+  trackWindowScroll?: boolean;
 }
 
-export const TopNav = ({ hidden = false }: TopNavProps) => {
+export const TopNav = ({ hidden = false, trackWindowScroll = true }: TopNavProps) => {
   const navigate = useNavigate();
   const { isAdmin } = useIsAdmin();
   const { applied } = useTheme();
   const clicks = useRef<number[]>([]);
   const logo = applied === "dark" ? darkLogo : lightLogo;
-  const windowScrollHidden = useScrollDirection();
+  const windowScrollHidden = useScrollDirection({ enabled: trackWindowScroll });
 
   const handleLogoClick = (e: React.MouseEvent) => {
     const now = Date.now();
@@ -37,8 +38,8 @@ export const TopNav = ({ hidden = false }: TopNavProps) => {
     <motion.header
       initial={false}
       animate={{ y: hidden || windowScrollHidden ? "-100%" : "0%", opacity: hidden || windowScrollHidden ? 0 : 1 }}
-      transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
-      className={`fixed top-0 inset-x-0 z-40 border-b border-border/40 bg-background/90 backdrop-blur-xl transform-gpu will-change-transform ${hidden || windowScrollHidden ? "pointer-events-none" : ""}`}
+      transition={{ duration: 0.12, ease: [0.22, 1, 0.36, 1] }}
+      className={`fixed top-0 inset-x-0 z-40 border-b border-border/40 bg-background/90 backdrop-blur-md transform-gpu will-change-transform ${hidden || windowScrollHidden ? "pointer-events-none" : ""}`}
     >
       <div className="flex items-center justify-between px-4 py-2.5 max-w-md mx-auto gap-2">
         <Link

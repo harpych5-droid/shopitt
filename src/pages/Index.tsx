@@ -236,7 +236,7 @@ const Index = () => {
 
   return (
     <main className="relative min-h-[100dvh] w-full bg-background">
-      <TopNav hidden={navHidden} />
+      <TopNav hidden={navHidden} trackWindowScroll={false} />
 
       <h1 className="sr-only">Shopitt — Discover drops, shop instantly</h1>
 
@@ -327,7 +327,7 @@ const Index = () => {
       </div>
 
       <FloatingBag onClick={() => setBagOpen(true)} bottomOffset={84} side="left" />
-      <BottomNav hidden={navHidden} />
+      <BottomNav hidden={navHidden} trackWindowScroll={false} />
 
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} action={authAction} />
       <BagSheet open={bagOpen} onClose={() => setBagOpen(false)} />

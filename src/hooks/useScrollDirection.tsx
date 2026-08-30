@@ -9,11 +9,14 @@ export function useScrollDirection(opts?: {
   target?: HTMLElement | null;
   threshold?: number;
   offset?: number;
+  enabled?: boolean;
 }) {
-  const { target, threshold = 12, offset = 64 } = opts ?? {};
+  const { target, threshold = 12, offset = 64, enabled = true } = opts ?? {};
   const [hidden, setHidden] = useState(false);
 
   useEffect(() => {
+    if (!enabled) return;
+
     const getY = () =>
       target ? target.scrollTop : window.scrollY || document.documentElement.scrollTop;
 
@@ -44,7 +47,7 @@ export function useScrollDirection(opts?: {
     const el: EventTarget = target ?? window;
     el.addEventListener("scroll", onScroll, { passive: true } as AddEventListenerOptions);
     return () => el.removeEventListener("scroll", onScroll as EventListener);
-  }, [target, threshold, offset]);
+  }, [target, threshold, offset, enabled]);
 
   return hidden;
 }

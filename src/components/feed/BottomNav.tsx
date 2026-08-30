@@ -17,13 +17,14 @@ const baseItems = [
 
 interface BottomNavProps {
   hidden?: boolean;
+  trackWindowScroll?: boolean;
 }
 
-export const BottomNav = ({ hidden = false }: BottomNavProps) => {
+export const BottomNav = ({ hidden = false, trackWindowScroll = true }: BottomNavProps) => {
   const { pathname } = useLocation();
   const { unread } = useNotifications();
   const [newPosts, setNewPosts] = useState(0);
-  const windowScrollHidden = useScrollDirection();
+  const windowScrollHidden = useScrollDirection({ enabled: trackWindowScroll });
 
   useEffect(() => {
     const onNewPost = () => setNewPosts((count) => count + 1);
@@ -43,8 +44,8 @@ export const BottomNav = ({ hidden = false }: BottomNavProps) => {
     <motion.nav
       initial={false}
       animate={{ y: hidden || windowScrollHidden ? "100%" : "0%", opacity: hidden || windowScrollHidden ? 0 : 1 }}
-      transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
-      className={`fixed bottom-0 inset-x-0 z-40 border-t border-border/60 bg-background/95 backdrop-blur-xl safe-bottom transform-gpu will-change-transform lg:hidden ${hidden || windowScrollHidden ? "pointer-events-none" : ""}`}
+      transition={{ duration: 0.12, ease: [0.22, 1, 0.36, 1] }}
+      className={`fixed bottom-0 inset-x-0 z-40 border-t border-border/60 bg-background/95 backdrop-blur-md safe-bottom transform-gpu will-change-transform lg:hidden ${hidden || windowScrollHidden ? "pointer-events-none" : ""}`}
       aria-label="Primary"
     >
       <ul className="grid grid-cols-5 max-w-md mx-auto px-2 pt-2 pb-1.5">

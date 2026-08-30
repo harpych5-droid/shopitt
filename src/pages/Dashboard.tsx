@@ -35,7 +35,7 @@ const Dashboard = () => {
 
   return (
     <main className="relative min-h-[100dvh] bg-background">
-      <TopNav hidden={hidden} />
+      <TopNav hidden={hidden} trackWindowScroll={false} />
 
       <div ref={scrollRef} className="h-[100dvh] overflow-y-auto no-scrollbar">
         <div className="h-[60px]" />
@@ -164,7 +164,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <BottomNav hidden={hidden} />
+      <BottomNav hidden={hidden} trackWindowScroll={false} />
     </main>
   );
 };
