@@ -101,10 +101,36 @@ const Index = () => {
     const root = scrollRef.current;
     const post = saved && postRefs.current.get(saved.postId);
     if (restored.current || !root || !post) return;
-    restored.current = true;
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      root.scrollTop = Math.max(0, post.offsetTop + saved.offset);
-    }));
+    let frame = 0;
+    let attempts = 0;
+
+    // A mobile browser can lay out images after the feed data has arrived.
+    // Retry only while layout is changing; ResizeObserver replaces an
+    // arbitrary timeout and prevents a permanently clamped restoration.
+    const restore = () => {
+      const latestPost = postRefs.current.get(saved.postId);
+      if (!latestPost) return;
+      const nextTarget = Math.max(0, latestPost.offsetTop + saved.offset);
+      root.scrollTop = nextTarget;
+      attempts += 1;
+      if (Math.abs(root.scrollTop - nextTarget) < 2 || attempts >= 12) {
+        restored.current = true;
+      }
+    };
+    const scheduleRestore = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(restore);
+    };
+    const resizeObserver = new ResizeObserver(scheduleRestore);
+    resizeObserver.observe(root);
+    // Images above the saved post can change its offset without changing the
+    // scroll container's own box, so watch the rendered feed rows as well.
+    postRefs.current.forEach((node) => resizeObserver.observe(node));
+    scheduleRestore();
+    return () => {
+      cancelAnimationFrame(frame);
+      resizeObserver.disconnect();
+    };
   }, [dbItems]);
 
   useEffect(() => {
@@ -130,16 +156,16 @@ const Index = () => {
   useEffect(() => {
     const sentinel = sentinelRef.current;
     const root = scrollRef.current;
-    if (!sentinel || !root) return;
+    if (!sentinel || !root || loading || !hasMore) return;
     const io = new IntersectionObserver(
       (entries) => {
-        if (entries[0]?.isIntersecting && hasMore) loadMore();
+        if (entries[0]?.isIntersecting) void loadMore();
       },
       { root, rootMargin: "800px 0px", threshold: 0 },
     );
     io.observe(sentinel);
     return () => io.disconnect();
-  }, [hasMore, loadMore]);
+  }, [hasMore, loading, loadMore]);
 
   useEffect(() => {
     document.title = "Shopitt — Shop Drops You Crave";
@@ -247,7 +273,7 @@ const Index = () => {
           )}
 
           {hasMore && (
-            <div ref={sentinelRef} className="flex items-center justify-center py-10">
+            <div ref={sentinelRef} className="flex items-center justify-center py-10 pb-32">
               <div className="flex gap-1.5">
                 <span className="h-2 w-2 rounded-full bg-brand-pink animate-pulse-soft" />
                 <span className="h-2 w-2 rounded-full bg-brand-purple animate-pulse-soft [animation-delay:120ms]" />

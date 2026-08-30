@@ -142,7 +142,9 @@ const Create = () => {
         hashtags: parseHashtags(hashtags),
         price:
           finalPostType === "product" && price ? Number(price) : null,
-        stock_quantity: finalPostType === "product" && stock ? Number(stock) : null,
+        // `quantity` is the established commerce field used by the mobile
+        // creator and order flow.  Do not write a parallel stock column.
+        quantity: finalPostType === "product" && stock ? Number(stock) : null,
         currency: "ZMW",
         is_available: true,
       };

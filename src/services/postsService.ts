@@ -24,6 +24,7 @@ export type DbPost = {
   post_badges: { label: string | null; badge_type: string | null }[] | null;
   is_available: boolean | null;
   stock_quantity: number | null;
+  quantity: number | null;
   delivery_type: string | null;
   has_free_delivery: boolean | null;
   rating: number | null;
@@ -48,7 +49,7 @@ export function getPostExperience(post: Pick<DbPost, "content_type">): "inspirat
 const SELECT = `
   id, user_id, title, description, media_url, media_urls, media, media_type,
   price, currency, hashtags, post_type, category_name, content_type, is_available,
-  stock_quantity, delivery_type, has_free_delivery, rating, review_count, created_at,
+  stock_quantity, quantity, delivery_type, has_free_delivery, rating, review_count, created_at,
   profiles!posts_user_id_fkey ( username, avatar_url, full_name, country ),
   post_badges ( label, badge_type )
 `;
@@ -70,7 +71,10 @@ export async function fetchShortsPosts(limit = 12, offset = 0) {
     .from("posts")
     .select(SELECT)
     .eq("is_available", true)
-    .eq("media_type", "video")
+    // Older production posts used the Short/Reel labels while the current
+    // composer writes `video`.  Keep this filter server-side so Shorts never
+    // turns an arbitrary Home page into a fake video feed.
+    .in("media_type", ["video", "short", "reel"])
     .order("created_at", { ascending: false })
     .range(offset, offset + limit - 1);
   if (error) return { data: [] as DbPost[], error: error.message };
@@ -127,7 +131,10 @@ export function postToFeedItem(p: DbPost): FeedItem {
     mediaUrls,
     price: Number(p.price ?? 0),
     currency: currencyLabel(p.currency) + " ",
-    stockLeft: p.stock_quantity ?? 0,
+    // Existing mobile-created posts persist `quantity`; older web posts use
+    // stock_quantity. Read the established field first without inventing a
+    // replacement column, and preserve a real zero.
+    stockLeft: Number.isFinite(Number(p.quantity ?? p.stock_quantity)) ? Number(p.quantity ?? p.stock_quantity) : 0,
     freeDelivery: !!p.has_free_delivery,
     category: isInspiration ? "Inspiration" : "Fashion",
     likes: 0,
@@ -144,6 +151,6 @@ export function postToFeedItem(p: DbPost): FeedItem {
         : undefined,
     postType: isInspiration ? "inspiration" : "product",
     badge: isInspiration ? "Inspiration" : (dropLabel ? undefined : "Product"),
-    mediaType: (p.media_type ?? "").toLowerCase() === "video" ? "video" : "image",
+    mediaType: ["video", "short", "reel"].includes((p.media_type ?? "").toLowerCase()) ? "video" : "image",
   };
 }

@@ -406,15 +406,15 @@ const UserProfile = () => {
           {tabItems.length === 0 ? (
             <EmptyState tab={tab} isSelf={isSelf} />
           ) : (
-            <div className="grid grid-cols-3 gap-1">
+            <div className="grid grid-cols-3 items-start gap-1">
               {tabItems.map((p) => (
                 <Link
                   key={p.id}
                   to={`/p/${p.id}`}
-                  className="relative aspect-square overflow-hidden bg-muted active:opacity-80 transition-opacity"
+                  className="relative overflow-hidden bg-muted active:opacity-80 transition-opacity"
                 >
                   {p.media_url && (
-                    <img src={p.media_url} alt={p.title ?? ""} loading="lazy" className="h-full w-full object-cover" />
+                    <img src={p.media_url} alt={p.title ?? ""} loading="lazy" className="block h-auto w-full" />
                   )}
                   {tab === "shorts" && (
                     <span className="absolute top-1.5 right-1.5">

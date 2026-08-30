@@ -135,10 +135,11 @@ export const FeedCard = ({ item, index, isActive, onAuthRequired }: FeedCardProp
             ref={videoRef}
             src={isActive ? item.image : undefined}
             className="h-full w-full object-contain"
+            autoPlay={isActive}
             muted={muted}
             loop
             playsInline
-            preload="none"
+            preload={isActive ? "metadata" : "none"}
           />
         ) : (
           <img

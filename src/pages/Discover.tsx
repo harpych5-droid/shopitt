@@ -20,9 +20,9 @@ type Section = {
 const InspirationCard = ({ item }: { item: FeedItem }) => (
   <Link
     to={`/p/${item.id}`}
-    className="relative shrink-0 w-[170px] aspect-[3/4] rounded-2xl overflow-hidden bg-muted active:scale-[0.97] transition-transform shadow-card"
+    className="relative shrink-0 w-[170px] rounded-2xl overflow-hidden bg-muted active:scale-[0.97] transition-transform shadow-card"
   >
-    <img src={optimizedImageUrl(item.image, 400)} alt={item.title} loading="lazy" decoding="async" sizes="170px" className="h-full w-full object-cover" />
+    <img src={optimizedImageUrl(item.image, 400)} alt={item.title} loading="lazy" decoding="async" sizes="170px" className="block h-auto w-full" />
     <div className="absolute inset-0 overlay-bottom" />
     {item.badge && (
       <span className="absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-black/50 text-white backdrop-blur-md">
@@ -41,8 +41,8 @@ const ProductCard = ({ item }: { item: FeedItem }) => (
     to={`/p/${item.id}`}
     className="shrink-0 w-[160px] active:scale-[0.97] transition-transform"
   >
-    <div className="aspect-square rounded-2xl overflow-hidden bg-muted shadow-card">
-      <img src={optimizedImageUrl(item.image, 400)} alt={item.title} loading="lazy" decoding="async" sizes="160px" className="h-full w-full object-cover" />
+    <div className="rounded-2xl overflow-hidden bg-muted shadow-card">
+      <img src={optimizedImageUrl(item.image, 400)} alt={item.title} loading="lazy" decoding="async" sizes="160px" className="block h-auto w-full" />
     </div>
     <div className="pt-2 px-0.5">
       <p className="text-xs font-semibold truncate">{item.title}</p>
