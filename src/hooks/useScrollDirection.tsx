@@ -14,11 +14,11 @@ export function useScrollDirection(opts?: {
   const [hidden, setHidden] = useState(false);
 
   useEffect(() => {
-    let lastY = getY();
-    let ticking = false;
-
     const getY = () =>
       target ? target.scrollTop : window.scrollY || document.documentElement.scrollTop;
+
+    let lastY = getY();
+    let ticking = false;
 
     const onScroll = () => {
       if (ticking) return;
