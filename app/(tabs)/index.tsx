@@ -153,7 +153,7 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const scrollY     = useRef(new Animated.Value(0)).current;
-  const lastScrollY = useRef(0);
+  const directionAnchorY = useRef(0);
   const navTranslate = useRef(new Animated.Value(0)).current;
   const navHidden = useRef(false);
   const navigation = useNavigation();
@@ -232,15 +232,17 @@ export default function HomeScreen() {
       useNativeDriver: true,
       listener: (e: NativeSyntheticEvent<NativeScrollEvent>) => {
         const currentY = e.nativeEvent.contentOffset.y;
-        const diff = currentY - lastScrollY.current;
+        const distance = currentY - directionAnchorY.current;
         if (currentY <= NAV_HIDE_OFFSET) {
           setNavigationVisibility(false);
-        } else if (diff >= NAV_DIRECTION_THRESHOLD) {
+          directionAnchorY.current = currentY;
+        } else if (distance >= NAV_DIRECTION_THRESHOLD) {
           setNavigationVisibility(true);
-        } else if (diff <= -NAV_DIRECTION_THRESHOLD) {
+          directionAnchorY.current = currentY;
+        } else if (distance <= -NAV_DIRECTION_THRESHOLD) {
           setNavigationVisibility(false);
+          directionAnchorY.current = currentY;
         }
-        lastScrollY.current = currentY;
       },
     }
   );
