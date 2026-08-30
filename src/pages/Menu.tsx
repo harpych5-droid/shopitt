@@ -21,6 +21,8 @@ import {
   ChevronRight,
   Download,
   Settings as SettingsIcon,
+  CreditCard,
+  Info,
 } from "lucide-react";
 import { BottomNav } from "@/components/feed/BottomNav";
 import { useIdentity } from "@/hooks/useIdentity";
@@ -58,6 +60,8 @@ const SECTIONS: { key: SectionKey; title: string; tag: string; items: Item[]; ct
       { icon: Wallet, label: "Wallet", hint: "Balance, payouts, withdraw", to: "/wallet" },
       { icon: Package, label: "Orders", hint: "Track & manage", to: "/orders" },
       { icon: Bookmark, label: "Saved items", hint: "Your wishlist", to: "/saved" },
+      { icon: CreditCard, label: "Subscription", hint: "Updates from Shopitt", to: "/subscription" },
+      { icon: Info, label: "About Shopitt", hint: "Fashion, culture & discovery", to: "/about" },
     ],
     cta: { copy: "Add a payout method to start receiving orders.", to: "/wallet" },
   },
