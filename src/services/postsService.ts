@@ -103,16 +103,17 @@ export async function fetchPostById(id: string) {
 
 /** Map a DB post row → the FeedItem shape the UI components expect. */
 export function postToFeedItem(p: DbPost): FeedItem {
-  const firstMedia =
-    p.media_url ||
-    (p.media_urls && p.media_urls[0]) ||
-    (p.media && p.media[0]) ||
-    "";
   const mediaUrls = Array.from(new Set([
     ...(p.media_url ? [p.media_url] : []),
     ...((p.media_urls ?? []).filter(Boolean)),
     ...((p.media ?? []).filter(Boolean)),
   ]));
+  const isVideo = ["video", "short", "reel"].includes((p.media_type ?? "").toLowerCase());
+  // Some existing rows keep a poster in media_url and the delivered video in
+  // the media array. Shorts must select the actual Cloudinary video source.
+  const firstMedia = isVideo
+    ? mediaUrls.find((url) => /\/video\/upload\/|\.(mp4|webm|mov)(?:$|[?#])/i.test(url)) ?? mediaUrls[0] ?? ""
+    : mediaUrls[0] ?? "";
   const handle = p.profiles?.username ?? "shopitt";
   const brand = p.profiles?.full_name || handle;
   const isInspiration = getPostExperience(p) === "inspiration";
@@ -151,6 +152,6 @@ export function postToFeedItem(p: DbPost): FeedItem {
         : undefined,
     postType: isInspiration ? "inspiration" : "product",
     badge: isInspiration ? "Inspiration" : (dropLabel ? undefined : "Product"),
-    mediaType: ["video", "short", "reel"].includes((p.media_type ?? "").toLowerCase()) ? "video" : "image",
+    mediaType: isVideo ? "video" : "image",
   };
 }

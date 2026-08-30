@@ -31,6 +31,7 @@ const Index = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const postRefs = useRef(new Map<string, HTMLElement>());
   const restored = useRef(false);
+  const restoring = useRef(false);
   const savedPosition = useRef(readFeedPosition());
   const lastScroll = useRef(0);
   const scrollTicking = useRef(false);
@@ -45,6 +46,21 @@ const Index = () => {
   const [commentsPostId, setCommentsPostId] = useState<string | null>(null);
 
   const { items: dbItems, loading, error, hasMore, loadMore, refresh } = useFeedPosts(savedPosition.current?.loadedCount);
+
+  const persistFeedPosition = useCallback(() => {
+    const root = scrollRef.current;
+    if (!root || restoring.current) return;
+    let anchor: HTMLElement | null = null;
+    postRefs.current.forEach((node) => {
+      if (node.offsetTop <= root.scrollTop + 2 && (!anchor || node.offsetTop > anchor.offsetTop)) anchor = node;
+    });
+    if (!anchor) return;
+    sessionStorage.setItem(FEED_POSITION_KEY, JSON.stringify({
+      postId: anchor.id,
+      offset: root.scrollTop - anchor.offsetTop,
+      loadedCount: dbItems.length,
+    }));
+  }, [dbItems.length]);
 
   const refreshFeed = useCallback(async () => {
     if (refreshing) return;
@@ -85,7 +101,7 @@ const Index = () => {
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => ratios.set(entry.target.id, entry.isIntersecting ? entry.intersectionRatio : 0));
       const active = [...ratios.entries()].reduce((best, current) => current[1] > best[1] ? current : best, ["", 0]);
-      if (!active[0]) return;
+      if (!active[0] || restoring.current) return;
       const post = postRefs.current.get(active[0]);
       if (!post) return;
       sessionStorage.setItem(FEED_POSITION_KEY, JSON.stringify({
@@ -101,6 +117,7 @@ const Index = () => {
     const root = scrollRef.current;
     const post = saved && postRefs.current.get(saved.postId);
     if (restored.current || !root || !post) return;
+    restoring.current = true;
     let frame = 0;
     let attempts = 0;
 
@@ -115,6 +132,7 @@ const Index = () => {
       attempts += 1;
       if (Math.abs(root.scrollTop - nextTarget) < 2 || attempts >= 12) {
         restored.current = true;
+        restoring.current = false;
       }
     };
     const scheduleRestore = () => {
@@ -148,10 +166,11 @@ const Index = () => {
         }
         scrollTicking.current = false;
       });
+      persistFeedPosition();
     };
     el.addEventListener("scroll", onScroll, { passive: true });
     return () => el.removeEventListener("scroll", onScroll);
-  }, []);
+  }, [persistFeedPosition]);
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
@@ -201,6 +220,8 @@ const Index = () => {
       path: "/",
     });
   }, []);
+
+  useEffect(() => () => persistFeedPosition(), [persistFeedPosition]);
 
   return (
     <main className="relative min-h-[100dvh] w-full bg-background">

@@ -39,6 +39,7 @@ const useReelMute = () => {
 
 export const FeedCard = ({ item, index, isActive, onAuthRequired }: FeedCardProps) => {
   const [loaded, setLoaded] = useState(false);
+  const [videoError, setVideoError] = useState(false);
   const [burst, setBurst] = useState(false);
   const [dtBurst, setDtBurst] = useState(false);
   const [shopOpen, setShopOpen] = useState(false);
@@ -51,6 +52,7 @@ export const FeedCard = ({ item, index, isActive, onAuthRequired }: FeedCardProp
   const isShoppable = item.postType === "product";
 
   useEffect(() => {
+    setVideoError(false);
     if (item.mediaType === "video") { setLoaded(true); return; }
     const img = new Image();
     img.src = item.image;
@@ -140,6 +142,10 @@ export const FeedCard = ({ item, index, isActive, onAuthRequired }: FeedCardProp
             loop
             playsInline
             preload={isActive ? "metadata" : "none"}
+            onError={(event) => {
+              setVideoError(true);
+              console.error("Short video failed to load", { postId: item.id, src: event.currentTarget.currentSrc || item.image, error: event.currentTarget.error?.message });
+            }}
           />
         ) : (
           <img
@@ -150,6 +156,11 @@ export const FeedCard = ({ item, index, isActive, onAuthRequired }: FeedCardProp
             sizes="100vw"
             className="h-full w-full object-contain"
           />
+        )}
+        {videoError && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/70 px-6 text-center text-sm font-semibold text-white">
+            This video could not be loaded. Please try another Short.
+          </div>
         )}
         {/* Top + bottom gradient overlays for readability */}
         <div className="pointer-events-none absolute inset-x-0 top-0 h-48 overlay-top" />
