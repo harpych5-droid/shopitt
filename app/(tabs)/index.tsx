@@ -1,10 +1,11 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
 import {
   View, Text, StyleSheet, Animated,
-  NativeSyntheticEvent, NativeScrollEvent, ActivityIndicator,
+  NativeSyntheticEvent, NativeScrollEvent, ActivityIndicator, Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { useNavigation } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { fetchFeedPosts, DbPost } from '@/services/postsService';
 import { toggleLike, toggleSave, fetchLikedPostIds, fetchSavedPostIds, getLikesCount } from '@/services/likesService';
@@ -16,7 +17,8 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const NAV_HEIGHT = 56;
 const TAB_HEIGHT = 44;
-const COLLAPSE_HEIGHT = NAV_HEIGHT + TAB_HEIGHT;
+const NAV_HIDE_OFFSET = 24;
+const NAV_DIRECTION_THRESHOLD = 8;
 
 // ── Mock fallback posts (typed as DbPost) ────────────────────────────────────
 const MOCK_DB_POSTS: DbPost[] = [
@@ -153,6 +155,8 @@ export default function HomeScreen() {
   const scrollY     = useRef(new Animated.Value(0)).current;
   const lastScrollY = useRef(0);
   const navTranslate = useRef(new Animated.Value(0)).current;
+  const navHidden = useRef(false);
+  const navigation = useNavigation();
 
   const [likedPosts,  setLikedPosts]  = useState<Set<string>>(new Set());
   const [savedPosts,  setSavedPosts]  = useState<Set<string>>(new Set());
@@ -194,6 +198,34 @@ export default function HomeScreen() {
   };
 
   // ── Scroll-aware navbar hide/show ────────────────────────────────────────
+  const setNavigationVisibility = (hidden: boolean) => {
+    if (navHidden.current === hidden) return;
+    navHidden.current = hidden;
+
+    Animated.timing(navTranslate, {
+      toValue: hidden ? -(NAV_HEIGHT + TAB_HEIGHT + insets.top) : 0,
+      duration: 140,
+      useNativeDriver: true,
+    }).start();
+
+    navigation.setOptions({
+      tabBarStyle: hidden
+        ? { display: 'none' }
+        : {
+            height: Platform.select({ ios: insets.bottom + 60, android: 70, default: 70 }),
+            paddingTop: 8,
+            paddingBottom: Platform.select({ ios: insets.bottom + 8, android: 10, default: 8 }),
+            backgroundColor: '#0A0A0A',
+            borderTopWidth: 1,
+            borderTopColor: '#1E1E1E',
+          },
+    });
+  };
+
+  useEffect(() => () => {
+    navigation.setOptions({ tabBarStyle: undefined });
+  }, [navigation]);
+
   const handleScroll = Animated.event(
     [{ nativeEvent: { contentOffset: { y: scrollY } } }],
     {
@@ -201,10 +233,12 @@ export default function HomeScreen() {
       listener: (e: NativeSyntheticEvent<NativeScrollEvent>) => {
         const currentY = e.nativeEvent.contentOffset.y;
         const diff = currentY - lastScrollY.current;
-        if (diff > 5 && currentY > COLLAPSE_HEIGHT) {
-          Animated.spring(navTranslate, { toValue: -(NAV_HEIGHT + TAB_HEIGHT + insets.top), useNativeDriver: true, speed: 20, bounciness: 0 }).start();
-        } else if (diff < -5) {
-          Animated.spring(navTranslate, { toValue: 0, useNativeDriver: true, speed: 20, bounciness: 0 }).start();
+        if (currentY <= NAV_HIDE_OFFSET) {
+          setNavigationVisibility(false);
+        } else if (diff >= NAV_DIRECTION_THRESHOLD) {
+          setNavigationVisibility(true);
+        } else if (diff <= -NAV_DIRECTION_THRESHOLD) {
+          setNavigationVisibility(false);
         }
         lastScrollY.current = currentY;
       },
