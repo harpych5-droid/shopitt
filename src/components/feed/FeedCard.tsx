@@ -12,6 +12,8 @@ interface FeedCardProps {
   index: number;
   isActive: boolean;
   onAuthRequired: (action: "like" | "save" | "buy" | "comment", itemId: string) => void;
+  onOpenComments: (postId: string) => void;
+  commentCount?: number;
 }
 
 // Persist mute state across cards/sessions
@@ -37,7 +39,7 @@ const useReelMute = () => {
   return { muted, toggle };
 };
 
-export const FeedCard = ({ item, index, isActive, onAuthRequired }: FeedCardProps) => {
+export const FeedCard = ({ item, index, isActive, onAuthRequired, onOpenComments, commentCount = 0 }: FeedCardProps) => {
   const [loaded, setLoaded] = useState(false);
   const [videoError, setVideoError] = useState(false);
   const [burst, setBurst] = useState(false);
@@ -94,7 +96,7 @@ export const FeedCard = ({ item, index, isActive, onAuthRequired }: FeedCardProp
 
   const handleSave = () => guard("save", () => shopitt.toggleSave(item.id));
   const handleBuy = () => guard("buy", () => shopitt.addToBag(item));
-  const handleComment = () => guard("comment", () => {});
+  const handleComment = () => guard("comment", () => onOpenComments(item.id));
   const handleShare = async () => {
     try {
       const result = await sharePost(item.id, item.title);
@@ -301,7 +303,7 @@ export const FeedCard = ({ item, index, isActive, onAuthRequired }: FeedCardProp
           <div className="h-12 w-12 rounded-full glass-dark flex items-center justify-center active:scale-90 transition-transform">
             <MessageCircle className="h-6 w-6 text-white" strokeWidth={2} />
           </div>
-          <span className="text-[11px] font-semibold text-white drop-shadow">128</span>
+          <span className="text-[11px] font-semibold text-white drop-shadow">{commentCount.toLocaleString()}</span>
         </button>
 
         <button onClick={handleShare} className="flex flex-col items-center gap-1" aria-label="Share">

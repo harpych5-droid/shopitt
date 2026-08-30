@@ -3,10 +3,12 @@ import { FeedCard } from "@/components/feed/FeedCard";
 import { FloatingBag } from "@/components/feed/FloatingBag";
 import { AuthModal } from "@/components/feed/AuthModal";
 import { BagSheet } from "@/components/feed/BagSheet";
+import { CommentsSheet } from "@/components/feed/CommentsSheet";
 import { BottomNav } from "@/components/feed/BottomNav";
 import type { FeedItem } from "@/data/feed";
 import { shopitt } from "@/store/useShopittStore";
 import { fetchShortsPosts, fetchPostById, postToFeedItem } from "@/services/postsService";
+import { fetchCommentCounts } from "@/services/socialService";
 import { Link, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Loader2, Play } from "lucide-react";
 import { setPageMetadata } from "@/lib/seo";
@@ -20,6 +22,8 @@ const Shorts = () => {
   const [authOpen, setAuthOpen] = useState(false);
   const [authAction, setAuthAction] = useState<"like" | "save" | "buy" | "comment" | null>(null);
   const [bagOpen, setBagOpen] = useState(false);
+  const [commentsPostId, setCommentsPostId] = useState<string | null>(null);
+  const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
   const [items, setItems] = useState<FeedItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -116,6 +120,8 @@ const Shorts = () => {
         : -1;
     setActiveIndex(selectedIndex >= 0 ? selectedIndex : 0);
     setItems(videos);
+    const counts = await fetchCommentCounts(videos.map((video) => video.id));
+    setCommentCounts(Object.fromEntries(counts));
   }, [selectedVideoId]);
 
   useEffect(() => { void loadShorts(); }, [loadShorts]);
@@ -125,6 +131,11 @@ const Shorts = () => {
     setAuthAction(action);
     setAuthOpen(true);
   };
+
+  const handleCommentCountChange = useCallback((count: number) => {
+    if (!commentsPostId) return;
+    setCommentCounts((current) => ({ ...current, [commentsPostId]: count }));
+  }, [commentsPostId]);
 
   return (
     <main className="relative h-[100dvh] w-full overflow-hidden bg-black">
@@ -169,6 +180,8 @@ const Shorts = () => {
                 index={i}
                 isActive={i === activeIndex}
                 onAuthRequired={handleAuthRequired}
+                onOpenComments={setCommentsPostId}
+                commentCount={commentCounts[item.id] ?? 0}
               />
             </div>
           ))}
@@ -189,6 +202,12 @@ const Shorts = () => {
       <BottomNav />
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} action={authAction} />
       <BagSheet open={bagOpen} onClose={() => setBagOpen(false)} />
+      <CommentsSheet
+        open={!!commentsPostId}
+        postId={commentsPostId}
+        onClose={() => setCommentsPostId(null)}
+        onCountChange={handleCommentCountChange}
+      />
     </main>
   );
 };

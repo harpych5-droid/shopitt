@@ -11,7 +11,7 @@ export function useScrollDirection(opts?: {
   offset?: number;
   enabled?: boolean;
 }) {
-  const { target, threshold = 12, offset = 64, enabled = true } = opts ?? {};
+  const { target, threshold = 8, offset = 24, enabled = true } = opts ?? {};
   const [hidden, setHidden] = useState(false);
 
   useEffect(() => {
