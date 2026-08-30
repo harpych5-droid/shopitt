@@ -36,9 +36,9 @@ export const TopNav = ({ hidden = false }: TopNavProps) => {
   return (
     <motion.header
       initial={false}
-      animate={{ y: hidden || windowScrollHidden ? -90 : 0, opacity: hidden || windowScrollHidden ? 0 : 1 }}
-      transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-      className="fixed top-0 inset-x-0 z-40 bg-background/90 backdrop-blur-xl border-b border-border/40"
+      animate={{ y: hidden || windowScrollHidden ? "-100%" : "0%", opacity: hidden || windowScrollHidden ? 0 : 1 }}
+      transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
+      className={`fixed top-0 inset-x-0 z-40 border-b border-border/40 bg-background/90 backdrop-blur-xl transform-gpu will-change-transform ${hidden || windowScrollHidden ? "pointer-events-none" : ""}`}
     >
       <div className="flex items-center justify-between px-4 py-2.5 max-w-md mx-auto gap-2">
         <Link

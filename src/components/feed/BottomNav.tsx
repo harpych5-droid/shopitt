@@ -42,9 +42,9 @@ export const BottomNav = ({ hidden = false }: BottomNavProps) => {
   return (
     <motion.nav
       initial={false}
-      animate={{ y: hidden || windowScrollHidden ? 110 : 0, opacity: hidden || windowScrollHidden ? 0 : 1 }}
-      transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-      className="fixed bottom-0 inset-x-0 z-40 bg-background/95 backdrop-blur-xl border-t border-border/60 safe-bottom lg:hidden"
+      animate={{ y: hidden || windowScrollHidden ? "100%" : "0%", opacity: hidden || windowScrollHidden ? 0 : 1 }}
+      transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
+      className={`fixed bottom-0 inset-x-0 z-40 border-t border-border/60 bg-background/95 backdrop-blur-xl safe-bottom transform-gpu will-change-transform lg:hidden ${hidden || windowScrollHidden ? "pointer-events-none" : ""}`}
       aria-label="Primary"
     >
       <ul className="grid grid-cols-5 max-w-md mx-auto px-2 pt-2 pb-1.5">

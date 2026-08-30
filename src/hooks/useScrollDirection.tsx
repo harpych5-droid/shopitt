@@ -10,11 +10,11 @@ export function useScrollDirection(opts?: {
   threshold?: number;
   offset?: number;
 }) {
-  const { target, threshold = 8, offset = 80 } = opts ?? {};
+  const { target, threshold = 12, offset = 64 } = opts ?? {};
   const [hidden, setHidden] = useState(false);
 
   useEffect(() => {
-    let lastY = 0;
+    let lastY = getY();
     let ticking = false;
 
     const getY = () =>
@@ -26,9 +26,16 @@ export function useScrollDirection(opts?: {
       requestAnimationFrame(() => {
         const y = getY();
         const delta = y - lastY;
-        if (Math.abs(delta) > threshold) {
-          setHidden(delta > 0 && y > offset);
+
+        // Keep the navigation available at the beginning of a feed and ignore
+        // the small direction changes that occur during normal touch scrolling.
+        if (y <= offset) {
           lastY = y;
+          setHidden((wasHidden) => wasHidden ? false : wasHidden);
+        } else if (Math.abs(delta) >= threshold) {
+          const shouldHide = delta > 0;
+          lastY = y;
+          setHidden((wasHidden) => wasHidden === shouldHide ? wasHidden : shouldHide);
         }
         ticking = false;
       });

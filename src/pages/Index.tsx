@@ -160,9 +160,13 @@ const Index = () => {
       requestAnimationFrame(() => {
         const y = el.scrollTop;
         const delta = y - lastScroll.current;
-        if (Math.abs(delta) > 8) {
-          setNavHidden(delta > 0 && y > 80);
+        if (y <= 64) {
           lastScroll.current = y;
+          setNavHidden((wasHidden) => wasHidden ? false : wasHidden);
+        } else if (Math.abs(delta) >= 12) {
+          const shouldHide = delta > 0;
+          lastScroll.current = y;
+          setNavHidden((wasHidden) => wasHidden === shouldHide ? wasHidden : shouldHide);
         }
         scrollTicking.current = false;
       });
