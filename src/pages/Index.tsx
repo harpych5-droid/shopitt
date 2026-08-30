@@ -223,6 +223,13 @@ const Index = () => {
 
   useEffect(() => () => persistFeedPosition(), [persistFeedPosition]);
 
+  useEffect(() => {
+    // iOS can freeze a page into the back-forward cache before React's route
+    // cleanup runs. Persist the internal scroller at that lifecycle boundary.
+    window.addEventListener("pagehide", persistFeedPosition);
+    return () => window.removeEventListener("pagehide", persistFeedPosition);
+  }, [persistFeedPosition]);
+
   return (
     <main className="relative min-h-[100dvh] w-full bg-background">
       <TopNav hidden={navHidden} />

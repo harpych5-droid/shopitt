@@ -105,6 +105,14 @@ export const FeedCard = ({ item, index, isActive, onAuthRequired }: FeedCardProp
   };
 
   const handleMediaTap = () => {
+    // Muted autoplay is permitted on modern mobile browsers, but a browser
+    // may still defer it (for example after an installed-PWA restore). A tap
+    // on the visible Short must always provide an explicit playback path.
+    if (item.mediaType === "video" && isActive && videoRef.current?.paused) {
+      void videoRef.current.play().catch((error) => {
+        console.warn("Short video play was rejected after user interaction", { postId: item.id, error });
+      });
+    }
     const now = Date.now();
     if (now - lastTap.current < 300) {
       lastTap.current = 0;
