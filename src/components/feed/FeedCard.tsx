@@ -323,7 +323,7 @@ export const FeedCard = ({ item, index, isActive, onAuthRequired, onOpenComments
         >
           <div className="flex-1 min-w-0 pr-2">
             <div className="flex items-center gap-2 mb-2">
-              <div className="relative h-7 w-7 rounded-full gradient-brand overflow-hidden flex items-center justify-center text-[11px] font-black">
+              <div className="relative h-9 w-9 rounded-full gradient-brand overflow-hidden flex items-center justify-center text-xs font-black">
                 <span>{item.brand[0]}</span>
                 {item.avatar && (
                   <img src={item.avatar} alt="" className="absolute inset-0 h-full w-full object-cover" onError={(event) => { event.currentTarget.style.display = "none"; }} />

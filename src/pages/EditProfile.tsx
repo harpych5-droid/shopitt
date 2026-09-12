@@ -7,6 +7,7 @@ import { useIdentity } from "@/hooks/useIdentity";
 import { supabase } from "@/lib/supabase";
 import { IdentityAvatar } from "@/components/identity/IdentityAvatar";
 import { uploadToCloudinary } from "@/lib/cloudinary";
+import { isValidUsername, sanitizeUsername } from "@/lib/username";
 
 const EditProfile = () => {
   const navigate = useNavigate();
@@ -58,15 +59,15 @@ const EditProfile = () => {
 
   const onSave = async () => {
     if (!user) return;
-    const cleanHandle = form.username.trim().toLowerCase().replace(/[^a-z0-9_]/g, "_");
-    if (cleanHandle.length < 2) {
-      toast.error("Username must be at least 2 characters");
+    const displayUsername = sanitizeUsername(form.username);
+    if (!isValidUsername(displayUsername)) {
+      toast.error("Username must be 2–24 letters, numbers, or underscores");
       return;
     }
 
     setSaving(true);
     const payload = {
-      username: cleanHandle,
+      username: displayUsername,
       country: form.country.trim() || null,
       avatar_url: form.avatar_url.trim() || null,
     };
@@ -74,7 +75,7 @@ const EditProfile = () => {
       .from("profiles")
       .update(payload)
       .eq("id", user.id)
-      .select("id, username, avatar_url, country")
+      .select("id, username, avatar_url, country, is_verified")
       .maybeSingle();
     setSaving(false);
 
@@ -133,6 +134,7 @@ const EditProfile = () => {
                 username: form.username || profile?.username || null,
                 avatar_url: form.avatar_url || null,
                 country: form.country || null,
+                is_verified: profile?.is_verified ?? false,
               }}
               size={96}
             />

@@ -22,9 +22,6 @@ export const CreatorsRail = ({ items }: { items: FeedItem[] }) => {
         <h2 className="font-display text-[11px] font-black tracking-[0.22em] text-muted-foreground">
           CREATORS
         </h2>
-        <Link to="/discover" className="text-[11px] font-semibold text-brand-pink">
-          Discover
-        </Link>
       </div>
 
       <div className="mt-2.5 flex gap-4 overflow-x-auto no-scrollbar px-4 pb-1">
@@ -34,8 +31,8 @@ export const CreatorsRail = ({ items }: { items: FeedItem[] }) => {
             to={`/u/${c.handle}`}
             className="shrink-0 w-[62px] flex flex-col items-center gap-1.5"
           >
-            <span className="relative block h-[62px] w-[62px] rounded-full gradient-brand p-[2px]">
-              <span className="block h-full w-full rounded-full bg-background p-[2px]">
+            <span className="relative block h-[70px] w-[70px] rounded-full overflow-hidden">
+              <span className="block h-full w-full rounded-full">
                 {c.avatar ? (
                   <img
                     src={c.avatar}

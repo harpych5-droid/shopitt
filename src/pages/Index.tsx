@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { TopNav } from "@/components/feed/TopNav";
 import { HomeFeedCard } from "@/components/feed/HomeFeedCard";
-import { CreatorsRail } from "@/components/feed/CreatorsRail";
 
 import { FloatingBag } from "@/components/feed/FloatingBag";
 import { AuthModal } from "@/components/feed/AuthModal";
@@ -12,12 +11,12 @@ import { BottomNav } from "@/components/feed/BottomNav";
 import { shopitt } from "@/store/useShopittStore";
 import { useFeedPosts } from "@/hooks/useFeedPosts";
 import { Sparkles } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { setPageMetadata } from "@/lib/seo";
+import { findFeedRestoreTarget, type FeedPosition } from "@/lib/feedRestore";
 
 const FEED_POSITION_KEY = "shopitt:feed-position";
 const HOME_INTENT_KEY = "shopitt:feed-home-intent";
-type FeedPosition = { postId: string; offset: number; loadedCount: number };
 
 const readFeedPosition = (): FeedPosition | null => {
   try {
@@ -27,6 +26,7 @@ const readFeedPosition = (): FeedPosition | null => {
 };
 
 const Index = () => {
+  const location = useLocation();
   const sentinelRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const postRefs = useRef(new Map<string, HTMLElement>());
@@ -44,6 +44,7 @@ const Index = () => {
   const [bagOpen, setBagOpen] = useState(false);
   const [saveSheetPostId, setSaveSheetPostId] = useState<string | null>(null);
   const [commentsPostId, setCommentsPostId] = useState<string | null>(null);
+  const restoreAttempts = useRef(0);
 
   const { items: dbItems, loading, error, hasMore, loadMore, refresh } = useFeedPosts(savedPosition.current?.loadedCount);
 
@@ -112,44 +113,33 @@ const Index = () => {
     return () => observer.disconnect();
   }, [dbItems]);
 
-  useEffect(() => {
-    const saved = savedPosition.current;
+  const restoreSavedPosition = useCallback(() => {
+    const saved = readFeedPosition();
     const root = scrollRef.current;
-    const post = saved && postRefs.current.get(saved.postId);
-    if (restored.current || !root || !post) return;
-    restoring.current = true;
-    let frame = 0;
-    let attempts = 0;
+    if (!saved || !root || location.pathname !== "/") return;
 
-    // A mobile browser can lay out images after the feed data has arrived.
-    // Retry only while layout is changing; ResizeObserver replaces an
-    // arbitrary timeout and prevents a permanently clamped restoration.
-    const restore = () => {
-      const latestPost = postRefs.current.get(saved.postId);
-      if (!latestPost) return;
-      const nextTarget = Math.max(0, latestPost.offsetTop + saved.offset);
-      root.scrollTop = nextTarget;
-      attempts += 1;
-      if (Math.abs(root.scrollTop - nextTarget) < 2 || attempts >= 12) {
-        restored.current = true;
-        restoring.current = false;
-      }
-    };
-    const scheduleRestore = () => {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(restore);
-    };
-    const resizeObserver = new ResizeObserver(scheduleRestore);
-    resizeObserver.observe(root);
-    // Images above the saved post can change its offset without changing the
-    // scroll container's own box, so watch the rendered feed rows as well.
-    postRefs.current.forEach((node) => resizeObserver.observe(node));
-    scheduleRestore();
-    return () => {
-      cancelAnimationFrame(frame);
-      resizeObserver.disconnect();
-    };
-  }, [dbItems]);
+    const nextTarget = findFeedRestoreTarget(saved, dbItems, postRefs.current, root);
+    root.scrollTop = nextTarget;
+    restored.current = true;
+    restoreAttempts.current = 0;
+  }, [dbItems, location.pathname]);
+
+  useEffect(() => {
+    if (location.pathname !== "/") {
+      restored.current = false;
+      return;
+    }
+
+    const saved = readFeedPosition();
+    if (!saved) return;
+
+    restoreSavedPosition();
+  }, [location.pathname, dbItems.length, restoreSavedPosition]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.history.scrollRestoration = "manual";
+  }, []);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -272,7 +262,6 @@ const Index = () => {
         </div>
         <div className="h-[60px]" />
         <div className="max-w-md mx-auto pb-28">
-          <CreatorsRail items={dbItems} />
           {dbItems.map((item, i) => (
 
             <div key={item.id} id={item.id} ref={(node) => { if (node) postRefs.current.set(item.id, node); else postRefs.current.delete(item.id); }}>

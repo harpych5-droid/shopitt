@@ -12,6 +12,7 @@ export type ConversationRow = {
     username: string | null;
     avatar_url: string | null;
     full_name: string | null;
+    is_verified: boolean | null;
   } | null;
 };
 
@@ -41,7 +42,7 @@ export async function fetchConversations(userId: string): Promise<ConversationRo
 
   const { data: profiles } = await supabase
     .from("profiles")
-    .select("id, username, avatar_url, full_name")
+    .select("id, username, avatar_url, full_name, is_verified")
     .in("id", otherIds);
   const map = new Map<string, ChatProfile>((profiles ?? []).map((p) => [p.id, p as ChatProfile]));
   return (data as ConversationRow[]).map((c) => {

@@ -59,8 +59,7 @@ const CreatorChip = ({ item }: { item: FeedItem }) => (
     className="shrink-0 flex flex-col items-center gap-2 w-[80px] active:scale-95 transition-transform"
   >
     <div className="relative">
-      <span className="absolute -inset-0.5 rounded-full gradient-brand" />
-      <div className="relative h-16 w-16 rounded-full bg-background p-[2px]">
+      <div className="relative h-16 w-16 rounded-full overflow-hidden">
         <div className="h-full w-full rounded-full overflow-hidden bg-muted">
           <img src={optimizedImageUrl(item.image, 160)} alt={item.brand} loading="lazy" decoding="async" sizes="64px" className="h-full w-full object-cover" />
         </div>

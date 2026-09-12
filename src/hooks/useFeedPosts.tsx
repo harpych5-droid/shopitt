@@ -5,6 +5,12 @@ import { supabase } from "@/lib/supabase";
 
 const PAGE_SIZE = 12;
 
+export function mergeFeedItems(current: FeedItem[], incoming: FeedItem[]) {
+  const seen = new Set(current.map((item) => item.id));
+  const fresh = incoming.filter((item) => !seen.has(item.id));
+  return [...current, ...fresh];
+}
+
 /**
  * Paginated feed loader against public.posts on the external Supabase project.
  * - Infinite scroll: keeps fetching pages until the server returns < PAGE_SIZE.
@@ -40,12 +46,10 @@ export function useFeedPosts(initialCount = PAGE_SIZE) {
       hasMoreRef.current = false;
       setHasMore(false);
     }
-    offsetRef.current += data.length;
-    setItems((prev) => {
-      const seen = new Set(prev.map((p) => p.id));
-      const fresh = data.map(postToFeedItem).filter((p) => !seen.has(p.id));
-      return [...prev, ...fresh];
-    });
+
+    const mapped = data.map(postToFeedItem);
+    offsetRef.current += mapped.length;
+    setItems((prev) => mergeFeedItems(prev, mapped));
     setLoading(false);
     inflight.current = false;
   }, [initialCount]);
@@ -68,10 +72,8 @@ export function useFeedPosts(initialCount = PAGE_SIZE) {
     }
 
     const fresh = data.map(postToFeedItem);
-    // A fresh query replaces, rather than prepends to, the cached window.
-    // This retains server ordering and makes duplicate ids impossible.
-    setItems(fresh);
-    offsetRef.current = fresh.length;
+    setItems((prev) => mergeFeedItems(prev, fresh));
+    offsetRef.current = Math.max(itemsRef.current.length, fresh.length);
     const nextHasMore = data.length === limit;
     hasMoreRef.current = nextHasMore;
     setHasMore(nextHasMore);

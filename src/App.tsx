@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
@@ -28,7 +28,7 @@ const ChatThread = lazy(() => import("./pages/ChatThread.tsx"));
 const SellerDashboard = lazy(() => import("./pages/SellerDashboard.tsx"));
 const ProductDetail = lazy(() => import("./pages/ProductDetail.tsx"));
 const Dashboard = lazy(() => import("./pages/Dashboard.tsx"));
-const Discover = lazy(() => import("./pages/Discover.tsx"));
+const Shoppable = lazy(() => import("./pages/Shoppable.tsx"));
 const Wallet = lazy(() => import("./pages/Wallet.tsx"));
 const Orders = lazy(() => import("./pages/Orders.tsx"));
 const OrderTracking = lazy(() => import("./pages/OrderTracking.tsx"));
@@ -80,7 +80,8 @@ const App = () => (
                   <Route path="/" element={<Index />} />
                   <Route path="/shorts" element={<ShortsErrorBoundary><Shorts /></ShortsErrorBoundary>} />
                   <Route path="/reels" element={<ShortsErrorBoundary><Shorts /></ShortsErrorBoundary>} />
-                  <Route path="/discover" element={<Discover />} />
+                  <Route path="/shoppable" element={<Shoppable />} />
+                  <Route path="/discover" element={<Navigate to="/shoppable" replace />} />
                   <Route path="/search" element={<Search />} />
                   <Route path="/create" element={<Create />} />
 

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  ArrowLeft, Heart, Bookmark, Send, Truck, ShoppingBag, BadgeCheck, MapPin,
+  ArrowLeft, Heart, Bookmark, Send, Truck, ShoppingBag, MapPin,
   MessageCircle, Sparkles, Plus, ChevronLeft, ChevronRight, CalendarCheck, Globe, Loader2,
 } from "lucide-react";
 import type { FeedItem } from "@/data/feed";
@@ -11,7 +11,8 @@ import { AuthModal } from "@/components/feed/AuthModal";
 import { BagSheet } from "@/components/feed/BagSheet";
 import { PlaceOrderSheet } from "@/components/feed/PlaceOrderSheet";
 import { CommentsSheet } from "@/components/feed/CommentsSheet";
-import { fetchPostById, postToFeedItem } from "@/services/postsService";
+import { fetchFeedPosts, fetchPostById, postToFeedItem } from "@/services/postsService";
+import { VerificationBadge } from "@/components/identity/VerificationBadge";
 import { usePostSocial } from "@/hooks/usePostSocial";
 import { useIdentity } from "@/hooks/useIdentity";
 import { followUser, unfollowUser } from "@/services/socialService";
@@ -43,6 +44,15 @@ const ProductDetail = () => {
       if (!data) { setNotFound(true); setLoading(false); return; }
       setProduct(postToFeedItem(data));
       setLoading(false);
+      const related = await fetchFeedPosts(8, 0);
+      if (!cancelled) {
+        setRelatedLooks(
+          related.data
+            .map(postToFeedItem)
+            .filter((look) => look.id !== id && look.postType === "inspiration")
+            .slice(0, 4),
+        );
+      }
     })();
     return () => { cancelled = true; };
   }, [id]);
@@ -70,10 +80,11 @@ const ProductDetail = () => {
   const [bagOpen, setBagOpen] = useState(false);
   const [orderOpen, setOrderOpen] = useState(false);
   const [commentsOpen, setCommentsOpen] = useState(false);
+  const [relatedLooks, setRelatedLooks] = useState<FeedItem[]>([]);
 
   const authed = useShopitt((s) => s.authed);
   const social = usePostSocial(product?.id ?? "", 0, 0);
-  const { liked, saved, likeCount, commentCount, toggleLike, toggleSave } = social;
+  const { liked, saved, likeCount, commentCount, commentPreview, toggleLike, toggleSave } = social;
 
   const trackRef = useRef<HTMLDivElement>(null);
 
@@ -152,7 +163,7 @@ const ProductDetail = () => {
   };
 
   return (
-    <main className="min-h-[100dvh] bg-background pb-32">
+    <main className="min-h-[100dvh] bg-[#0E0E0E] text-white pb-32">
       {/* Floating top bar */}
       <header className="fixed top-0 inset-x-0 z-40">
         <div className="max-w-md mx-auto px-3 pt-3 flex items-center justify-between">
@@ -178,7 +189,7 @@ const ProductDetail = () => {
         </div>
       </header>
 
-      <div className="max-w-md mx-auto">
+      <div className="mx-auto max-w-2xl">
         {/* GALLERY */}
         <section className="relative">
           <div
@@ -186,11 +197,11 @@ const ProductDetail = () => {
             className="flex w-full overflow-x-auto snap-x snap-mandatory no-scrollbar"
           >
             {gallery.map((src, i) => (
-              <div key={i} className="relative shrink-0 w-full aspect-[4/5] snap-center bg-muted">
+              <div key={i} className="relative shrink-0 w-full aspect-[4/5] snap-center bg-[#121212]">
                 {product.mediaType === "video" && i === 0 ? (
                   <video
                     src={src}
-                    className="h-full w-full object-cover"
+                    className="h-full w-full object-contain"
                     controls
                     playsInline
                     preload="metadata"
@@ -265,61 +276,21 @@ const ProductDetail = () => {
           </div>
         </section>
 
-        {/* INFO */}
-        <section className="px-4 pt-5">
-          <h1 className="text-2xl font-extrabold tracking-tight text-foreground leading-tight">
+        {/* LOOK CONTEXT */}
+        <section className="px-5 pt-8">
+          <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-brand-pink">{product.drop || "The Look"}</p>
+          <h1 className="mt-2 font-display text-3xl font-extrabold leading-tight tracking-tight text-white sm:text-4xl">
             {product.title}
           </h1>
-
-          {isShoppable && <div className="mt-3 flex items-end gap-3">
-            <span className="text-3xl font-black tracking-tight tabular-nums">
-              {product.currency}
-              {product.price}
-            </span>
-            {product.oldPrice && (
-              <span className="text-base text-muted-foreground line-through tabular-nums">
-                {product.currency}
-                {product.oldPrice}
-              </span>
-            )}
-            {product.oldPrice && (
-              <span className="ml-auto text-[11px] font-bold text-success bg-success/15 rounded-full px-2 py-0.5">
-                Save {Math.round((1 - product.price / product.oldPrice) * 100)}%
-              </span>
-            )}
-          </div>}
-
-          {isShoppable && (() => {
-            const dKey = product.deliveryType ?? "country";
-            const D = DELIVERY_META[dKey];
-            return product.freeDelivery ? (
-              <div className="mt-3 flex items-center gap-2 rounded-2xl bg-success/10 border border-success/20 px-3 py-2">
-                <Truck className="h-4 w-4 text-success shrink-0" />
-                <span className="text-xs font-semibold text-success flex-1">
-                  Free Delivery — ships in {product.shipsIn}
-                </span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-success/20 px-2 py-0.5 text-[10px] font-bold text-success">
-                  <D.icon className="h-3 w-3" /> {D.label}
-                </span>
-              </div>
-            ) : (
-              <div className="mt-3 flex items-center gap-2 rounded-2xl bg-muted/40 border border-border/60 px-3 py-2">
-                <D.icon className="h-4 w-4 text-foreground/80 shrink-0" />
-                <span className="text-xs font-semibold text-foreground/85 flex-1">
-                  {D.label} — ships in {product.shipsIn}
-                </span>
-              </div>
-            );
-          })()}
+          <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/65">A Shopitt moment brought to life through style, movement and mood.</p>
         </section>
 
         {/* SELLER */}
-        <section className="px-4 mt-5">
-          <div className="flex items-center gap-3 rounded-2xl bg-card border border-border/60 p-3">
+        <section className="px-5 mt-8">
+          <div className="flex items-center gap-4 border-y border-white/10 py-4">
             <Link to={`/u/${product.brandHandle}`} className="flex items-center gap-3 flex-1 min-w-0">
               <span className="relative shrink-0">
-                <span className="absolute -inset-0.5 rounded-full gradient-brand" />
-                <span className="relative block h-11 w-11 rounded-full bg-background p-[2px]">
+                <span className="relative block h-14 w-14 rounded-full overflow-hidden">
                   {product.avatar ? (
                     <img
                       src={product.avatar}
@@ -341,21 +312,21 @@ const ProductDetail = () => {
               </span>
               <div className="min-w-0">
                 <div className="flex items-center gap-1">
-                  <p className="text-sm font-bold truncate">@{product.brandHandle}</p>
-                  <BadgeCheck className="h-4 w-4 text-brand-purple fill-brand-purple/20" />
+                  <p className="text-base font-bold truncate text-white">@{product.brandHandle}</p>
+                  <VerificationBadge verified={product.verified} className="h-4 w-4" />
                 </div>
                 <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
                   <MapPin className="h-3 w-3 text-brand-pink" />
-                  <span>{product.location || "Shopitt seller"}</span>
+                  <span>{product.location || "Shopitt creator"}</span>
                 </div>
               </div>
             </Link>
             <button
               onClick={handleFollow}
               disabled={!user || user.id === product.userId}
-              className={`rounded-full px-4 h-9 text-xs font-bold transition-colors disabled:opacity-50 ${
+                className={`rounded-full px-4 h-9 text-xs font-bold transition-colors disabled:opacity-50 ${
                 following
-                  ? "bg-card border border-border/60 text-foreground"
+                  ? "bg-white/10 border border-white/15 text-white"
                   : "gradient-brand text-white shadow-brand"
               }`}
             >
@@ -365,11 +336,11 @@ const ProductDetail = () => {
         </section>
 
         {/* DESCRIPTION */}
-        <section className="px-4 mt-5">
-          <h2 className="text-xs uppercase tracking-[0.16em] font-bold text-muted-foreground mb-2">
-            About this drop
+        <section className="px-5 mt-8">
+          <h2 className="text-xs uppercase tracking-[0.18em] font-bold text-white/50 mb-2">
+            The Story
           </h2>
-          <p className="text-sm text-foreground/90 leading-relaxed">{product.caption}</p>
+          <p className="text-base text-white/85 leading-relaxed">{product.caption || "A style moment from the Shopitt community."}</p>
           {product.hashtags.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-1.5">
               {product.hashtags.map((h) => (
@@ -384,16 +355,43 @@ const ProductDetail = () => {
           )}
         </section>
 
+        {isShoppable && <section className="px-5 mt-10">
+          <div className="mb-3 flex items-end justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-pink">Shop Tags</p>
+              <h2 className="mt-1 font-display text-2xl font-extrabold text-white">Pieces inside the Look</h2>
+            </div>
+            <Sparkles className="h-5 w-5 text-brand-pink" />
+          </div>
+          <div className="border border-white/10 bg-[#121212] p-4">
+            <div className="flex items-center gap-4">
+              <img src={product.image} alt="" className="h-20 w-16 rounded-xl object-cover" />
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/45">The piece</p>
+                <h3 className="mt-1 truncate text-base font-bold text-white">{product.title}</h3>
+                <p className="mt-1 font-display text-xl font-black text-white">{product.currency}{product.price}</p>
+              </div>
+              <button onClick={handleAddBag} className="shrink-0 rounded-full gradient-brand px-3.5 py-2.5 text-xs font-bold text-white shadow-brand">
+                Add to Bag
+              </button>
+            </div>
+            <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-white/55">
+              <span>{product.stockLeft > 0 ? `${product.stockLeft} available` : "Availability varies"}</span>
+              <span>{product.freeDelivery ? "Free delivery" : product.shipsIn !== "—" ? `Ships ${product.shipsIn}` : "Shopitt delivery"}</span>
+            </div>
+          </div>
+        </section>}
+
         {/* SOCIAL */}
-        <section className="px-4 mt-6 flex items-center justify-between">
+        <section className="px-5 mt-10 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button onClick={handleLike} aria-label="Like" className="flex items-center gap-1.5 active:scale-90 transition-transform">
-              <Heart className={`h-6 w-6 ${liked ? "fill-brand-pink text-brand-pink" : "text-foreground"}`} />
-              <span className="text-sm font-bold tabular-nums">{likeCount.toLocaleString()}</span>
+              <Heart className={`h-6 w-6 ${liked ? "fill-brand-pink text-brand-pink" : "text-white"}`} />
+              <span className="text-sm font-bold tabular-nums text-white">{likeCount.toLocaleString()}</span>
             </button>
             <button onClick={() => setCommentsOpen(true)} className="flex items-center gap-1.5">
-              <MessageCircle className="h-6 w-6 text-foreground" />
-              <span className="text-sm font-bold tabular-nums">{commentCount}</span>
+              <MessageCircle className="h-6 w-6 text-white" />
+              <span className="text-sm font-bold tabular-nums text-white">{commentCount}</span>
             </button>
             <button onClick={handleShare} aria-label="Share" className="active:scale-90 transition-transform">
               <Send className="h-6 w-6 text-foreground" />
@@ -402,19 +400,41 @@ const ProductDetail = () => {
         </section>
 
         {/* COMMENTS */}
-        <section className="px-4 mt-6">
-          <button
-            onClick={() => setCommentsOpen(true)}
-            className="w-full rounded-3xl glass p-5 text-center active:scale-95 transition-transform"
-          >
-            <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl gradient-brand shadow-brand">
-              <MessageCircle className="h-6 w-6 text-white" />
-            </span>
-            <h3 className="mt-3 text-base font-extrabold">
-              {commentCount > 0 ? `View all ${commentCount} comments` : "Be the first to comment 🔥"}
-            </h3>
-          </button>
+        <section className="px-5 mt-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-white/50">Fashion Talk</h2>
+            <button onClick={() => setCommentsOpen(true)} className="text-xs font-semibold text-brand-pink">
+              {commentCount > 0 ? `View all ${commentCount}` : "Join the conversation"}
+            </button>
+          </div>
+          {commentPreview.length > 0 ? (
+            <button onClick={() => setCommentsOpen(true)} className="mt-3 w-full space-y-3 text-left">
+              {commentPreview.map((comment) => (
+                <span key={comment.id} className="flex items-start gap-3">
+                  <span className="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-white/10">
+                    {comment.profiles?.avatar_url ? <img src={comment.profiles.avatar_url} alt="" className="h-full w-full object-cover" /> : <span className="flex h-full w-full items-center justify-center gradient-brand text-xs font-black text-white">{(comment.profiles?.username?.[0] ?? "S").toUpperCase()}</span>}
+                  </span>
+                  <span className="min-w-0 text-sm leading-snug text-white/75"><strong className="text-white">{comment.profiles?.username ?? "shopper"}</strong>{" "}{comment.text}</span>
+                </span>
+              ))}
+            </button>
+          ) : (
+            <button onClick={() => setCommentsOpen(true)} className="mt-3 text-sm text-white/55">Be the first to add to the conversation.</button>
+          )}
         </section>
+
+        {relatedLooks.length > 0 && <section className="px-5 mt-12">
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-pink">More Like This</p>
+          <h2 className="mt-1 font-display text-2xl font-extrabold text-white">More from the style universe</h2>
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            {relatedLooks.map((look) => (
+              <Link key={look.id} to={`/p/${look.id}`} className="group overflow-hidden bg-[#121212]">
+                <img src={look.image} alt={look.title} className="aspect-[4/5] w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
+                <div className="p-3"><p className="text-xs font-bold text-white line-clamp-2">{look.title}</p><p className="mt-1 text-[11px] text-white/45">@{look.brandHandle}</p></div>
+              </Link>
+            ))}
+          </div>
+        </section>}
       </div>
 
       {/* STICKY ACTIONS — dynamic Buy / Book based on item kind */}

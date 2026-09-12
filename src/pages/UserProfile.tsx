@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import {
   ArrowLeft,
   MapPin,
-  BadgeCheck,
   MoreHorizontal,
   MessageCircle,
   UserPlus,
@@ -22,6 +21,8 @@ import { signInWithGoogle } from "@/hooks/useAuth";
 import { useIdentity } from "@/hooks/useIdentity";
 import { toast } from "sonner";
 import { setPageMetadata } from "@/lib/seo";
+import { VerificationBadge } from "@/components/identity/VerificationBadge";
+import { sanitizeUsername } from "@/lib/username";
 
 type Tab = "posts" | "shorts" | "saved";
 
@@ -30,6 +31,7 @@ type ProfileRow = {
   username: string | null;
   avatar_url: string | null;
   country: string | null;
+  is_verified: boolean;
 };
 
 type PostRow = {
@@ -87,7 +89,7 @@ const UserProfile = () => {
         // fetch by id
         const { data, error } = await supabase
           .from("profiles")
-          .select("id, username, avatar_url, country")
+          .select("id, username, avatar_url, country, is_verified")
           .eq("id", authedUserId)
           .maybeSingle();
 
@@ -98,20 +100,19 @@ const UserProfile = () => {
         if (!targetProfile) {
           const { data: authData } = await supabase.auth.getUser();
           const meta = (authData.user?.user_metadata ?? {}) as Record<string, any>;
-          const fallbackHandle = (authData.user?.email?.split("@")[0] ?? `user_${authedUserId.slice(0, 6)}`)
-            .toLowerCase()
-            .replace(/[^a-z0-9_]/g, "_");
+          const fallbackHandle = sanitizeUsername(authData.user?.email?.split("@")[0] ?? `user_${authedUserId.slice(0, 6)}`);
 
           const insertPayload = {
             id: authedUserId,
             username: fallbackHandle,
             avatar_url: meta.avatar_url ?? meta.picture ?? null,
+            is_verified: false,
           };
 
           const { data: created, error: createErr } = await supabase
             .from("profiles")
             .insert(insertPayload)
-            .select("id, username, avatar_url, country")
+            .select("id, username, avatar_url, country, is_verified")
             .maybeSingle();
 
           if (createErr) {
@@ -122,8 +123,8 @@ const UserProfile = () => {
       } else if (handle) {
         const { data, error } = await supabase
           .from("profiles")
-          .select("id, username, avatar_url, country")
-          .eq("username", handle)
+          .select("id, username, avatar_url, country, is_verified")
+          .ilike("username", handle)
           .maybeSingle();
         if (error) throw error;
         targetProfile = data as ProfileRow | null;
@@ -264,7 +265,7 @@ const UserProfile = () => {
           </Link>
           <div className="flex items-center gap-1.5 min-w-0">
             <h1 className="text-base font-bold truncate">@{username}</h1>
-            <BadgeCheck className="h-4 w-4 text-brand-purple fill-brand-purple/20 shrink-0" />
+            <VerificationBadge verified={profile.is_verified} className="h-4 w-4" />
           </div>
           <button aria-label="More" className="h-9 w-9 rounded-full hover:bg-muted/50 flex items-center justify-center">
             <MoreHorizontal className="h-5 w-5" />
@@ -285,10 +286,9 @@ const UserProfile = () => {
             <div className="flex items-end gap-4">
               <button
                 aria-label="View avatar"
-                className="relative shrink-0 active:scale-95 transition-transform"
+                className="relative shrink-0 overflow-hidden rounded-full active:scale-95 transition-transform"
               >
-                <span className="absolute -inset-1 rounded-full gradient-brand" />
-                <span className="relative block h-24 w-24 rounded-full bg-background p-[3px]">
+                <span className="relative block h-24 w-24 rounded-full">
                   {profile.avatar_url ? (
                     <img
                       src={profile.avatar_url}

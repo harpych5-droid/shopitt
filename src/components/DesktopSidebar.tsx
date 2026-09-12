@@ -13,7 +13,7 @@ import {
 
 const items = [
   { to: "/", label: "Home", icon: Home, end: true },
-  { to: "/discover", label: "Discovery", icon: Compass },
+  { to: "/shoppable", label: "Shoppable", icon: Compass },
   { to: "/shorts", label: "Shorts", icon: Film },
   { to: "/alerts", label: "Alerts", icon: Bell },
   { to: "/profile", label: "Profile", icon: User },

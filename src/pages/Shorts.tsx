@@ -26,10 +26,15 @@ const Shorts = () => {
   const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
   const [items, setItems] = useState<FeedItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
   const feedRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef(new Map<number, HTMLDivElement>());
   const savedShortId = useRef(readShortsPosition());
+  const offsetRef = useRef(0);
+  const loadingMoreRef = useRef(false);
+  const hasMoreRef = useRef(true);
   const [searchParams] = useSearchParams();
   const selectedVideoId = searchParams.get("video");
 
@@ -94,37 +99,62 @@ const Shorts = () => {
     if (card && feed) feed.scrollTo({ top: card.offsetTop, behavior: "auto" });
   }, [items, selectedVideoId]);
 
-  const loadShorts = useCallback(async () => {
+  const loadShorts = useCallback(async (reset = true) => {
     setError(null);
-    setItems(null);
-    // A single screen only needs a small initial window. FeedCard loads media
-    // only for the active Short, preventing concurrent video downloads.
-    const { data, error: requestError } = await fetchShortsPosts(12, 0);
+    if (reset) {
+      setItems(null);
+      offsetRef.current = 0;
+      setHasMore(true);
+      hasMoreRef.current = true;
+    } else {
+      if (loadingMoreRef.current || !hasMoreRef.current) return;
+      loadingMoreRef.current = true;
+      setLoadingMore(true);
+    }
+    const pageOffset = reset ? 0 : offsetRef.current;
+    const { data, error: requestError } = await fetchShortsPosts(12, pageOffset);
     if (requestError) {
       setError(requestError);
-      setItems([]);
+      if (reset) setItems([]);
+      loadingMoreRef.current = false;
+      setLoadingMore(false);
       return;
     }
-    let videos = data.map(postToFeedItem).filter((it) => it.image);
+    const mappedVideos = data.map(postToFeedItem).filter((it) => it.mediaType === "video" && it.image);
+    offsetRef.current = pageOffset + data.length;
+    setHasMore(data.length === 12);
+    hasMoreRef.current = data.length === 12;
+    let videos = mappedVideos;
       // A direct link from a deeper Home item still opens that exact Short
       // without making every Shorts visit download a large feed window.
-      if (selectedVideoId && !videos.some((item) => item.id === selectedVideoId)) {
+      if (reset && selectedVideoId && !videos.some((item) => item.id === selectedVideoId)) {
         const { data: selected } = await fetchPostById(selectedVideoId);
         if (selected) {
           const item = postToFeedItem(selected);
           if (item.mediaType === "video" && item.image) videos = [item, ...videos];
         }
       }
-      const selectedIndex = selectedVideoId
-        ? videos.findIndex((item) => item.id === selectedVideoId)
-        : -1;
-    setActiveIndex(selectedIndex >= 0 ? selectedIndex : 0);
-    setItems(videos);
+    const selectedIndex = reset && selectedVideoId
+      ? videos.findIndex((item) => item.id === selectedVideoId)
+      : -1;
+    if (reset) setActiveIndex(selectedIndex >= 0 ? selectedIndex : 0);
+    setItems((current) => {
+      if (reset || !current) return videos;
+      return [...current, ...videos.filter((item) => !current.some((existing) => existing.id === item.id))];
+    });
     const counts = await fetchCommentCounts(videos.map((video) => video.id));
-    setCommentCounts(Object.fromEntries(counts));
+    setCommentCounts((current) => ({ ...current, ...Object.fromEntries(counts) }));
+    loadingMoreRef.current = false;
+    setLoadingMore(false);
   }, [selectedVideoId]);
 
-  useEffect(() => { void loadShorts(); }, [loadShorts]);
+  useEffect(() => { void loadShorts(true); }, [loadShorts]);
+
+  const handleFeedScroll = useCallback(() => {
+    const feed = feedRef.current;
+    if (!feed || feed.scrollTop + feed.clientHeight < feed.scrollHeight - 1200) return;
+    void loadShorts(false);
+  }, [loadShorts]);
 
   const handleAuthRequired = (action: "like" | "save" | "buy" | "comment", itemId: string) => {
     shopitt.setPending({ type: action, itemId });
@@ -165,7 +195,7 @@ const Shorts = () => {
           </div>
         </div>
       ) : items.length > 0 ? (
-        <div ref={feedRef} className="feed-snap h-full w-full overflow-y-auto no-scrollbar">
+        <div ref={feedRef} onScroll={handleFeedScroll} className="feed-snap h-full w-full overflow-y-auto no-scrollbar">
           {items.map((item, i) => (
             <div
               key={item.id}
@@ -185,6 +215,7 @@ const Shorts = () => {
               />
             </div>
           ))}
+          {loadingMore && <div className="flex h-16 items-center justify-center text-xs text-white/60">Loading more Shorts…</div>}
         </div>
       ) : (
         <div className="h-full w-full px-6 flex items-center justify-center text-center">

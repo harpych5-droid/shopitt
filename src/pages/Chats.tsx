@@ -7,6 +7,7 @@ import { useIdentity } from "@/hooks/useIdentity";
 import { fetchConversations, type ConversationRow } from "@/services/chatService";
 import { supabase } from "@/lib/supabase";
 import { formatDistanceToNow } from "date-fns";
+import { VerificationBadge } from "@/components/identity/VerificationBadge";
 
 const Chats = () => {
   const { user, isAuthed } = useIdentity();
@@ -81,8 +82,7 @@ const Chats = () => {
                 <li key={c.id}>
                   <Link to={`/chats/${handle}`} className="flex items-center gap-3 rounded-2xl px-3 py-3 hover:bg-muted/40 active:bg-muted/60 transition-colors">
                     <span className="relative shrink-0">
-                      <span className="absolute -inset-0.5 rounded-full gradient-brand" />
-                      <span className="relative block h-12 w-12 rounded-full bg-background p-[2px] overflow-hidden">
+                      <span className="relative block h-12 w-12 rounded-full overflow-hidden">
                         {other?.avatar_url ? (
                           <img src={other.avatar_url} alt="" className="h-full w-full rounded-full object-cover" />
                         ) : (
@@ -94,7 +94,10 @@ const Chats = () => {
                     </span>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-baseline justify-between gap-2">
-                        <p className="text-sm font-bold text-foreground truncate">{name}</p>
+                        <div className="flex items-center gap-1 min-w-0">
+                          <p className="text-sm font-bold text-foreground truncate">{name}</p>
+                          <VerificationBadge verified={other?.is_verified} className="h-3.5 w-3.5" />
+                        </div>
                         <span className="text-[11px] text-muted-foreground shrink-0">{time}</span>
                       </div>
                       <p className="text-xs truncate text-muted-foreground mt-0.5">

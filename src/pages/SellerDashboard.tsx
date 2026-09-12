@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
-  BadgeCheck,
   Wallet,
   TrendingUp,
   Package,
@@ -20,6 +19,7 @@ import {
 } from "lucide-react";
 import { BottomNav } from "@/components/feed/BottomNav";
 import { useIdentity } from "@/hooks/useIdentity";
+import { VerificationBadge } from "@/components/identity/VerificationBadge";
 import { fetchSellerOrders, updateOrderStatus, type OrderRow } from "@/services/ordersService";
 import { fetchUserPosts, postToFeedItem } from "@/services/postsService";
 import { fetchWalletBalance, type WalletBalance } from "@/services/walletService";
@@ -124,7 +124,7 @@ const SellerDashboard = () => {
                 src={profile.avatar_url}
                 alt={profile.username ?? "you"}
                 referrerPolicy="no-referrer"
-                className="h-12 w-12 rounded-full object-cover ring-2 ring-white/30"
+                className="h-12 w-12 rounded-full object-cover"
               />
             ) : (
               <span className="h-12 w-12 rounded-full bg-white/15 backdrop-blur flex items-center justify-center text-base font-black text-white">
@@ -136,10 +136,10 @@ const SellerDashboard = () => {
                 <p className="text-sm font-extrabold text-white truncate">
                   @{profile?.username ?? "shopper"}
                 </p>
-                <BadgeCheck className="h-4 w-4 text-white fill-white/30" />
+                <VerificationBadge verified={profile?.is_verified} className="h-4 w-4 text-white fill-white/30" />
               </div>
               <p className="text-[11px] text-white/80">
-                Verified Seller{profile?.country ? ` · ${profile.country}` : ""}
+                {profile?.is_verified ? "Verified Seller" : "Seller"}{profile?.country ? ` · ${profile.country}` : ""}
               </p>
             </div>
             <Link to="/wallet" className="rounded-full bg-white/15 hover:bg-white/25 px-3 py-1.5 text-[10px] font-bold text-white">Wallet</Link>

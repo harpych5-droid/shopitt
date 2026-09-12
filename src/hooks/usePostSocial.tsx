@@ -9,6 +9,8 @@ import {
   unsavePost,
   fetchLikeCount,
   fetchCommentCount,
+  fetchCommentPreview,
+  type CommentRow,
 } from "@/services/socialService";
 
 /**
@@ -23,11 +25,17 @@ export function usePostSocial(postId: string, initialLikes = 0, initialComments 
 
   const [likeCount, setLikeCount] = useState(initialLikes);
   const [commentCount, setCommentCount] = useState(initialComments);
+  const [commentPreview, setCommentPreview] = useState<CommentRow[]>([]);
 
   const refresh = useCallback(async () => {
-    const [l, c] = await Promise.all([fetchLikeCount(postId), fetchCommentCount(postId)]);
+    const [l, c, preview] = await Promise.all([
+      fetchLikeCount(postId),
+      fetchCommentCount(postId),
+      fetchCommentPreview(postId),
+    ]);
     setLikeCount(l);
     setCommentCount(c);
+    setCommentPreview(preview);
   }, [postId]);
 
   useEffect(() => {
@@ -46,7 +54,10 @@ export function usePostSocial(postId: string, initialLikes = 0, initialComments 
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "post_comments", filter: `post_id=eq.${postId}` },
-        () => fetchCommentCount(postId).then(setCommentCount),
+        () => Promise.all([fetchCommentCount(postId), fetchCommentPreview(postId)]).then(([count, preview]) => {
+          setCommentCount(count);
+          setCommentPreview(preview);
+        }),
       )
       .subscribe();
     return () => {
@@ -85,5 +96,5 @@ export function usePostSocial(postId: string, initialLikes = 0, initialComments 
     return true;
   }, [isAuthed, user, saved, postId]);
 
-  return { liked, saved, likeCount, commentCount, toggleLike, toggleSave, refresh };
+  return { liked, saved, likeCount, commentCount, commentPreview, toggleLike, toggleSave, refresh };
 }

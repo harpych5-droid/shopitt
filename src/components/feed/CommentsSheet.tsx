@@ -11,6 +11,7 @@ import {
 } from "@/services/socialService";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
+import { VerificationBadge } from "@/components/identity/VerificationBadge";
 
 interface CommentsSheetProps {
   open: boolean;
@@ -118,7 +119,7 @@ export const CommentsSheet = ({ open, postId, onClose, onCountChange }: Comments
                 <ul className="space-y-4">
                   {comments.map((c) => (
                     <li key={c.id} className="flex gap-3">
-                      <span className="h-9 w-9 rounded-full bg-muted shrink-0 overflow-hidden">
+                      <span className="h-10 w-10 rounded-full bg-muted shrink-0 overflow-hidden">
                         {c.profiles?.avatar_url ? (
                           <img src={c.profiles.avatar_url} alt="" className="h-full w-full object-cover" />
                         ) : (
@@ -132,6 +133,7 @@ export const CommentsSheet = ({ open, postId, onClose, onCountChange }: Comments
                           <span className="text-sm font-semibold truncate">
                             @{c.profiles?.username ?? "shopper"}
                           </span>
+                          <VerificationBadge verified={c.profiles?.is_verified} className="h-3.5 w-3.5" />
                           <span className="text-[11px] text-muted-foreground">
                             {formatDistanceToNow(new Date(c.created_at), { addSuffix: false })}
                           </span>
@@ -156,7 +158,7 @@ export const CommentsSheet = ({ open, postId, onClose, onCountChange }: Comments
             </div>
 
             <div className="border-t border-border/60 px-3 py-2.5 flex items-center gap-2">
-              <span className="h-9 w-9 rounded-full overflow-hidden bg-muted shrink-0">
+              <span className="h-10 w-10 rounded-full overflow-hidden bg-muted shrink-0">
                 {profile?.avatar_url ? (
                   <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
                 ) : (

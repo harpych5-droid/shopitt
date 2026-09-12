@@ -1,16 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Send, BadgeCheck, Loader2 } from "lucide-react";
+import { ArrowLeft, Send, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useIdentity } from "@/hooks/useIdentity";
 import { fetchMessages, sendMessage, findOrCreateConversation, type MessageRow } from "@/services/chatService";
 import { toast } from "sonner";
+import { VerificationBadge } from "@/components/identity/VerificationBadge";
 
 const ChatThread = () => {
   const { handle = "" } = useParams();
   const { user, isAuthed } = useIdentity();
-  const [otherProfile, setOtherProfile] = useState<{ id: string; username: string | null; avatar_url: string | null; full_name: string | null } | null>(null);
+  const [otherProfile, setOtherProfile] = useState<{ id: string; username: string | null; avatar_url: string | null; full_name: string | null; is_verified: boolean | null } | null>(null);
   const [convId, setConvId] = useState<string | null>(null);
   const [messages, setMessages] = useState<MessageRow[]>([]);
   const [draft, setDraft] = useState("");
@@ -28,10 +29,10 @@ const ChatThread = () => {
     (async () => {
       setLoading(true);
       const looksLikeUuid = /^[0-9a-f]{8}-[0-9a-f]{4}/i.test(handle);
-      const q = supabase.from("profiles").select("id, username, avatar_url, full_name");
+      const q = supabase.from("profiles").select("id, username, avatar_url, full_name, is_verified");
       const { data } = looksLikeUuid
         ? await q.eq("id", handle).maybeSingle()
-        : await q.eq("username", handle).maybeSingle();
+        : await q.ilike("username", handle).maybeSingle();
       if (cancelled) return;
       if (!data) { setLoading(false); return; }
       setOtherProfile(data as any);
@@ -81,8 +82,7 @@ const ChatThread = () => {
           </Link>
           <Link to={otherProfile ? `/u/${otherProfile.username ?? otherProfile.id}` : "#"} className="flex items-center gap-2.5 flex-1 min-w-0">
             <span className="relative shrink-0">
-              <span className="absolute -inset-0.5 rounded-full gradient-brand" />
-              <span className="relative block h-9 w-9 rounded-full bg-background p-[2px] overflow-hidden">
+              <span className="relative block h-9 w-9 rounded-full overflow-hidden">
                 {otherProfile?.avatar_url ? (
                   <img src={otherProfile.avatar_url} alt="" className="h-full w-full rounded-full object-cover" />
                 ) : (
@@ -95,7 +95,7 @@ const ChatThread = () => {
             <div className="min-w-0">
               <div className="flex items-center gap-1">
                 <p className="text-sm font-bold text-foreground truncate">{displayName}</p>
-                <BadgeCheck className="h-3.5 w-3.5 text-brand-purple fill-brand-purple/20" />
+                <VerificationBadge verified={otherProfile?.is_verified} className="h-3.5 w-3.5" />
               </div>
             </div>
           </Link>

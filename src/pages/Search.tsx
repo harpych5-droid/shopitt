@@ -5,6 +5,15 @@ import { BottomNav } from "@/components/feed/BottomNav";
 import { supabase } from "@/lib/supabase";
 import { postToFeedItem, type DbPost } from "@/services/postsService";
 import type { FeedItem } from "@/data/feed";
+import { VerificationBadge } from "@/components/identity/VerificationBadge";
+
+type ProfileSearchResult = {
+  id: string;
+  username: string | null;
+  full_name: string | null;
+  avatar_url: string | null;
+  is_verified: boolean | null;
+};
 
 const RECENT_KEY = "shopitt:recent-search";
 const CATEGORIES = ["Fashion", "Beauty", "Tech", "Footwear", "Inspiration"];
@@ -13,7 +22,7 @@ const SELECT = `
   id, user_id, title, description, media_url, media_urls, media, media_type,
   price, currency, hashtags, post_type, category_name, content_type, is_available,
   stock_quantity, delivery_type, has_free_delivery, rating, review_count, created_at,
-  profiles!posts_user_id_fkey ( username, avatar_url, full_name, country ),
+  profiles!posts_user_id_fkey ( username, avatar_url, full_name, country, is_verified ),
   post_badges ( label, badge_type )
 `;
 
@@ -23,6 +32,7 @@ const Search = () => {
     try { return JSON.parse(localStorage.getItem(RECENT_KEY) || "[]"); } catch { return []; }
   });
   const [results, setResults] = useState<FeedItem[]>([]);
+  const [profileResults, setProfileResults] = useState<ProfileSearchResult[]>([]);
   const [trending, setTrending] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -41,15 +51,23 @@ const Search = () => {
   // Debounced search
   useEffect(() => {
     const term = q.trim();
-    if (!term) { setResults([]); return; }
+    if (!term) { setResults([]); setProfileResults([]); return; }
     setLoading(true);
     const timer = setTimeout(async () => {
       const like = `%${term}%`;
-      const { data } = await (supabase as any)
-        .from("posts").select(SELECT).eq("is_available", true)
-        .or(`title.ilike.${like},description.ilike.${like}`)
-        .order("created_at", { ascending: false }).limit(30);
-      setResults(((data ?? []) as DbPost[]).map(postToFeedItem));
+      const [{ data: posts }, { data: profiles }] = await Promise.all([
+        (supabase as any)
+          .from("posts").select(SELECT).eq("is_available", true)
+          .or(`title.ilike.${like},description.ilike.${like}`)
+          .order("created_at", { ascending: false }).limit(30),
+        (supabase as any)
+          .from("profiles")
+          .select("id, username, full_name, avatar_url, is_verified")
+          .ilike("username", like)
+          .order("username", { ascending: true }).limit(12),
+      ]);
+      setResults(((posts ?? []) as DbPost[]).map(postToFeedItem));
+      setProfileResults((profiles ?? []) as ProfileSearchResult[]);
       setLoading(false);
     }, 250);
     return () => clearTimeout(timer);
@@ -103,11 +121,11 @@ const Search = () => {
         {q.trim() ? (
           <section>
             <h2 className="text-xs uppercase tracking-[0.16em] font-bold text-muted-foreground mb-2">
-              Results {!loading && `(${results.length})`}
+              Results {!loading && `(${results.length + profileResults.length})`}
             </h2>
             {loading ? (
               <div className="flex justify-center py-10"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
-            ) : results.length === 0 ? (
+            ) : results.length === 0 && profileResults.length === 0 ? (
               <div className="rounded-3xl glass p-6 text-center">
                 <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl gradient-brand shadow-brand">
                   <Sparkles className="h-6 w-6 text-white" />
@@ -116,20 +134,37 @@ const Search = () => {
                 <p className="mt-1 text-xs text-muted-foreground">Try one of the trending searches below.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-3">
-                {results.map((p) => (
-                  <Link key={p.id} to={`/p/${p.id}`}
-                    className="rounded-2xl overflow-hidden bg-card border border-border/60 active:scale-95 transition-transform">
-                    <div className="aspect-[4/5] bg-muted">
-                      <img src={p.image} alt={p.title} loading="lazy" className="h-full w-full object-cover" />
-                    </div>
-                    <div className="p-2.5">
-                      <p className="text-xs font-bold truncate">{p.title}</p>
-                      {p.postType === "product" && <p className="text-sm font-extrabold tabular-nums mt-0.5">{p.currency}{p.price}</p>}
-                    </div>
-                  </Link>
-                ))}
-              </div>
+              <>
+                {profileResults.length > 0 && (
+                  <div className="mb-5 space-y-1.5">
+                    <h3 className="text-xs uppercase tracking-[0.16em] font-bold text-muted-foreground">People</h3>
+                    {profileResults.map((person) => (
+                      <Link key={person.id} to={`/u/${encodeURIComponent(person.username ?? person.id)}`} className="flex items-center gap-3 rounded-2xl bg-card border border-border/60 px-3 py-2.5 hover:bg-muted/40 transition-colors">
+                        <span className="h-10 w-10 rounded-full overflow-hidden bg-muted shrink-0">
+                          {person.avatar_url ? <img src={person.avatar_url} alt="" className="h-full w-full object-cover" /> : <span className="h-full w-full flex items-center justify-center gradient-brand text-white text-sm font-black">{(person.username?.[0] ?? "S").toUpperCase()}</span>}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="flex items-center gap-1">
+                            <span className="text-sm font-semibold truncate">@{person.username ?? "shopper"}</span>
+                            <VerificationBadge verified={person.is_verified} className="h-3.5 w-3.5" />
+                          </span>
+                          {person.full_name && <span className="block text-xs text-muted-foreground truncate">{person.full_name}</span>}
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+                {results.length > 0 && (
+                  <div className="grid grid-cols-2 gap-3">
+                    {results.map((p) => (
+                      <Link key={p.id} to={`/p/${p.id}`} className="rounded-2xl overflow-hidden bg-card border border-border/60 active:scale-95 transition-transform">
+                        <div className="aspect-[4/5] bg-muted"><img src={p.image} alt={p.title} loading="lazy" className="h-full w-full object-cover" /></div>
+                        <div className="p-2.5"><p className="text-xs font-bold truncate">{p.title}</p>{p.postType === "product" && <p className="text-sm font-extrabold tabular-nums mt-0.5">{p.currency}{p.price}</p>}</div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </section>
         ) : (

@@ -141,6 +141,7 @@ export type Database = {
           country: string | null
           created_at: string
           id: string
+          is_verified: boolean
           is_system: boolean
           updated_at: string
           username: string | null
@@ -150,6 +151,7 @@ export type Database = {
           country?: string | null
           created_at?: string
           id: string
+          is_verified?: boolean
           is_system?: boolean
           updated_at?: string
           username?: string | null
@@ -159,6 +161,7 @@ export type Database = {
           country?: string | null
           created_at?: string
           id?: string
+          is_verified?: boolean
           is_system?: boolean
           updated_at?: string
           username?: string | null

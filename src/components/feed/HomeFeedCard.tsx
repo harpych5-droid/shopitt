@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
-import { Heart, Bookmark, MessageCircle, Send, Truck, MoreHorizontal, MapPin, BadgeCheck, ShoppingBag, CalendarCheck, X, Volume2, VolumeX } from "lucide-react";
+import { Heart, Bookmark, MessageCircle, Send, Truck, MoreHorizontal, MapPin, ShoppingBag, CalendarCheck, X, Volume2, VolumeX } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import type { FeedItem } from "@/data/feed";
 import { useShopitt, shopitt } from "@/store/useShopittStore";
@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { useIdentity } from "@/hooks/useIdentity";
 import { supabase } from "@/lib/supabase";
 import { optimizedImageUrl } from "@/lib/media";
+import { VerificationBadge } from "@/components/identity/VerificationBadge";
 
 interface HomeFeedCardProps {
   item: FeedItem;
@@ -27,7 +28,7 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
 
   const authed = useShopitt((s) => s.authed);
   const { user } = useIdentity();
-  const { liked, saved, likeCount, commentCount, toggleLike } = usePostSocial(item.id, item.likes, item.comments);
+  const { liked, saved, likeCount, commentCount, commentPreview, toggleLike } = usePostSocial(item.id, item.likes, item.comments);
   const lastTap = useRef(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [muted, setMuted] = useState(true);
@@ -163,8 +164,7 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
       <header className="flex items-center justify-between px-4 py-3">
         <Link to={`/u/${item.brandHandle}`} className="flex items-center gap-3 min-w-0 flex-1">
           <div className="relative shrink-0">
-            <span className="absolute -inset-0.5 rounded-full gradient-brand" />
-            <div className="relative h-9 w-9 rounded-full bg-background p-[2px]">
+            <div className="relative h-14 w-14 rounded-full overflow-hidden">
               {avatar ? (
                 <img
                   src={optimizedImageUrl(avatar, 96)}
@@ -174,7 +174,7 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
                   onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = "none")}
                 />
               ) : (
-                <div className="h-full w-full rounded-full gradient-brand flex items-center justify-center text-[12px] font-black text-white">
+                <div className="h-full w-full rounded-full gradient-brand flex items-center justify-center text-sm font-black text-white">
                   {initial}
                 </div>
               )}
@@ -185,7 +185,7 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
               <span className="text-sm font-semibold text-foreground truncate">
                 {item.brandHandle}
               </span>
-              <BadgeCheck className="h-3.5 w-3.5 text-brand-purple fill-brand-purple/20 shrink-0" />
+              <VerificationBadge verified={item.verified} className="h-3.5 w-3.5" />
             </div>
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               {item.location && <MapPin className="h-3 w-3 text-brand-pink" />}
@@ -406,7 +406,7 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
       {/* ENGAGEMENT ROW */}
       <div className="px-4 pt-3 pb-1 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <button onClick={handleLike} aria-label="Like" className="relative active:scale-90 transition-transform">
+          <button onClick={handleLike} aria-label="React" className="relative flex items-center gap-1.5 active:scale-90 transition-transform">
             <motion.div animate={burst ? { scale: [1, 1.4, 0.95, 1.1] } : { scale: 1 }} transition={{ duration: 0.5 }}>
               <Heart
                 className={`h-6 w-6 ${liked ? "fill-brand-pink text-brand-pink" : "text-foreground"}`}
@@ -424,9 +424,11 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
                 />
               )}
             </AnimatePresence>
+            <span className="text-xs font-semibold text-foreground">{likeCount.toLocaleString()}</span>
           </button>
-          <button onClick={handleComment} aria-label="Comment" className="active:scale-90 transition-transform">
+          <button onClick={handleComment} aria-label="Open conversation" className="flex items-center gap-1.5 active:scale-90 transition-transform">
             <MessageCircle className="h-6 w-6 text-foreground" strokeWidth={2} />
+            <span className="text-xs font-semibold text-foreground">{commentCount.toLocaleString()}</span>
           </button>
           <button onClick={handleShare} aria-label="Share" className="active:scale-90 transition-transform">
             <Send className="h-6 w-6 text-foreground" strokeWidth={2} />
@@ -440,20 +442,13 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
         </button>
       </div>
 
-      {/* SOCIAL PROOF + CAPTION */}
+      {/* STORY + CONVERSATION */}
       <div className="px-4 pb-4 pt-1">
-        <div className="flex items-center gap-2 mb-1.5">
-          <span className="text-sm font-semibold text-foreground">
-            {likeCount.toLocaleString()} likes
-          </span>
-        </div>
         {item.caption && (
-          <p className="text-sm text-foreground leading-snug">
-            <Link to={`/u/${item.brandHandle}`} className="font-semibold mr-1.5">
-              {item.brandHandle}
-            </Link>
-            <span className="text-foreground/90">{item.caption}</span>
-          </p>
+          <div>
+            <p className="text-[10px] font-bold tracking-[0.14em] text-muted-foreground">THE STORY</p>
+            <p className="mt-1 text-sm text-foreground/90 leading-snug">{item.caption}</p>
+          </div>
         )}
         {item.hashtags.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1.5">
@@ -467,11 +462,34 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
             ))}
           </div>
         )}
-        <button
-          onClick={handleComment}
-          className="mt-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          {commentCount > 0 ? `View all ${commentCount} comments` : "Add a comment"}
+        {commentPreview.length > 0 && (
+          <button
+            type="button"
+            onClick={handleComment}
+            className="mt-3 block w-full text-left space-y-2"
+            aria-label="Open conversation preview"
+          >
+            {commentPreview.map((comment) => (
+              <span key={comment.id} className="flex items-start gap-2">
+                <span className="h-10 w-10 rounded-full overflow-hidden bg-muted shrink-0">
+                  {comment.profiles?.avatar_url ? (
+                    <img src={comment.profiles.avatar_url} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <span className="flex h-full w-full items-center justify-center gradient-brand text-[10px] font-black text-white">
+                      {(comment.profiles?.username?.[0] ?? "S").toUpperCase()}
+                    </span>
+                  )}
+                </span>
+                <span className="min-w-0 text-xs leading-snug">
+                  <span className="font-semibold text-foreground">{comment.profiles?.username ?? "shopper"}</span>{" "}
+                  <span className="text-foreground/80">{comment.text}</span>
+                </span>
+              </span>
+            ))}
+          </button>
+        )}
+        <button onClick={handleComment} className="mt-2 text-xs text-muted-foreground hover:text-foreground transition-colors">
+          {commentCount > commentPreview.length ? `View all ${commentCount} conversations` : commentCount > 0 ? "Join the conversation" : "Start the conversation"}
         </button>
       </div>
     </article>

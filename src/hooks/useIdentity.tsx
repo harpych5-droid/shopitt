@@ -11,12 +11,14 @@ import {
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { shopitt } from "@/store/useShopittStore";
+import { sanitizeUsername } from "@/lib/username";
 
 export type Profile = {
   id: string;
   username: string | null;
   avatar_url: string | null;
   country: string | null;
+  is_verified: boolean;
 };
 
 type IdentityContextValue = {
@@ -31,14 +33,13 @@ type IdentityContextValue = {
 
 const IdentityContext = createContext<IdentityContextValue | undefined>(undefined);
 
-const sanitizeHandle = (raw: string) =>
-  raw.toLowerCase().replace(/[^a-z0-9_]/g, "_").slice(0, 24) || "shopper";
+const sanitizeHandle = (raw: string) => sanitizeUsername(raw) || "shopper";
 
 async function fetchOrCreateProfile(user: User): Promise<Profile | null> {
   // 1) Try to fetch existing profile
   const { data: existing, error: fetchErr } = await supabase
     .from("profiles")
-    .select("id, username, avatar_url, country")
+    .select("id, username, avatar_url, country, is_verified")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -63,15 +64,15 @@ async function fetchOrCreateProfile(user: User): Promise<Profile | null> {
   const { data: created, error: createErr } = await supabase
     .from("profiles")
     .insert(insertPayload)
-    .select("id, username, avatar_url, country")
+    .select("id, username, avatar_url, country, is_verified")
     .maybeSingle();
 
   if (createErr) {
     console.error("[identity] auto-create failed", createErr);
     // Fallback so the app still has identity in memory
-    return { ...insertPayload, country: null } as Profile;
+    return { ...insertPayload, country: null, is_verified: false } as Profile;
   }
-  return (created as Profile) ?? ({ ...insertPayload, country: null } as Profile);
+  return (created as Profile) ?? ({ ...insertPayload, country: null, is_verified: false } as Profile);
 }
 
 export const IdentityProvider = ({ children }: { children: ReactNode }) => {

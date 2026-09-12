@@ -174,7 +174,7 @@ export type CommentRow = {
   text: string;
   parent_comment_id: string | null;
   created_at: string;
-  profiles: { username: string | null; avatar_url: string | null } | null;
+  profiles: { username: string | null; avatar_url: string | null; is_verified: boolean | null } | null;
 };
 
 export async function fetchComments(postId: string): Promise<CommentRow[]> {
@@ -182,12 +182,28 @@ export async function fetchComments(postId: string): Promise<CommentRow[]> {
     .from("post_comments")
     .select(
       `id, post_id, user_id, text, parent_comment_id, created_at,
-       profiles!post_comments_user_id_fkey ( username, avatar_url )`,
+      profiles!post_comments_user_id_fkey ( username, avatar_url, is_verified )`,
     )
     .eq("post_id", postId)
     .order("created_at", { ascending: true });
   if (error) return [];
   return (data ?? []) as unknown as CommentRow[];
+}
+
+export async function fetchCommentPreview(postId: string, limit = 3): Promise<CommentRow[]> {
+  const { data, error } = await supabase
+    .from("post_comments")
+    .select(
+      `id, post_id, user_id, text, parent_comment_id, created_at,
+       profiles!post_comments_user_id_fkey ( username, avatar_url, is_verified )`,
+    )
+    .eq("post_id", postId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) return [];
+  return ((data ?? []) as unknown as CommentRow[])
+    .filter((comment) => comment.text.trim().length > 0)
+    .reverse();
 }
 
 export async function addComment(
@@ -201,7 +217,7 @@ export async function addComment(
     .insert({ post_id: postId, user_id: userId, text, parent_comment_id: parentId })
     .select(
       `id, post_id, user_id, text, parent_comment_id, created_at,
-       profiles!post_comments_user_id_fkey ( username, avatar_url )`,
+      profiles!post_comments_user_id_fkey ( username, avatar_url, is_verified )`,
     )
     .maybeSingle();
   return { data: data as unknown as CommentRow | null, error: error?.message ?? null };

@@ -1,16 +1,15 @@
 import { NavLink, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { Home, Compass, Film, Bell, User } from "lucide-react";
+import { Home, Sparkles, Play, Bell, User } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useScrollDirection } from "@/hooks/useScrollDirection";
 
-// SBB 18 — Primary bottom navigation: Home, Discovery, Shorts, Alerts, Profile.
-// No Create FAB here; Create lives in the Creator space.
+// Primary bottom navigation: Home, Shoppable, Shorts, Alerts, Profile.
 const baseItems = [
   { to: "/", label: "Home", icon: Home, end: true },
-  { to: "/discover", label: "Discovery", icon: Compass, end: false },
-  { to: "/shorts", label: "Shorts", icon: Film, end: false },
+  { to: "/shoppable", label: "Shoppable", icon: Sparkles, end: false },
+  { to: "/shorts", label: "Shorts", icon: Play, end: false },
   { to: "/alerts", label: "Alerts", icon: Bell, end: false, badgeKey: "unread" as const },
   { to: "/profile", label: "Profile", icon: User, end: false },
 ];

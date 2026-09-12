@@ -15,7 +15,7 @@ export const IdentityAvatar = ({
   profile,
   size = 40,
   className = "",
-  ring = true,
+  ring = false,
 }: IdentityAvatarProps) => {
   const initial = (profile?.username?.[0] ?? "S").toUpperCase();
   const dim = { width: size, height: size };

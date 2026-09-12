@@ -35,22 +35,39 @@ export type DbPost = {
     avatar_url: string | null;
     full_name: string | null;
     country: string | null;
+    is_verified: boolean | null;
   } | null;
 };
 
 /**
  * `posts.content_type` is the database-enforced source of truth for a post
- * experience. Commerce is available only to the `product` experience.
+ * experience. Commerce is available only to the shoppable/product experience.
  */
-export function getPostExperience(post: Pick<DbPost, "content_type">): "inspiration" | "product" {
-  return post.content_type === "inspiration" ? "inspiration" : "product";
+export function isShoppablePost(post: Pick<DbPost, "content_type" | "post_type">): boolean {
+  const kind = (post.content_type ?? post.post_type ?? "").toLowerCase();
+  return kind === "product" || kind === "shoppable";
+}
+
+export function getPostExperience(post: Pick<DbPost, "content_type" | "post_type">): "inspiration" | "product" {
+  const kind = (post.content_type ?? post.post_type ?? "").toLowerCase();
+  return kind === "inspiration" ? "inspiration" : "product";
+}
+
+const VIDEO_URL_PATTERN = /\/video\/upload\/|\.(mp4|webm|mov)(?:$|[?#])/i;
+
+export function isVideoPost(post: Pick<DbPost, "media_type" | "media_url" | "media_urls" | "media">): boolean {
+  const mediaType = (post.media_type ?? "").trim().toLowerCase();
+  if (["video", "short", "reel", "mp4", "webm", "mov", "video/mp4", "video/webm", "video/quicktime"].includes(mediaType)) return true;
+  return [post.media_url, ...(post.media_urls ?? []), ...(post.media ?? [])]
+    .filter((url): url is string => !!url)
+    .some((url) => VIDEO_URL_PATTERN.test(url));
 }
 
 const SELECT = `
   id, user_id, title, description, media_url, media_urls, media, media_type,
   price, currency, hashtags, post_type, category_name, content_type, is_available,
   stock_quantity, quantity, delivery_type, has_free_delivery, rating, review_count, created_at,
-  profiles!posts_user_id_fkey ( username, avatar_url, full_name, country ),
+  profiles!posts_user_id_fkey ( username, avatar_url, full_name, country, is_verified ),
   post_badges ( label, badge_type )
 `;
 
@@ -65,16 +82,27 @@ export async function fetchFeedPosts(limit = 20, offset = 0) {
   return { data: (data ?? []) as DbPost[], error: null as string | null };
 }
 
+export async function fetchShoppablePosts(limit = 20, offset = 0) {
+  const { data, error } = await (supabase as any)
+    .from("posts")
+    .select(SELECT)
+    .eq("is_available", true)
+    .or("content_type.eq.product,content_type.eq.shoppable,post_type.eq.product,post_type.eq.shoppable")
+    .order("created_at", { ascending: false })
+    .range(offset, offset + limit - 1);
+  if (error) return { data: [] as DbPost[], error: error.message };
+  return { data: (data ?? []) as DbPost[], error: null as string | null };
+}
+
 /** Fetch Shorts from the server, rather than filtering an arbitrary Home page. */
 export async function fetchShortsPosts(limit = 12, offset = 0) {
   const { data, error } = await (supabase as any)
     .from("posts")
     .select(SELECT)
     .eq("is_available", true)
-    // Older production posts used the Short/Reel labels while the current
-    // composer writes `video`.  Keep this filter server-side so Shorts never
-    // turns an arbitrary Home page into a fake video feed.
-    .in("media_type", ["video", "short", "reel"])
+    // Keep legacy rows with a missing type in the candidate set; isVideoPost
+    // verifies their actual media URL before they enter Shorts.
+    .or("media_type.ilike.video,media_type.ilike.short,media_type.ilike.reel,media_type.ilike.mp4,media_type.ilike.webm,media_type.ilike.mov,media_type.is.null")
     .order("created_at", { ascending: false })
     .range(offset, offset + limit - 1);
   if (error) return { data: [] as DbPost[], error: error.message };
@@ -108,11 +136,11 @@ export function postToFeedItem(p: DbPost): FeedItem {
     ...((p.media_urls ?? []).filter(Boolean)),
     ...((p.media ?? []).filter(Boolean)),
   ]));
-  const isVideo = ["video", "short", "reel"].includes((p.media_type ?? "").toLowerCase());
+  const isVideo = isVideoPost(p);
   // Some existing rows keep a poster in media_url and the delivered video in
   // the media array. Shorts must select the actual Cloudinary video source.
   const firstMedia = isVideo
-    ? mediaUrls.find((url) => /\/video\/upload\/|\.(mp4|webm|mov)(?:$|[?#])/i.test(url)) ?? mediaUrls[0] ?? ""
+    ? mediaUrls.find((url) => VIDEO_URL_PATTERN.test(url)) ?? mediaUrls[0] ?? ""
     : mediaUrls[0] ?? "";
   const handle = p.profiles?.username ?? "shopitt";
   const brand = p.profiles?.full_name || handle;
@@ -126,6 +154,7 @@ export function postToFeedItem(p: DbPost): FeedItem {
     brand,
     brandHandle: handle,
     avatar: p.profiles?.avatar_url ?? null,
+    verified: p.profiles?.is_verified ?? false,
     title: p.title ?? "Untitled drop",
     drop: dropLabel,
     image: firstMedia,
