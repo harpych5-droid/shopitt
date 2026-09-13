@@ -16,6 +16,7 @@ export type PostBadge =
 
 export type FeedItem = {
   id: string;
+  createdAt?: string;
   brand: string;
   brandHandle: string;
   verified?: boolean;

@@ -7,6 +7,7 @@ import { fetchShoppablePosts, postToFeedItem } from "@/services/postsService";
 import { setPageMetadata } from "@/lib/seo";
 import { optimizedImageUrl } from "@/lib/media";
 import type { FeedItem } from "@/data/feed";
+import { PostTimestamp } from "@/components/feed/PostTimestamp";
 
 const PAGE_SIZE = 12;
 
@@ -122,7 +123,7 @@ const Shoppable = () => {
                   />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold text-foreground">{item.brandHandle}</p>
-                    <p className="text-[11px] text-muted-foreground">{item.location || "Shopitt creator"}</p>
+                    <p className="text-[11px] text-muted-foreground">{item.location || "Shopitt creator"} · <PostTimestamp createdAt={item.createdAt} /></p>
                   </div>
                   <span className="rounded-full bg-brand-pink/10 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-brand-pink">
                     Shoppable

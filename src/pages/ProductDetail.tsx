@@ -20,6 +20,7 @@ import { supabase } from "@/lib/supabase";
 import { sharePost } from "@/lib/sharePost";
 import { toast } from "sonner";
 import { setPageMetadata } from "@/lib/seo";
+import { PostTimestamp } from "@/components/feed/PostTimestamp";
 
 const DELIVERY_META = {
   international: { icon: Globe, label: "International delivery" },
@@ -315,9 +316,11 @@ const ProductDetail = () => {
                   <p className="text-base font-bold truncate text-white">@{product.brandHandle}</p>
                   <VerificationBadge verified={product.verified} className="h-4 w-4" />
                 </div>
-                <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                <div className="flex flex-wrap items-center gap-x-1 gap-y-0.5 text-[11px] text-muted-foreground">
                   <MapPin className="h-3 w-3 text-brand-pink" />
                   <span>{product.location || "Shopitt creator"}</span>
+                  <span aria-hidden="true">·</span>
+                  <PostTimestamp createdAt={product.createdAt} />
                 </div>
               </div>
             </Link>

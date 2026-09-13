@@ -150,6 +150,7 @@ export function postToFeedItem(p: DbPost): FeedItem {
 
   return {
     id: p.id,
+    createdAt: p.created_at,
     userId: p.user_id,
     brand,
     brandHandle: handle,

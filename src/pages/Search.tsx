@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { postToFeedItem, type DbPost } from "@/services/postsService";
 import type { FeedItem } from "@/data/feed";
 import { VerificationBadge } from "@/components/identity/VerificationBadge";
+import { PostTimestamp } from "@/components/feed/PostTimestamp";
 
 type ProfileSearchResult = {
   id: string;
@@ -159,7 +160,7 @@ const Search = () => {
                     {results.map((p) => (
                       <Link key={p.id} to={`/p/${p.id}`} className="rounded-2xl overflow-hidden bg-card border border-border/60 active:scale-95 transition-transform">
                         <div className="aspect-[4/5] bg-muted"><img src={p.image} alt={p.title} loading="lazy" className="h-full w-full object-cover" /></div>
-                        <div className="p-2.5"><p className="text-xs font-bold truncate">{p.title}</p>{p.postType === "product" && <p className="text-sm font-extrabold tabular-nums mt-0.5">{p.currency}{p.price}</p>}</div>
+                        <div className="p-2.5"><p className="text-xs font-bold truncate">{p.title}</p>{p.postType === "product" && <p className="text-sm font-extrabold tabular-nums mt-0.5">{p.currency}{p.price}</p>}<PostTimestamp createdAt={p.createdAt} className="mt-0.5 block text-[10px] text-muted-foreground" /></div>
                       </Link>
                     ))}
                   </div>
@@ -218,6 +219,7 @@ const Search = () => {
                     <div className="p-2.5">
                       <p className="text-xs font-bold truncate">{p.title}</p>
                       {p.postType === "product" && <p className="text-sm font-extrabold tabular-nums mt-0.5">{p.currency}{p.price}</p>}
+                      <PostTimestamp createdAt={p.createdAt} className="mt-0.5 block text-[10px] text-muted-foreground" />
                     </div>
                   </Link>
                 ))}

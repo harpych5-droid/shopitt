@@ -11,6 +11,7 @@ import { useIdentity } from "@/hooks/useIdentity";
 import { supabase } from "@/lib/supabase";
 import { optimizedImageUrl } from "@/lib/media";
 import { VerificationBadge } from "@/components/identity/VerificationBadge";
+import { PostTimestamp } from "@/components/feed/PostTimestamp";
 
 interface HomeFeedCardProps {
   item: FeedItem;
@@ -187,9 +188,15 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
               </span>
               <VerificationBadge verified={item.verified} className="h-3.5 w-3.5" />
             </div>
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-muted-foreground">
               {item.location && <MapPin className="h-3 w-3 text-brand-pink" />}
               {item.location && <span className="truncate">{item.location}</span>}
+              {item.createdAt && (
+                <>
+                  <span aria-hidden="true">·</span>
+                  <PostTimestamp createdAt={item.createdAt} />
+                </>
+              )}
               {!isInspiration && item.shipsIn && item.shipsIn !== "—" && (
                 <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-full bg-success/15 text-success text-[10px] font-semibold">
                   Ships {item.shipsIn}

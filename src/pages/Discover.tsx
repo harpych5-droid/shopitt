@@ -7,6 +7,7 @@ import type { FeedItem } from "@/data/feed";
 import { useFeedPosts } from "@/hooks/useFeedPosts";
 import { setPageMetadata } from "@/lib/seo";
 import { optimizedImageUrl } from "@/lib/media";
+import { PostTimestamp } from "@/components/feed/PostTimestamp";
 
 type Section = {
   id: string;
@@ -31,7 +32,9 @@ const InspirationCard = ({ item }: { item: FeedItem }) => (
     )}
     <div className="absolute inset-x-0 bottom-0 p-2.5">
       <p className="text-xs font-bold text-white leading-tight line-clamp-2">{item.title}</p>
-      <p className="text-[10px] text-white/70 mt-0.5 truncate">@{item.brandHandle}</p>
+      <p className="text-[10px] text-white/70 mt-0.5 truncate">
+        @{item.brandHandle}{item.createdAt && <> · <PostTimestamp createdAt={item.createdAt} /></>}
+      </p>
     </div>
   </Link>
 );
@@ -49,6 +52,7 @@ const ProductCard = ({ item }: { item: FeedItem }) => (
       <p className="text-sm font-display font-extrabold tabular-nums mt-0.5">
         {item.currency}{item.price}
       </p>
+      <PostTimestamp createdAt={item.createdAt} className="text-[10px] text-muted-foreground" />
     </div>
   </Link>
 );

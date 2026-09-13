@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import { setPageMetadata } from "@/lib/seo";
 import { VerificationBadge } from "@/components/identity/VerificationBadge";
 import { sanitizeUsername } from "@/lib/username";
+import { PostTimestamp } from "@/components/feed/PostTimestamp";
 
 type Tab = "posts" | "shorts" | "saved";
 
@@ -426,6 +427,7 @@ const UserProfile = () => {
                       {p.price}
                     </span>
                   )}
+                  <PostTimestamp createdAt={p.created_at} className="absolute bottom-1 right-1.5 text-[10px] font-semibold text-white drop-shadow" />
                 </Link>
               ))}
             </div>

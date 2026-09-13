@@ -6,6 +6,7 @@ import { useShopitt, shopitt } from "@/store/useShopittStore";
 import { sharePost } from "@/lib/sharePost";
 import { toast } from "sonner";
 import { optimizedImageUrl, videoPosterUrl } from "@/lib/media";
+import { PostTimestamp } from "@/components/feed/PostTimestamp";
 
 interface FeedCardProps {
   item: FeedItem;
@@ -329,7 +330,12 @@ export const FeedCard = ({ item, index, isActive, onAuthRequired, onOpenComments
                   <img src={item.avatar} alt="" className="absolute inset-0 h-full w-full object-cover" onError={(event) => { event.currentTarget.style.display = "none"; }} />
                 )}
               </div>
-              <span className="text-sm font-semibold text-white">@{item.brandHandle}</span>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-white">@{item.brandHandle}</span>
+                  <PostTimestamp createdAt={item.createdAt} className="text-[11px] text-white/70" />
+                </div>
+              </div>
               <button className="ml-1 px-2.5 py-0.5 rounded-full border border-white/40 text-[11px] font-semibold text-white hover:bg-white/10 transition-colors">
                 Follow
               </button>
