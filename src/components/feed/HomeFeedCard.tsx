@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
-import { Heart, Bookmark, MessageCircle, Send, MoreHorizontal, MapPin, Volume2, VolumeX } from "lucide-react";
+import { Heart, Bookmark, MessageCircle, Send, MoreHorizontal, MapPin, Volume2, VolumeX, X, ExternalLink } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import type { FeedItem } from "@/data/feed";
 import { useShopitt, shopitt } from "@/store/useShopittStore";
@@ -12,7 +12,6 @@ import { supabase } from "@/lib/supabase";
 import { optimizedImageUrl } from "@/lib/media";
 import { VerificationBadge } from "@/components/identity/VerificationBadge";
 import { PostTimestamp } from "@/components/feed/PostTimestamp";
-import { ShopSheet } from "@/components/feed/ShopSheet";
 import { fetchPostShopTags, type ShopTag } from "@/services/shopTagsService";
 
 interface HomeFeedCardProps {
@@ -27,6 +26,7 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
   const [burst, setBurst] = useState(false);
   const [dtBurst, setDtBurst] = useState(false);
   const [shopOpen, setShopOpen] = useState(false);
+  const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
   const [shopTags, setShopTags] = useState<ShopTag[]>([]);
   const [moreOpen, setMoreOpen] = useState(false);
 
@@ -88,6 +88,15 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
     return () => observer.disconnect();
   }, [isVideo]);
 
+  useEffect(() => {
+    if (isInspiration) return;
+    let cancelled = false;
+    void fetchPostShopTags(item.id).then(({ data }) => {
+      if (!cancelled) setShopTags(data);
+    });
+    return () => { cancelled = true; };
+  }, [isInspiration, item.id]);
+
   const toggleMute = () => {
     const nextMuted = !muted;
     setMuted(nextMuted);
@@ -120,11 +129,13 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
     }
   };
   const openShop = async () => {
+    setSelectedTagId(null);
     setShopOpen(true);
     if (shopTags.length > 0) return;
     const { data } = await fetchPostShopTags(item.id);
     setShopTags(data);
   };
+  const outfitTotal = shopTags.reduce((total, tag) => total + Number(tag.price || 0), 0);
   const editPost = async () => {
     const title = window.prompt("Edit post title", item.title);
     if (title === null || !title.trim()) return;
@@ -317,7 +328,7 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
               <button
                 key={tag.id}
                 type="button"
-                onClick={(event) => { event.preventDefault(); event.stopPropagation(); void openShop(); }}
+                onClick={(event) => { event.preventDefault(); event.stopPropagation(); setSelectedTagId(tag.id); setShopOpen(true); }}
                 className="pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/70 bg-black/70 px-2 py-1 text-[10px] font-bold text-white shadow-lg backdrop-blur-sm"
                 style={{ left: `${tag.position_x * 100}%`, top: `${tag.position_y * 100}%` }}
               >
@@ -341,19 +352,82 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
           <div className="absolute inset-x-0 bottom-0 z-10 pointer-events-none">
             <div className="h-24 overlay-bottom" />
             <div className="absolute inset-x-0 bottom-0 px-3 pb-3 pointer-events-auto">
-              <button
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); void openShop(); }}
-                className="rounded-full gradient-brand px-4 py-2.5 text-[12px] font-bold tracking-[0.14em] text-white shadow-brand active:scale-95 transition-transform"
-              >
-                SHOP
-              </button>
+              {!shopOpen ? (
+                <button
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); void openShop(); }}
+                  className="rounded-full glass-dark px-4 py-2.5 text-[12px] font-bold tracking-[0.14em] text-white active:scale-95 transition-transform"
+                >
+                  SHOP
+                </button>
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+                  className="max-w-[19rem] rounded-3xl glass-dark p-3.5"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/55">Shop tags</p>
+                      <p className="mt-1 truncate text-[13px] font-semibold text-white">{item.title}</p>
+                    </div>
+                    <button
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShopOpen(false); setSelectedTagId(null); }}
+                      aria-label="Close shop"
+                      className="h-7 w-7 shrink-0 rounded-full bg-white/10 flex items-center justify-center"
+                    >
+                      <X className="h-4 w-4 text-white" />
+                    </button>
+                  </div>
+                  <div className="mt-2 space-y-1.5">
+                    {selectedTagId ? (() => {
+                      const selectedTag = shopTags.find((tag) => tag.id === selectedTagId);
+                      return selectedTag ? (
+                        <div className="rounded-2xl bg-white/10 px-3 py-2.5">
+                          <p className="text-sm font-bold text-white">{selectedTag.item_name}</p>
+                          <p className="mt-1 text-base font-extrabold text-white">K{Number(selectedTag.price).toLocaleString()}</p>
+                          {selectedTag.product && (
+                            <button
+                              type="button"
+                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate(`/p/${selectedTag.product?.id}`); }}
+                              className="mt-2 text-[10px] font-bold text-white underline underline-offset-2"
+                            >
+                              <ExternalLink className="mr-0.5 inline h-3 w-3" /> VIEW PRODUCT
+                            </button>
+                          )}
+                        </div>
+                      ) : null;
+                    })() : shopTags.length === 0 ? (
+                      <p className="text-[11px] text-white/65">No outfit tags were added to this look.</p>
+                    ) : shopTags.map((tag) => (
+                      <div key={tag.id} className="flex items-center gap-2 text-[11px] text-white/85">
+                        <span className="h-1.5 w-1.5 shrink-0 rounded-full gradient-brand" />
+                        <span className="min-w-0 flex-1 truncate">{tag.item_name} · K{Number(tag.price).toLocaleString()}</span>
+                        {tag.product && (
+                          <button
+                            type="button"
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate(`/p/${tag.product?.id}`); }}
+                            className="shrink-0 text-[10px] font-bold text-white underline underline-offset-2"
+                          >
+                            <ExternalLink className="mr-0.5 inline h-3 w-3" /> VIEW
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  {shopTags.length > 0 && !selectedTagId && (
+                    <div className="mt-3 flex items-center justify-between border-t border-white/10 pt-2 text-[11px]">
+                      <span className="font-semibold text-white/60">TOTAL OUTFIT</span>
+                      <span className="font-bold text-white">K{outfitTotal.toLocaleString()}</span>
+                    </div>
+                  )}
+                </motion.div>
+              )}
             </div>
           </div>
         )}
 
       </Link>
-
-      <ShopSheet open={shopOpen} postId={item.id} onClose={() => setShopOpen(false)} />
 
       {/* ENGAGEMENT ROW */}
       <div className="px-4 pt-3 pb-1 flex items-center justify-between">
