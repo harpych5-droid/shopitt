@@ -346,3 +346,96 @@ export function timeAgo(iso: string) {
   if (s < 86400) return `${Math.floor(s / 3600)}h`;
   return `${Math.floor(s / 86400)}d`;
 }
+
+export type FounderDashboard = {
+  totalUsers: number;
+  activeNow: number | null;
+  dailyActiveUsers: number;
+  monthlyActiveUsers: number;
+  newUsersToday: number;
+  totalLooks: number;
+  looksToday: number;
+  comments: number;
+  commentsToday: number;
+  reactions: number | null;
+  reactionsToday: number | null;
+  saves: number | null;
+  messages: number | null;
+  verifiedAccounts: number;
+  growth: { date: string; users: number }[];
+  activity: AdminActivity[];
+  attention: { label: string; count: number }[];
+};
+
+async function countSince(table: string, column: string, iso: string) {
+  return count(table, (q) => q.gte(column, iso));
+}
+
+async function firstAvailableCount(tables: string[], since?: string) {
+  for (const table of tables) {
+    const value = since ? await countSince(table, "created_at", since) : await count(table);
+    const { error } = await (supabase as any).from(table).select("id", { count: "exact", head: true });
+    if (!error) return value;
+  }
+  return null;
+}
+
+export async function fetchFounderDashboard(range: 7 | 30 | 90 = 30): Promise<FounderDashboard> {
+  const now = new Date();
+  const dayStart = new Date(now); dayStart.setHours(0, 0, 0, 0);
+  const activeDay = new Date(now.getTime() - 86400000).toISOString();
+  const activeMonth = new Date(now.getTime() - 30 * 86400000).toISOString();
+  const growthStart = new Date(now.getTime() - (range - 1) * 86400000);
+  growthStart.setHours(0, 0, 0, 0);
+
+  const [totalUsers, dailyActiveUsers, monthlyActiveUsers, newUsersToday, totalLooks, looksToday, comments, commentsToday, verifiedAccounts, activity] = await Promise.all([
+    count("profiles"),
+    countSince("profiles", "updated_at", activeDay),
+    countSince("profiles", "updated_at", activeMonth),
+    countSince("profiles", "created_at", dayStart.toISOString()),
+    count("posts"),
+    countSince("posts", "created_at", dayStart.toISOString()),
+    firstAvailableCount(["comments", "post_comments"]),
+    firstAvailableCount(["comments", "post_comments"], dayStart.toISOString()),
+    count("profiles", (q) => q.eq("is_verified", true)),
+    fetchAdminActivity(),
+  ]);
+
+  const [reactions, reactionsToday, saves, messages] = await Promise.all([
+    firstAvailableCount(["likes", "post_likes", "reactions"]),
+    firstAvailableCount(["likes", "post_likes", "reactions"], dayStart.toISOString()),
+    firstAvailableCount(["saves", "saved_posts", "bookmarks"]),
+    firstAvailableCount(["messages", "conversations"]),
+  ]);
+
+  const { data: users } = await (supabase as any)
+    .from("profiles")
+    .select("created_at")
+    .gte("created_at", growthStart.toISOString())
+    .order("created_at", { ascending: true });
+  const growth = Array.from({ length: range }, (_, index) => {
+    const date = new Date(growthStart.getTime() + index * 86400000);
+    const key = date.toISOString().slice(0, 10);
+    return { date: key, users: (users ?? []).filter((u: any) => String(u.created_at).slice(0, 10) === key).length };
+  });
+
+  return {
+    totalUsers,
+    activeNow: null,
+    dailyActiveUsers,
+    monthlyActiveUsers,
+    newUsersToday,
+    totalLooks,
+    looksToday,
+    comments: comments ?? 0,
+    commentsToday: commentsToday ?? 0,
+    reactions,
+    reactionsToday,
+    saves,
+    messages,
+    verifiedAccounts,
+    growth,
+    activity,
+    attention: [],
+  };
+}

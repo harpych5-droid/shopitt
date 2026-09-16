@@ -21,12 +21,43 @@ import { sharePost } from "@/lib/sharePost";
 import { toast } from "sonner";
 import { setPageMetadata } from "@/lib/seo";
 import { PostTimestamp } from "@/components/feed/PostTimestamp";
+import { fetchCatalogProductById, type CatalogProduct } from "@/services/shopTagsService";
 
 const DELIVERY_META = {
   international: { icon: Globe, label: "International delivery" },
   country: { icon: Truck, label: "Country-wide delivery" },
   local: { icon: MapPin, label: "Local delivery" },
 } as const;
+
+function catalogProductToFeedItem(product: CatalogProduct): FeedItem {
+  return {
+    id: product.id,
+    userId: product.seller_id,
+    brand: product.profile?.username ?? "Shopitt seller",
+    brandHandle: product.profile?.username ?? product.seller_id,
+    avatar: product.profile?.avatar_url ?? null,
+    title: product.title,
+    drop: "Catalog product",
+    image: product.image_url,
+    mediaUrls: [product.image_url],
+    price: Number(product.price_usd),
+    currency: "USD ",
+    stockLeft: 0,
+    freeDelivery: false,
+    category: "Fashion",
+    likes: 0,
+    sold: 0,
+    location: "",
+    shipsIn: "—",
+    caption: product.description ?? "",
+    hashtags: [],
+    comments: 0,
+    kind: "product",
+    postType: "product",
+    catalogProduct: true,
+    mediaType: "image",
+  };
+}
 
 const ProductDetail = () => {
   const { id = "" } = useParams();
@@ -42,8 +73,14 @@ const ProductDetail = () => {
       setLoading(true);
       const { data } = await fetchPostById(id);
       if (cancelled) return;
-      if (!data) { setNotFound(true); setLoading(false); return; }
-      setProduct(postToFeedItem(data));
+      if (data) {
+        setProduct(postToFeedItem(data));
+      } else {
+        const catalog = await fetchCatalogProductById(id);
+        if (cancelled) return;
+        if (!catalog.data) { setNotFound(true); setLoading(false); return; }
+        setProduct(catalogProductToFeedItem(catalog.data));
+      }
       setLoading(false);
       const related = await fetchFeedPosts(8, 0);
       if (!cancelled) {

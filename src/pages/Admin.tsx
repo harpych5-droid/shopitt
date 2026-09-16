@@ -1,33 +1,25 @@
 import { useEffect, useMemo, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import {
-  LayoutDashboard, Users, Store, ShoppingBag, FileImage, BarChart3, TrendingUp,
-  Package, CreditCard, LifeBuoy, Settings as SettingsIcon, Search, Bell, Menu as MenuIcon,
-  X, ArrowUpRight, ArrowDownRight, Star, Megaphone, Sparkles, Eye, MoreHorizontal,
-  CheckCircle2, AlertTriangle, Activity, LogOut, ChevronRight,
+  LayoutDashboard, Users, FileImage, BarChart3, TrendingUp, LifeBuoy, Settings as SettingsIcon,
+  Search, Bell, Menu as MenuIcon, X, Star, Megaphone, MoreHorizontal, LogOut,
+  Activity, MessageCircle, Heart, Bookmark, AlertTriangle,
 } from "lucide-react";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useIdentity } from "@/hooks/useIdentity";
 import { supabase } from "@/lib/supabase";
 import * as adminSvc from "@/services/adminService";
-import type { AdminCounts } from "@/services/adminService";
-const { fetchAdminCounts } = adminSvc;
+import type { FounderDashboard } from "@/services/adminService";
+const { fetchFounderDashboard, timeAgo } = adminSvc;
 
-type Section =
-  | "overview" | "users" | "sellers" | "content" | "orders"
-  | "subscriptions" | "analytics" | "trends" | "featured"
-  | "cj" | "announcements" | "support" | "settings";
+type Section = "overview" | "users" | "sellers" | "orders" | "content" | "analytics" | "trends" | "featured" | "announcements" | "support" | "settings";
 
 const NAV: { key: Section; label: string; icon: any }[] = [
   { key: "overview", label: "Dashboard", icon: LayoutDashboard },
   { key: "users", label: "Users", icon: Users },
-  { key: "sellers", label: "Sellers", icon: Store },
-  { key: "orders", label: "Orders", icon: ShoppingBag },
   { key: "content", label: "Content", icon: FileImage },
   { key: "analytics", label: "Analytics", icon: BarChart3 },
   { key: "trends", label: "Trends", icon: TrendingUp },
-  { key: "cj", label: "CJ Products", icon: Package },
-  { key: "subscriptions", label: "Subscriptions", icon: CreditCard },
   { key: "featured", label: "Featured", icon: Star },
   { key: "announcements", label: "Announcements", icon: Megaphone },
   { key: "support", label: "Support", icon: LifeBuoy },
@@ -41,120 +33,72 @@ const Admin = () => {
   const [drawer, setDrawer] = useState(false);
   const navigate = useNavigate();
 
-  if (loading) {
-    return (
-      <div className="min-h-[100dvh] grid place-items-center bg-background">
-        <div className="text-sm text-muted-foreground">Verifying access…</div>
-      </div>
-    );
-  }
+  if (loading) return <div className="min-h-[100dvh] grid place-items-center bg-background"><div className="text-sm text-muted-foreground">Verifying access…</div></div>;
   if (!user || !isAdmin) return <Navigate to="/" replace />;
 
-  return (
-    <div className="min-h-[100dvh] bg-muted/30 text-foreground -ml-0 lg:-ml-60">
-      {/* Sidebar */}
-      <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-background border-r border-border/60 transform transition-transform lg:translate-x-0 ${
-          drawer ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        <div className="h-14 px-5 flex items-center justify-between border-b border-border/60">
-          <div className="flex items-center gap-2">
-            <span className="h-7 w-7 rounded-lg gradient-brand grid place-items-center text-white text-[11px] font-black">S</span>
-            <div className="leading-tight">
-              <div className="text-sm font-bold">Shopitt</div>
-              <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Admin</div>
-            </div>
-          </div>
-          <button onClick={() => setDrawer(false)} className="lg:hidden h-8 w-8 grid place-items-center rounded-md hover:bg-muted">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-        <nav className="p-2 space-y-0.5 overflow-y-auto h-[calc(100dvh-3.5rem-3.5rem)]">
-          {NAV.map((n) => {
-            const active = n.key === section;
-            const Icon = n.icon;
-            return (
-              <button
-                key={n.key}
-                onClick={() => { setSection(n.key); setDrawer(false); }}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  active
-                    ? "bg-foreground text-background"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-                <span>{n.label}</span>
-              </button>
-            );
-          })}
-        </nav>
-        <div className="h-14 border-t border-border/60 px-3 flex items-center justify-between">
-          <button
-            onClick={() => navigate("/")}
-            className="text-xs font-medium text-muted-foreground hover:text-foreground"
-          >
-            ← Exit admin
-          </button>
-          <button
-            onClick={async () => { await supabase.auth.signOut(); navigate("/"); }}
-            className="h-8 w-8 grid place-items-center rounded-md hover:bg-muted"
-            aria-label="Sign out"
-          >
-            <LogOut className="h-4 w-4" />
-          </button>
-        </div>
-      </aside>
-
-      {drawer && <div className="fixed inset-0 z-40 bg-black/40 lg:hidden" onClick={() => setDrawer(false)} />}
-
-      {/* Main */}
-      <div className="lg:pl-64">
-        {/* Topbar */}
-        <header className="sticky top-0 z-30 h-14 bg-background/80 backdrop-blur-xl border-b border-border/60 flex items-center gap-3 px-4">
-          <button onClick={() => setDrawer(true)} className="lg:hidden h-9 w-9 grid place-items-center rounded-md hover:bg-muted">
-            <MenuIcon className="h-5 w-5" />
-          </button>
-          <div className="hidden sm:flex flex-1 max-w-md items-center gap-2 h-9 px-3 rounded-lg bg-muted/60 border border-border/60">
-            <Search className="h-4 w-4 text-muted-foreground" />
-            <input
-              className="bg-transparent outline-none text-sm flex-1 placeholder:text-muted-foreground"
-              placeholder="Search users, orders, products…"
-            />
-            <kbd className="hidden md:inline text-[10px] text-muted-foreground border border-border rounded px-1.5 py-0.5">⌘K</kbd>
-          </div>
-          <div className="flex-1 sm:hidden" />
-          <button className="h-9 w-9 grid place-items-center rounded-md hover:bg-muted relative">
-            <Bell className="h-4 w-4" />
-            <span className="absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-brand-pink" />
-          </button>
-          <div className="h-8 w-8 rounded-full gradient-brand grid place-items-center text-white text-xs font-bold">
-            {(user.email?.[0] ?? "A").toUpperCase()}
-          </div>
-        </header>
-
-        <main className="p-4 md:p-6 max-w-[1400px] mx-auto">
-          {section === "overview" && <Overview />}
-          {section === "users" && <UsersPage />}
-          {section === "sellers" && <SellersPage />}
-          {section === "orders" && <OrdersPage />}
-          {section === "content" && <ContentPage />}
-          {section === "analytics" && <AnalyticsPage />}
-          {section === "trends" && <TrendsPage />}
-          {section === "cj" && <CJPage />}
-          {section === "subscriptions" && <SubsPage />}
-          {section === "featured" && <FeaturedPage />}
-          {section === "announcements" && <AnnouncementsPage />}
-          {section === "support" && <SupportPage />}
-          {section === "settings" && <SettingsPage />}
-        </main>
-      </div>
-    </div>
-  );
+  return <div className="min-h-[100dvh] bg-muted/30 text-foreground -ml-0 lg:-ml-60">
+    <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-background border-r border-border/60 transform transition-transform lg:translate-x-0 ${drawer ? "translate-x-0" : "-translate-x-full"}`}>
+      <div className="h-14 px-5 flex items-center justify-between border-b border-border/60"><div className="flex items-center gap-2"><span className="h-7 w-7 rounded-lg gradient-brand grid place-items-center text-white text-[11px] font-black">S</span><div className="leading-tight"><div className="text-sm font-bold">Shopitt</div><div className="text-[10px] text-muted-foreground uppercase tracking-wider">Admin</div></div></div><button onClick={() => setDrawer(false)} className="lg:hidden h-8 w-8 grid place-items-center rounded-md hover:bg-muted"><X className="h-4 w-4" /></button></div>
+      <nav className="p-2 space-y-0.5 overflow-y-auto h-[calc(100dvh-7rem)]">{NAV.map((item) => { const Icon = item.icon; return <button key={item.key} onClick={() => { setSection(item.key); setDrawer(false); }} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium ${item.key === section ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}><Icon className="h-4 w-4" /><span>{item.label}</span></button>; })}</nav>
+      <div className="h-14 border-t border-border/60 px-3 flex items-center justify-between"><button onClick={() => navigate("/")} className="text-xs font-medium text-muted-foreground hover:text-foreground">Exit admin</button><button onClick={async () => { await supabase.auth.signOut(); navigate("/"); }} className="h-8 w-8 grid place-items-center rounded-md hover:bg-muted" aria-label="Sign out"><LogOut className="h-4 w-4" /></button></div>
+    </aside>
+    {drawer && <div className="fixed inset-0 z-40 bg-black/40 lg:hidden" onClick={() => setDrawer(false)} />}
+    <div className="lg:pl-64"><header className="sticky top-0 z-30 h-14 bg-background/80 backdrop-blur-xl border-b border-border/60 flex items-center gap-3 px-4"><button onClick={() => setDrawer(true)} className="lg:hidden h-9 w-9 grid place-items-center rounded-md hover:bg-muted"><MenuIcon className="h-5 w-5" /></button><div className="flex-1" /><div className="h-8 w-8 rounded-full gradient-brand grid place-items-center text-white text-xs font-bold">{(user.email?.[0] ?? "A").toUpperCase()}</div></header><main className="p-4 md:p-6 max-w-[1400px] mx-auto">{section === "overview" && <Overview />}{section === "users" && <UsersPage />}{section === "content" && <ContentPage />}{section === "analytics" && <AnalyticsPage />}{section === "trends" && <TrendsPage />}{section === "featured" && <FeaturedPage />}{section === "announcements" && <AnnouncementsPage />}{section === "support" && <SupportPage />}{section === "settings" && <SettingsPage />}</main></div>
+  </div>;
 };
 
 export default Admin;
+
+const FounderMetric = ({ label, value, icon: Icon }: { label: string; value: string; icon: any }) => (
+  <Card className="p-4">
+    <div className="flex items-center justify-between text-muted-foreground">
+      <span className="text-[11px] font-semibold uppercase tracking-wider">{label}</span>
+      <Icon className="h-4 w-4" />
+    </div>
+    <div className="mt-2 text-2xl font-bold tracking-tight">{value}</div>
+  </Card>
+);
+
+const FounderOverview = ({ dashboard, range, setRange }: { dashboard: FounderDashboard; range: 7 | 30 | 90; setRange: (range: 7 | 30 | 90) => void }) => {
+  const fmt = (value: number | null) => value === null ? "—" : value.toLocaleString();
+  const max = Math.max(1, ...dashboard.growth.map((point) => point.users));
+  return (
+    <>
+      <SectionHeader title="Founder command center" subtitle="Users, activity, growth, and platform health." action={<Pill tone="green"><span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" /> Real data</Pill>} />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <FounderMetric label="Total users" value={dashboard.totalUsers.toLocaleString()} icon={Users} />
+        <FounderMetric label="Active now" value={fmt(dashboard.activeNow)} icon={Activity} />
+        <FounderMetric label="DAU" value={dashboard.dailyActiveUsers.toLocaleString()} icon={Users} />
+        <FounderMetric label="New users today" value={dashboard.newUsersToday.toLocaleString()} icon={Users} />
+      </div>
+      <div className="grid lg:grid-cols-3 gap-4 mt-4">
+        <Card className="lg:col-span-2 p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div><h2 className="font-semibold">User growth</h2><p className="text-xs text-muted-foreground">New registrations by day</p></div>
+            <div className="flex gap-1">{([7, 30, 90] as const).map((value) => <button key={value} onClick={() => setRange(value)} className={`px-2.5 py-1 rounded-md text-[11px] font-bold ${range === value ? "bg-foreground text-background" : "bg-muted text-muted-foreground"}`}>{value}D</button>)}</div>
+          </div>
+          <div className="mt-5 h-36 flex items-end gap-1">
+            {dashboard.growth.map((point) => <div key={point.date} title={`${point.date}: ${point.users}`} className="flex-1 min-w-0 bg-brand-pink/70 rounded-t-sm" style={{ height: `${Math.max(4, (point.users / max) * 100)}%` }} />)}
+          </div>
+        </Card>
+        <Card className="p-5">
+          <h2 className="font-semibold">User health</h2>
+          <div className="mt-4 space-y-3 text-sm"><div className="flex justify-between"><span className="text-muted-foreground">MAU</span><strong>{dashboard.monthlyActiveUsers.toLocaleString()}</strong></div><div className="flex justify-between"><span className="text-muted-foreground">Verified</span><strong>{dashboard.verifiedAccounts.toLocaleString()}</strong></div><div className="flex justify-between"><span className="text-muted-foreground">Looks today</span><strong>{dashboard.looksToday.toLocaleString()}</strong></div></div>
+        </Card>
+      </div>
+      <div className="mt-4"><h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Platform activity</h2><div className="grid grid-cols-2 md:grid-cols-4 gap-3"><FounderMetric label="Looks" value={dashboard.totalLooks.toLocaleString()} icon={FileImage} /><FounderMetric label="Reactions" value={fmt(dashboard.reactions)} icon={Heart} /><FounderMetric label="Comments" value={dashboard.comments.toLocaleString()} icon={MessageCircle} /><FounderMetric label="Saves" value={fmt(dashboard.saves)} icon={Bookmark} /></div></div>
+      <div className="grid lg:grid-cols-2 gap-4 mt-4"><Card className="p-5"><h2 className="font-semibold">Live activity</h2><ul className="mt-4 space-y-3">{dashboard.activity.map((item) => <li key={item.id} className="flex justify-between gap-3 text-sm"><span><strong>{item.text}</strong><span className="block text-xs text-muted-foreground">{item.who}</span></span><span className="text-xs text-muted-foreground shrink-0">{timeAgo(item.at)}</span></li>)}{dashboard.activity.length === 0 && <li className="text-sm text-muted-foreground">No recent activity.</li>}</ul></Card><Card className="p-5"><h2 className="font-semibold">Needs attention</h2>{dashboard.attention.length === 0 ? <p className="mt-4 text-sm text-muted-foreground">All clear</p> : <ul className="mt-4 space-y-2">{dashboard.attention.map((item) => <li key={item.label} className="flex justify-between text-sm"><span>{item.label}</span><Pill tone="yellow">{item.count}</Pill></li>)}</ul>}</Card></div>
+    </>
+  );
+};
+
+const Overview = () => {
+  const [dashboard, setDashboard] = useState<FounderDashboard | null>(null);
+  const [range, setRange] = useState<7 | 30 | 90>(30);
+  useEffect(() => { fetchFounderDashboard(range).then(setDashboard); }, [range]);
+  if (!dashboard) return <div className="py-16 text-center text-sm text-muted-foreground">Loading platform health…</div>;
+  return <FounderOverview dashboard={dashboard} range={range} setRange={setRange} />;
+};
 
 /* ============================== Shared UI ============================== */
 
@@ -185,141 +129,6 @@ const Pill = ({ tone, children }: { tone: "green" | "red" | "yellow" | "blue" | 
 };
 
 /* ============================== Overview ============================== */
-
-function KpiCard({ label, value, delta, deltaTone = "green", icon: Icon }: any) {
-  const ToneIcon = deltaTone === "green" ? ArrowUpRight : ArrowDownRight;
-  const toneClass = deltaTone === "green" ? "text-success" : "text-destructive";
-  return (
-    <Card className="p-4">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{label}</span>
-        {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
-      </div>
-      <div className="mt-2 text-2xl font-bold tracking-tight">{value}</div>
-      {delta && (
-        <div className={`mt-1 inline-flex items-center gap-0.5 text-xs font-semibold ${toneClass}`}>
-          <ToneIcon className="h-3 w-3" />
-          {delta}
-        </div>
-      )}
-    </Card>
-  );
-}
-
-const Overview = () => {
-  const [c, setC] = useState<AdminCounts | null>(null);
-
-  useEffect(() => {
-    fetchAdminCounts().then(setC);
-  }, []);
-
-  const fmt = (n: number) => n.toLocaleString();
-  const v = (n?: number) => (c ? fmt(n ?? 0) : "—");
-
-  return (
-    <>
-      <SectionHeader
-        title="Operations Overview"
-        subtitle="Live snapshot of the Shopitt platform."
-        action={<Pill tone="green"><span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" /> Live data</Pill>}
-      />
-
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
-        <KpiCard label="Total Users" value={v(c?.users)} icon={Users} />
-        <KpiCard label="Total Sellers" value={v(c?.sellers)} icon={Store} />
-        <KpiCard label="Total Products" value={v(c?.products)} icon={Package} />
-        <KpiCard label="Total Orders" value={v(c?.orders)} icon={ShoppingBag} />
-        <KpiCard label="Total Posts" value={v(c?.posts)} icon={FileImage} />
-        <KpiCard label="Total Reels" value={v(c?.reels)} icon={Activity} />
-        <KpiCard label="Total Comments" value={v(c?.comments)} icon={ChevronRight} />
-        <KpiCard label="Total Messages" value={v(c?.messages)} icon={ChevronRight} />
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
-        <KpiCard
-          label="Gross Order Value"
-          value={c ? `$${Math.round(c.revenue).toLocaleString()}` : "—"}
-          icon={CreditCard}
-        />
-        <KpiCard label="Active Today" value={v(c?.activeToday)} icon={Activity} />
-        <KpiCard label="Avg Order Value" value={c && c.orders ? `$${(c.revenue / c.orders).toFixed(2)}` : "$0.00"} icon={CreditCard} />
-        <KpiCard label="Posts / Seller" value={c && c.sellers ? (c.posts / c.sellers).toFixed(1) : "0"} icon={FileImage} />
-      </div>
-
-      <div className="grid lg:grid-cols-3 gap-4 mt-5">
-        <Card className="lg:col-span-2 p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-semibold">Order volume</h3>
-              <p className="text-xs text-muted-foreground">Rolling trend of platform order value</p>
-            </div>
-            <Pill tone="pink"><Activity className="h-3 w-3" /> Live</Pill>
-          </div>
-          <SparkChart />
-        </Card>
-        <ActivityFeed />
-      </div>
-    </>
-  );
-};
-
-
-const SparkChart = () => {
-  const points = useMemo(() => Array.from({ length: 30 }, () => 30 + Math.random() * 70), []);
-  const max = Math.max(...points);
-  const d = points.map((p, i) => `${(i / (points.length - 1)) * 100},${100 - (p / max) * 100}`).join(" ");
-  return (
-    <div className="mt-4 h-44">
-      <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full">
-        <defs>
-          <linearGradient id="g" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="hsl(var(--brand-pink))" stopOpacity="0.4" />
-            <stop offset="100%" stopColor="hsl(var(--brand-pink))" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        <polyline points={d} fill="none" stroke="hsl(var(--brand-pink))" strokeWidth="1.2" vectorEffect="non-scaling-stroke" />
-        <polygon points={`0,100 ${d} 100,100`} fill="url(#g)" />
-      </svg>
-    </div>
-  );
-};
-
-const ACTIVITY = [
-  { t: "2m", text: "New seller joined", who: "@bellatextiles", tone: "green" as const, icon: Store },
-  { t: "5m", text: "Order received", who: "ORD-48201 · $128", tone: "blue" as const, icon: ShoppingBag },
-  { t: "8m", text: "Reel uploaded", who: "@kemiafro", tone: "pink" as const, icon: Activity },
-  { t: "12m", text: "Subscription activated", who: "Growth · @adaobi", tone: "green" as const, icon: CreditCard },
-  { t: "18m", text: "Comment added", who: "@tariq · “Love this!”", tone: "gray" as const, icon: ChevronRight },
-  { t: "22m", text: "User reported", who: "@spam_user · 3 reports", tone: "yellow" as const, icon: AlertTriangle },
-  { t: "31m", text: "New user registered", who: "@nia.styles", tone: "green" as const, icon: Users },
-  { t: "44m", text: "Post published", who: "@hauteafrika · Lookbook 03", tone: "blue" as const, icon: FileImage },
-];
-
-const ActivityFeed = () => (
-  <Card className="p-5">
-    <div className="flex items-center justify-between">
-      <h3 className="font-semibold">Live activity</h3>
-      <Pill tone="pink"><span className="h-1.5 w-1.5 rounded-full bg-brand-pink animate-pulse" /> Live</Pill>
-    </div>
-    <ul className="mt-4 space-y-3">
-      {ACTIVITY.map((a, i) => {
-        const Icon = a.icon;
-        return (
-          <li key={i} className="flex items-start gap-3">
-            <span className="h-8 w-8 rounded-full bg-muted grid place-items-center shrink-0">
-              <Icon className="h-4 w-4 text-foreground" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <div className="text-sm font-medium truncate">{a.text}</div>
-              <div className="text-xs text-muted-foreground truncate">{a.who}</div>
-            </div>
-            <span className="text-[11px] text-muted-foreground shrink-0">{a.t}</span>
-          </li>
-        );
-      })}
-    </ul>
-  </Card>
-);
 
 /* ============================== Users ============================== */
 

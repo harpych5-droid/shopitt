@@ -13,17 +13,9 @@ import { useBag } from '@/hooks/useBag';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveAddress, createOrder } from '@/services/ordersService';
 import { clearCart } from '@/services/cartService';
+import { supabase } from '@/lib/supabase';
 
 const { width } = Dimensions.get('window');
-
-type PayMethod = 'airtel' | 'mtn' | 'bank' | 'cash';
-
-const ORDER_ID = `#SHP-${Date.now().toString().slice(-6)}`;
-const DELIVERY_DATE = (() => {
-  const d = new Date();
-  d.setDate(d.getDate() + 2);
-  return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-})();
 
 export default function CheckoutScreen() {
   const insets = useSafeAreaInsets();
@@ -35,20 +27,20 @@ export default function CheckoutScreen() {
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
-  const [payMethod, setPayMethod] = useState<PayMethod>('airtel');
   const [showSuccess, setShowSuccess] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
-  const [confirmedOrderId, setConfirmedOrderId] = useState(ORDER_ID);
+  const [confirmedOrderId, setConfirmedOrderId] = useState<string | null>(null);
 
   const btnScale = useRef(new Animated.Value(1)).current;
   const successScale = useRef(new Animated.Value(0.7)).current;
   const successOpacity = useRef(new Animated.Value(0)).current;
 
   const total = items.reduce((sum, item) => {
-    const num = parseFloat(item.price.replace(/[^0-9.]/g, '')) * item.quantity;
+    const num = Number(item.price) * item.quantity;
     return sum + (isNaN(num) ? 0 : num);
   }, 0);
+  const currency = items[0]?.currency ?? 'USD';
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -62,49 +54,68 @@ export default function CheckoutScreen() {
 
   const placeOrder = async () => {
     if (!validate()) return;
+    if (!user) {
+      setErrors({ submit: 'Please sign in before placing an order.' });
+      return;
+    }
 
     Animated.sequence([
       Animated.timing(btnScale, { toValue: 0.93, duration: 100, useNativeDriver: true }),
       Animated.spring(btnScale, { toValue: 1, useNativeDriver: true, speed: 25, bounciness: 8 }),
     ]).start();
 
-    if (user) {
-      setLoading(true);
-      try {
+    setLoading(true);
+    try {
         // Save address
         const { data: addrData, error: addrError } = await saveAddress(user.id, {
           full_name: name.trim(),
           phone: phone.trim(),
-          address_line: address.trim(),
+          line1: address.trim(),
           city: city.trim(),
+          country: 'ZM',
           is_default: true,
         });
 
-        if (addrData) {
-          const orderItems = items.map(item => ({
-            post_id: item.id,
-            name: item.name,
-            price: parseFloat(item.price.replace(/[^0-9.]/g, '')) || 0,
-            quantity: item.quantity,
-            image: item.image,
-          }));
+        if (addrError || !addrData) throw new Error(addrError ?? 'Could not save delivery address');
 
-          const { data: orderData } = await createOrder({
+        const createdOrderIds: string[] = [];
+        for (const item of items) {
+          const { data: post, error: postError } = await supabase
+            .from('posts')
+            .select('user_id')
+            .eq('id', item.id)
+            .single();
+          if (postError || !post?.user_id) throw new Error(postError?.message ?? 'Seller information is missing');
+
+          const { data: orderData, error: orderError } = await createOrder({
             buyerId: user.id,
-            totalPrice: total,
-            paymentMethod: payMethod,
-            addressId: addrData.id,
-            items: orderItems,
+            sellerId: post.user_id,
+            postId: item.id,
+            quantity: item.quantity,
+            totalPrice: item.price * item.quantity,
+            currency: item.currency,
+            size: item.selectedSize ?? undefined,
+            color: item.selectedColor ?? undefined,
+            shippingAddress: {
+              full_name: name.trim(),
+              phone: phone.trim(),
+              line1: address.trim(),
+              city: city.trim(),
+              country: 'ZM',
+            },
+            productSnapshot: { title: item.name, price: item.price, image: item.image },
           });
-
-          if (orderData) {
-            setConfirmedOrderId(`#SHP-${orderData.id.slice(-6).toUpperCase()}`);
-            await clearCart(user.id);
-          }
+          if (orderError || !orderData) throw new Error(orderError ?? 'Could not create order');
+          createdOrderIds.push(orderData.id);
         }
-      } finally {
-        setLoading(false);
-      }
+
+        setConfirmedOrderId(createdOrderIds[0] ?? null);
+        await clearCart(user.id);
+    } catch (error) {
+      setErrors({ submit: error instanceof Error ? error.message : 'Could not place order' });
+      return;
+    } finally {
+      setLoading(false);
     }
 
     setShowSuccess(true);
@@ -117,17 +128,9 @@ export default function CheckoutScreen() {
   const handleSuccessClose = () => {
     clearBag();
     setShowSuccess(false);
-    router.replace('/(tabs)');
+    if (confirmedOrderId) router.replace(`/order/${confirmedOrderId}`);
+    else router.replace('/(tabs)');
   };
-
-  const PAY_OPTIONS: { key: PayMethod; label: string; sub: string; emoji: string; color: string }[] = [
-    { key: 'airtel', label: 'Airtel Money', sub: 'Instant mobile payment', emoji: '📱', color: '#FF4DA6' },
-    { key: 'mtn', label: 'MTN Money', sub: 'Instant mobile payment', emoji: '📱', color: '#F59E0B' },
-    { key: 'bank', label: 'Bank Transfer', sub: 'Zanaco, Stanbic, etc.', emoji: '🏦', color: '#3B82F6' },
-    { key: 'cash', label: 'Pay on Delivery', sub: 'Cash at your door', emoji: '💵', color: '#22C55E' },
-  ];
-
-  // INSERT PAYMENT API HERE
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
@@ -187,32 +190,6 @@ export default function CheckoutScreen() {
           </View>
         </View>
 
-        {/* ─── PAYMENT METHOD ─── */}
-        <View style={styles.sectionHeader}>
-          <LinearGradient colors={['#7B5CFF', '#FF4DA6']} style={styles.sectionIcon}>
-            <Ionicons name="card-outline" size={16} color="#fff" />
-          </LinearGradient>
-          <Text style={styles.sectionTitle}>Payment Method</Text>
-        </View>
-
-        <View style={styles.payGrid}>
-          {PAY_OPTIONS.map(opt => {
-            const isSelected = payMethod === opt.key;
-            return (
-              <Pressable
-                key={opt.key}
-                style={({ pressed }) => [styles.payCard, isSelected && styles.payCardActive, pressed && { opacity: 0.85 }]}
-                onPress={() => setPayMethod(opt.key)}
-              >
-                {isSelected ? <View style={[styles.payCheckmark, { backgroundColor: opt.color }]}><Ionicons name="checkmark" size={10} color="#fff" /></View> : null}
-                <Text style={styles.payEmoji}>{opt.emoji}</Text>
-                <Text style={[styles.payLabel, isSelected && { color: opt.color }]}>{opt.label}</Text>
-                <Text style={styles.paySub}>{opt.sub}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
-
         {/* ─── ORDER SUMMARY ─── */}
         <View style={styles.sectionHeader}>
           <LinearGradient colors={['#22C55E', '#16A34A']} style={styles.sectionIcon}>
@@ -245,25 +222,20 @@ export default function CheckoutScreen() {
                     <Text style={styles.freeDeliveryText}>Free Delivery</Text>
                   </View>
                 </View>
-                <Text style={styles.totalAmount}>K{total.toLocaleString()}</Text>
+                <Text style={styles.totalAmount}>{currency} {total.toLocaleString()}</Text>
               </View>
             </>
           ) : null}
         </View>
 
-        <View style={styles.deliveryNote}>
-          <Ionicons name="time-outline" size={16} color="#7B5CFF" />
-          <Text style={styles.deliveryNoteText}>
-            Estimated delivery: <Text style={{ color: '#7B5CFF', fontWeight: '700' }}>{DELIVERY_DATE}</Text>
-          </Text>
-        </View>
+        {errors.submit ? <Text style={styles.errorText}>{errors.submit}</Text> : null}
       </ScrollView>
 
       {/* ─── STICKY FOOTER ─── */}
       <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
         <View style={styles.footerTotal}>
           <Text style={styles.footerTotalLabel}>Total</Text>
-          <Text style={styles.footerTotalAmount}>K{total.toLocaleString()}</Text>
+          <Text style={styles.footerTotalAmount}>{currency} {total.toLocaleString()}</Text>
         </View>
         <Animated.View style={{ transform: [{ scale: btnScale }] }}>
           <Pressable onPress={placeOrder} disabled={loading}>
@@ -284,23 +256,12 @@ export default function CheckoutScreen() {
             </LinearGradient>
             <Text style={styles.confetti}>🎉</Text>
             <Text style={styles.successTitle}>Order Placed!</Text>
-            <Text style={styles.successOrderId}>{confirmedOrderId}</Text>
-            <Text style={styles.successSub}>Your order has been confirmed. The seller will reach out shortly to arrange delivery.</Text>
-            <View style={styles.successInfoCard}>
-              <View style={styles.successInfoRow}>
-                <Ionicons name="calendar-outline" size={16} color="#7B5CFF" />
-                <Text style={styles.successInfoText}>Estimated delivery</Text>
-                <Text style={styles.successInfoValue}>{DELIVERY_DATE}</Text>
-              </View>
-              <View style={[styles.successInfoRow, { borderTopWidth: 1, borderTopColor: Colors.border, marginTop: 10, paddingTop: 10 }]}>
-                <Ionicons name="bag-outline" size={16} color="#FF4DA6" />
-                <Text style={styles.successInfoText}>Total paid</Text>
-                <Text style={[styles.successInfoValue, { color: '#FF4DA6' }]}>K{total.toLocaleString()}</Text>
-              </View>
-            </View>
-            <Pressable onPress={handleSuccessClose} style={styles.successBtn}>
+            <Text style={styles.successOrderId}>#{confirmedOrderId?.slice(0, 8).toUpperCase()}</Text>
+            <Text style={styles.successSub}>Your order was received by the seller and is ready to be prepared.</Text>
+            <Text style={styles.successSub}>{currency} {total.toLocaleString()} · Order received</Text>
+            <Pressable onPress={handleSuccessClose} style={styles.successBtn} disabled={!confirmedOrderId}>
               <LinearGradient colors={['#FF4DA6', '#7B5CFF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.successBtnGrad}>
-                <Text style={styles.successBtnText}>Back to Home</Text>
+                <Text style={styles.successBtnText}>View Order</Text>
               </LinearGradient>
             </Pressable>
           </Animated.View>

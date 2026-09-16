@@ -3,7 +3,6 @@ import feed2 from "@/assets/feed-2.jpg";
 import feed3 from "@/assets/feed-3.jpg";
 import feed4 from "@/assets/feed-4.jpg";
 import feed5 from "@/assets/feed-5.jpg";
-import feed6 from "@/assets/feed-6.jpg";
 
 export type PostType = "product" | "inspiration";
 export type PostBadge =
@@ -51,6 +50,8 @@ export type FeedItem = {
   mediaType?: "image" | "video";
   /** All media URLs for product detail swipe galleries. */
   mediaUrls?: string[];
+  /** True when this item resolves from public.products rather than public.posts. */
+  catalogProduct?: boolean;
 };
 
 export const FEED: FeedItem[] = [
@@ -257,28 +258,6 @@ export const FEED: FeedItem[] = [
     comments: 712,
     postType: "inspiration",
     badge: "Trend",
-  },
-  {
-    id: "p6",
-    brand: "Echo Audio",
-    brandHandle: "echoaudio",
-    title: "Halo Pro ANC Headphones",
-    drop: "Tech Drop 🎧",
-    image: feed6,
-    price: 7533,
-    oldPrice: 9423,
-    currency: "ZMW ",
-    stockLeft: 9,
-    freeDelivery: true,
-    category: "Tech",
-    likes: 7180,
-    sold: 198,
-    location: "Lusaka",
-    shipsIn: "24h",
-    caption: "Studio-grade ANC. 40h battery. Built for the commute.",
-    hashtags: ["tech", "audio", "headphones"],
-    comments: 98,
-    postType: "product",
   },
   {
     id: "p7", brand: "Lumen Optics", brandHandle: "lumenoptics",

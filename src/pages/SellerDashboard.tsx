@@ -83,11 +83,11 @@ const SellerDashboard = () => {
 
   const advanceOrder = async (order: OrderRow) => {
     const current = (order.status ?? "pending").toLowerCase();
-    const next = current === "pending" || current === "received" ? "preparing" : current === "preparing" ? "ready" : current === "ready" ? "delivered" : null;
+    const next = current === "pending" ? "preparing" : current === "preparing" ? "delivered" : null;
     if (!next) return;
     const { error } = await updateOrderStatus(order.id, next as any);
     if (error) toast.error(error);
-    else toast.success(`Order marked ${next}`);
+    else toast.success(next === "preparing" ? "Order marked preparing" : "Order completed");
   };
 
   return (
@@ -236,7 +236,7 @@ const SellerDashboard = () => {
                         <p className="text-[11px] text-muted-foreground">{currencyLabel(o.currency ?? wallet.currency)} {money.format(Number(o.total_price ?? 0))} · {status}</p>
                       </div>
                       <button onClick={() => advanceOrder(o)} disabled={["delivered", "cancelled"].includes(status)} className="rounded-full bg-muted/60 px-3 py-1.5 text-[11px] font-bold disabled:opacity-40">
-                        Advance
+                        {status === "pending" ? "Start preparing" : status === "preparing" ? "Complete" : "Done"}
                       </button>
                     </div>
                   </li>

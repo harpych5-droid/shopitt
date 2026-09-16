@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { X, CheckCircle2, Truck, Phone, Loader2 } from "lucide-react";
+import { X, CheckCircle2, Truck, Phone, Loader2, MessageCircle, MessageSquareText } from "lucide-react";
 import type { FeedItem } from "@/data/feed";
 import { useIdentity } from "@/hooks/useIdentity";
-import { createOrder } from "@/services/ordersService";
+import { buildWhatsAppUrl, createOrder, fetchSellerContactPhone, getOrderStatusLabel } from "@/services/ordersService";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -18,62 +18,63 @@ type Stage = "form" | "confirmed";
 export const PlaceOrderSheet = ({ open, product, onClose }: PlaceOrderSheetProps) => {
   const { user, profile, isAuthed } = useIdentity();
   const [stage, setStage] = useState<Stage>("form");
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [address, setAddress] = useState("");
-  const [province, setProvince] = useState("");
-  const [city, setCity] = useState("");
   const [quantity, setQuantity] = useState(1);
-  const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
+  const [sellerPhone, setSellerPhone] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
       setStage("form");
       setSubmitting(false);
       setQuantity(1);
-      setName(profile?.username ?? "");
+      setOrderId(null);
+      if (product?.userId) {
+        void fetchSellerContactPhone(product.userId).then((phone) => setSellerPhone(phone));
+      }
     }
-  }, [open, product?.id, profile]);
+  }, [open, product?.userId]);
 
   if (!product) return null;
 
-  const canSubmit = name.trim() && phone.trim() && address.trim() && province.trim() && city.trim() && quantity > 0 && !submitting;
+  const total = Number(product.price ?? 0) * quantity;
+  const maxQuantity = Number.isFinite(Number(product.stockLeft)) && Number(product.stockLeft) > 0 ? Number(product.stockLeft) : 99;
+  const canSubmit = quantity > 0 && quantity <= maxQuantity && !submitting && isAuthed && !!user && !!product.userId;
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!canSubmit) return;
-    if (!isAuthed || !user) {
-      toast.error("Please sign in to order");
+    if (!canSubmit) {
+      if (!isAuthed || !user) toast.error("Please sign in to order");
+      else if (!product.userId) toast.error("Seller info missing");
+      else if (quantity > maxQuantity) toast.error("Sorry, this item is no longer available in that quantity.");
       return;
     }
-    if (!product.userId) {
-      toast.error("Seller info missing");
-      return;
-    }
+
     setSubmitting(true);
-    const fullAddress = `${address.trim()}, ${city.trim()}, ${province.trim()}` + (notes ? `\nNotes: ${notes.trim()}` : "");
     const { id, error } = await createOrder({
-      buyerId: user.id,
+      buyerId: user!.id,
       sellerId: product.userId,
-      postId: product.id,
+      postId: product.catalogProduct ? null : product.id,
       quantity,
-      unitPrice: product.price,
+      unitPrice: Number(product.price ?? 0),
       currency: (product.currency ?? "USD").trim(),
-      buyerName: name.trim(),
-      buyerPhone: phone.trim(),
-      deliveryAddress: fullAddress,
+      buyerName: profile?.username ?? "Customer",
+      buyerPhone: "",
+      deliveryAddress: "",
       productSnapshot: { title: product.title, media_url: product.image },
     });
     setSubmitting(false);
-    if (error) {
-      toast.error(error);
+
+    if (error || !id) {
+      toast.error(error || "Your order wasn't placed. Please try again.");
       return;
     }
+
     setOrderId(id);
     setStage("confirmed");
   };
+
+  const whatsappHref = buildWhatsAppUrl(sellerPhone, `Hi, I just placed Shopitt order #${orderId ?? ""} for ${product.title}.`);
 
   return (
     <AnimatePresence>
@@ -119,53 +120,27 @@ export const PlaceOrderSheet = ({ open, product, onClose }: PlaceOrderSheetProps
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-foreground">Full name *</label>
-                  <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" className="mt-1.5 w-full rounded-2xl bg-card border border-border/60 px-4 py-3 text-sm focus:outline-none focus:border-brand-pink" />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-foreground">Phone *</label>
-                  <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+260 ..." type="tel" className="mt-1.5 w-full rounded-2xl bg-card border border-border/60 px-4 py-3 text-sm focus:outline-none focus:border-brand-pink" />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-foreground">Delivery address *</label>
-                  <textarea value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Area, street, landmark" rows={2} className="mt-1.5 w-full rounded-2xl bg-card border border-border/60 px-4 py-3 text-sm focus:outline-none focus:border-brand-pink" />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs font-semibold text-foreground">Province *</label>
-                    <input value={province} onChange={(e) => setProvince(e.target.value)} placeholder="Province" className="mt-1.5 w-full rounded-2xl bg-card border border-border/60 px-4 py-3 text-sm focus:outline-none focus:border-brand-pink" />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-foreground">City *</label>
-                    <input value={city} onChange={(e) => setCity(e.target.value)} placeholder="City" className="mt-1.5 w-full rounded-2xl bg-card border border-border/60 px-4 py-3 text-sm focus:outline-none focus:border-brand-pink" />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-foreground">Quantity *</label>
+                  <label className="text-xs font-semibold text-foreground">Quantity</label>
                   <div className="mt-1.5 flex items-center gap-3">
                     <button type="button" onClick={() => setQuantity((q) => Math.max(1, q - 1))} className="h-11 w-11 rounded-full bg-card border border-border/60 text-lg font-bold">−</button>
                     <span className="min-w-[3ch] text-center text-base font-extrabold tabular-nums">{quantity}</span>
-                    <button type="button" onClick={() => setQuantity((q) => Math.min(99, q + 1))} className="h-11 w-11 rounded-full bg-card border border-border/60 text-lg font-bold">+</button>
+                    <button type="button" onClick={() => setQuantity((q) => Math.min(maxQuantity, q + 1))} className="h-11 w-11 rounded-full bg-card border border-border/60 text-lg font-bold">+</button>
                     <span className="ml-auto text-sm font-bold tabular-nums text-brand-pink">
-                      {product.currency}{(product.price * quantity).toFixed(2)}
+                      {product.currency}{total.toFixed(2)}
                     </span>
                   </div>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-foreground">Notes (optional)</label>
-                  <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Size, color, preferred time…" className="mt-1.5 w-full rounded-2xl bg-card border border-border/60 px-4 py-3 text-sm focus:outline-none focus:border-brand-pink" />
                 </div>
 
                 <div className="rounded-2xl bg-muted/40 border border-border/60 px-3 py-2.5 flex items-start gap-2 text-[12px] text-muted-foreground leading-snug">
                   <Truck className="h-4 w-4 text-brand-pink mt-0.5 shrink-0" />
-                  The seller will contact you to arrange payment & delivery.
+                  Order received is the first status after purchase. The seller receives the order and can start preparing it.
                 </div>
 
                 <button type="submit" disabled={!canSubmit} className="w-full h-12 rounded-full gradient-brand shadow-brand text-sm font-extrabold text-white flex items-center justify-center disabled:opacity-50 active:scale-[0.98] transition-transform">
                   {submitting ? (
                     <span className="inline-flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Placing…</span>
                   ) : (
-                    "Place Order"
+                    "Buy"
                   )}
                 </button>
               </form>
@@ -174,30 +149,44 @@ export const PlaceOrderSheet = ({ open, product, onClose }: PlaceOrderSheetProps
                 <motion.span initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 360, damping: 22 }} className="inline-flex h-16 w-16 items-center justify-center rounded-full gradient-brand shadow-brand">
                   <CheckCircle2 className="h-9 w-9 text-white" />
                 </motion.span>
-                <h3 className="mt-4 text-xl font-extrabold tracking-tight">Order received 🎉</h3>
+                <h3 className="mt-4 text-xl font-extrabold tracking-tight">Order received</h3>
                 <p className="mt-2 text-sm text-muted-foreground leading-snug">
-                  <span className="font-semibold text-foreground">{product.brand}</span> will contact you to arrange payment and delivery.
+                  Product: <span className="font-semibold text-foreground">{product.title}</span>
                 </p>
                 <div className="mt-5 rounded-2xl bg-card border border-border/60 p-4 text-left">
                   <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground font-bold">Order summary</p>
                   <div className="mt-2 flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Item</span>
-                    <span className="font-semibold truncate ml-2">{product.title}</span>
+                    <span className="text-muted-foreground">Quantity</span>
+                    <span className="font-semibold">{quantity}</span>
                   </div>
                   <div className="mt-1 flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Total</span>
-                    <span className="font-extrabold tabular-nums">{product.currency}{product.price}</span>
+                    <span className="text-muted-foreground">Price</span>
+                    <span className="font-extrabold tabular-nums">{product.currency}{total.toFixed(2)}</span>
                   </div>
                   <div className="mt-1 flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Status</span>
-                    <span className="font-semibold text-brand-pink">Pending</span>
+                    <span className="font-semibold text-brand-pink">{getOrderStatusLabel("pending")}</span>
+                  </div>
+                  <div className="mt-1 flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Order</span>
+                    <span className="font-semibold">#{orderId?.slice(0, 8).toUpperCase() ?? "NEW"}</span>
                   </div>
                 </div>
-                <div className="mt-5 flex items-center gap-2">
-                  <a href="tel:" className="flex-1 h-11 rounded-full bg-card border border-border/60 text-sm font-bold flex items-center justify-center gap-1.5">
+                <div className="mt-5 grid grid-cols-3 gap-2">
+                  <a href={sellerPhone ? `tel:${sellerPhone}` : undefined} aria-disabled={!sellerPhone} className={`h-11 rounded-full border text-sm font-bold flex items-center justify-center gap-1.5 ${sellerPhone ? "bg-card border-border/60" : "bg-muted border-muted text-muted-foreground pointer-events-none"}`}>
                     <Phone className="h-4 w-4" />
-                    Call seller
+                    Call
                   </a>
+                  <a href={sellerPhone ? `sms:${sellerPhone}` : undefined} aria-disabled={!sellerPhone} className={`h-11 rounded-full border text-sm font-bold flex items-center justify-center gap-1.5 ${sellerPhone ? "bg-card border-border/60" : "bg-muted border-muted text-muted-foreground pointer-events-none"}`}>
+                    <MessageSquareText className="h-4 w-4" />
+                    Text
+                  </a>
+                  <a href={whatsappHref ?? undefined} aria-disabled={!whatsappHref} className={`h-11 rounded-full border text-sm font-bold flex items-center justify-center gap-1.5 ${whatsappHref ? "bg-card border-border/60" : "bg-muted border-muted text-muted-foreground pointer-events-none"}`}>
+                    <MessageCircle className="h-4 w-4" />
+                    WhatsApp
+                  </a>
+                </div>
+                <div className="mt-5 flex items-center gap-2">
                   <Link to={orderId ? `/orders/${orderId}` : "/orders"} onClick={onClose} className="flex-1 h-11 rounded-full gradient-brand shadow-brand text-sm font-extrabold text-white flex items-center justify-center">
                     View order
                   </Link>

@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable,
-  Animated, ActivityIndicator,
+  ActivityIndicator,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -11,80 +11,8 @@ import { StatusBar } from 'expo-status-bar';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
-import { DbOrder, fetchBuyerOrders, updateOrderStatus } from '@/services/ordersService';
+import { DbOrder, fetchOrderById, updateOrderStatus } from '@/services/ordersService';
 import { supabase } from '@/lib/supabase';
-
-const STATUS_STEPS: { key: DbOrder['status']; label: string; icon: string; desc: string }[] = [
-  { key: 'pending',   label: 'Order Placed',  icon: 'checkmark-circle-outline', desc: 'Your order has been received' },
-  { key: 'confirmed', label: 'Confirmed',      icon: 'bag-check-outline',        desc: 'Seller confirmed your order' },
-  { key: 'shipped',   label: 'Shipped',        icon: 'car-outline',              desc: 'Your order is on the way' },
-  { key: 'delivered', label: 'Delivered',      icon: 'home-outline',             desc: 'Order delivered successfully' },
-];
-
-const STATUS_WEIGHT: Record<string, number> = {
-  pending: 0, confirmed: 1, shipped: 2, delivered: 3, cancelled: -1,
-};
-
-function estimatedDelivery(createdAt: string): string {
-  const date = new Date(createdAt);
-  date.setDate(date.getDate() + 5);
-  return date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
-}
-
-function StepDot({ step, currentWeight, index }: { step: typeof STATUS_STEPS[0]; currentWeight: number; index: number }) {
-  const scaleAnim = useRef(new Animated.Value(0)).current;
-  const isPast    = STATUS_WEIGHT[step.key] <= currentWeight;
-  const isActive  = STATUS_WEIGHT[step.key] === currentWeight;
-
-  useEffect(() => {
-    if (isPast || isActive) {
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        delay: index * 150,
-        useNativeDriver: true,
-        speed: 18,
-        bounciness: 10,
-      }).start();
-    }
-  }, [isPast, isActive]);
-
-  return (
-    <View style={styles.step}>
-      {/* Connector line above */}
-      {index > 0 ? (
-        <View style={[styles.connector, isPast && styles.connectorActive]} />
-      ) : null}
-
-      {/* Dot */}
-      <Animated.View style={{ transform: [{ scale: isPast || isActive ? scaleAnim : new Animated.Value(1) }] }}>
-        {isActive ? (
-          <LinearGradient
-            colors={['#FF4DA6', '#7B5CFF']}
-            style={styles.dotActive}
-          >
-            <Ionicons name={step.icon as any} size={18} color="#fff" />
-          </LinearGradient>
-        ) : isPast ? (
-          <View style={styles.dotDone}>
-            <Ionicons name="checkmark" size={16} color="#22C55E" />
-          </View>
-        ) : (
-          <View style={styles.dotPending}>
-            <Ionicons name={step.icon as any} size={16} color={Colors.textSubtle} />
-          </View>
-        )}
-      </Animated.View>
-
-      {/* Label */}
-      <View style={styles.stepLabel}>
-        <Text style={[styles.stepTitle, (isPast || isActive) && styles.stepTitleActive]}>
-          {step.label}
-        </Text>
-        <Text style={styles.stepDesc}>{step.desc}</Text>
-      </View>
-    </View>
-  );
-}
 
 export default function OrderTrackingScreen() {
   const insets  = useSafeAreaInsets();
@@ -98,11 +26,13 @@ export default function OrderTrackingScreen() {
   // ── Fetch order ───────────────────────────────────────────────────────────
   const load = async () => {
     if (!user) return;
-    const { data } = await fetchBuyerOrders(user.id);
-    if (data) {
-      const found = data.find(o => o.id === id);
-      setOrder(found ?? null);
+    if (!id) {
+      setOrder(null);
+      setLoading(false);
+      return;
     }
+    const { data } = await fetchOrderById(id);
+    setOrder(data && (data.buyer_id === user.id || data.seller_id === user.id) ? data : null);
     setLoading(false);
   };
 
@@ -129,10 +59,8 @@ export default function OrderTrackingScreen() {
   // ── Seller: update status ─────────────────────────────────────────────────
   const handleAdvanceStatus = async () => {
     if (!order) return;
-    const steps = STATUS_STEPS.map(s => s.key);
-    const currentIdx = steps.indexOf(order.status);
-    if (currentIdx < steps.length - 1) {
-      const next = steps[currentIdx + 1];
+    const next = order.status === 'pending' ? 'preparing' : 'delivered';
+    if (order.status !== 'delivered' && order.status !== 'cancelled') {
       await updateOrderStatus(order.id, next);
       setOrder(prev => prev ? { ...prev, status: next } : prev);
     }
@@ -164,7 +92,6 @@ export default function OrderTrackingScreen() {
     );
   }
 
-  const currentWeight = order.status === 'cancelled' ? -1 : (STATUS_WEIGHT[order.status] ?? 0);
   const isCancelled   = order.status === 'cancelled';
 
   return (
@@ -203,67 +130,32 @@ export default function OrderTrackingScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
       >
-        {/* Estimated Delivery Banner */}
-        {!isCancelled ? (
-          <LinearGradient
-            colors={['rgba(255,77,166,0.12)', 'rgba(123,92,255,0.12)']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.deliveryBanner}
-          >
-            <Ionicons name="time-outline" size={20} color="#FF4DA6" />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.deliveryLabel}>Estimated Delivery</Text>
-              <Text style={styles.deliveryDate}>{estimatedDelivery(order.created_at)}</Text>
-            </View>
-            {order.status === 'delivered' ? (
-              <View style={styles.deliveredTag}>
-                <Text style={styles.deliveredTagText}>Delivered ✓</Text>
-              </View>
-            ) : null}
-          </LinearGradient>
-        ) : null}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Status</Text>
+          <Text style={styles.addressLine}>{order.status === 'pending' ? 'Order received' : order.status === 'preparing' ? 'Preparing' : 'Completed'}</Text>
+        </View>
 
-        {/* Timeline */}
-        <View style={styles.timelineSection}>
-          <Text style={styles.sectionTitle}>Order Timeline</Text>
-          <View style={styles.timeline}>
-            {STATUS_STEPS.map((step, i) => (
-              <StepDot
-                key={step.key}
-                step={step}
-                currentWeight={currentWeight}
-                index={i}
-              />
-            ))}
+        {/* Product snapshot */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Product</Text>
+          <View style={styles.orderItem}>
+            {order.product_snapshot?.image ? (
+              <Image source={{ uri: order.product_snapshot.image }} style={styles.itemImage} contentFit="cover" />
+            ) : (
+              <View style={[styles.itemImage, { backgroundColor: Colors.surfaceCard, alignItems: 'center', justifyContent: 'center' }]}>
+                <Ionicons name="bag-outline" size={24} color={Colors.textSubtle} />
+              </View>
+            )}
+            <View style={styles.itemInfo}>
+              <Text style={styles.itemName} numberOfLines={2}>{order.product_snapshot?.title ?? 'Product'}</Text>
+              <Text style={styles.itemQty}>Qty: {order.quantity}</Text>
+            </View>
+            <Text style={styles.itemPrice}>{order.currency} {Number(order.total_price).toLocaleString()}</Text>
           </View>
         </View>
 
-        {/* Items */}
-        {order.order_items && order.order_items.length > 0 ? (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Items ({order.order_items.length})</Text>
-            {order.order_items.map(item => (
-              <View key={item.id} style={styles.orderItem}>
-                {item.image ? (
-                  <Image source={{ uri: item.image }} style={styles.itemImage} contentFit="cover" />
-                ) : (
-                  <View style={[styles.itemImage, { backgroundColor: Colors.surfaceCard, alignItems: 'center', justifyContent: 'center' }]}>
-                    <Ionicons name="bag-outline" size={24} color={Colors.textSubtle} />
-                  </View>
-                )}
-                <View style={styles.itemInfo}>
-                  <Text style={styles.itemName} numberOfLines={2}>{item.name}</Text>
-                  <Text style={styles.itemQty}>Qty: {item.quantity}</Text>
-                </View>
-                <Text style={styles.itemPrice}>K{Number(item.price).toLocaleString()}</Text>
-              </View>
-            ))}
-          </View>
-        ) : null}
-
         {/* Delivery address */}
-        {order.addresses ? (
+        {order.shipping_address_snapshot ? (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Delivery Address</Text>
             <View style={styles.addressCard}>
@@ -273,10 +165,10 @@ export default function OrderTrackingScreen() {
                 </LinearGradient>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.addressName}>{order.addresses.full_name}</Text>
-                <Text style={styles.addressLine}>{order.addresses.address_line}</Text>
-                <Text style={styles.addressLine}>{order.addresses.city}, {order.addresses.country}</Text>
-                <Text style={styles.addressPhone}>{order.addresses.phone}</Text>
+                <Text style={styles.addressName}>{order.shipping_address_snapshot.full_name}</Text>
+                <Text style={styles.addressLine}>{order.shipping_address_snapshot.line1}</Text>
+                <Text style={styles.addressLine}>{order.shipping_address_snapshot.city}, {order.shipping_address_snapshot.country}</Text>
+                <Text style={styles.addressPhone}>{order.shipping_address_snapshot.phone}</Text>
               </View>
             </View>
           </View>
@@ -287,12 +179,8 @@ export default function OrderTrackingScreen() {
           <Text style={styles.sectionTitle}>Payment Summary</Text>
           <View style={styles.summaryCard}>
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Subtotal</Text>
-              <Text style={styles.summaryValue}>K{Number(order.total_price).toLocaleString()}</Text>
-            </View>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Delivery</Text>
-              <Text style={[styles.summaryValue, { color: '#22C55E' }]}>Free</Text>
+              <Text style={styles.summaryLabel}>Order total</Text>
+              <Text style={styles.summaryValue}>{order.currency} {Number(order.total_price).toLocaleString()}</Text>
             </View>
             <View style={[styles.summaryRow, { borderTopWidth: 1, borderTopColor: Colors.border, paddingTop: 12 }]}>
               <Text style={[styles.summaryLabel, { fontWeight: '800', color: Colors.textPrimary }]}>Total</Text>
@@ -302,15 +190,9 @@ export default function OrderTrackingScreen() {
                 end={{ x: 1, y: 0 }}
                 style={styles.totalBadge}
               >
-                <Text style={styles.totalText}>K{Number(order.total_price).toLocaleString()}</Text>
+                <Text style={styles.totalText}>{order.currency} {Number(order.total_price).toLocaleString()}</Text>
               </LinearGradient>
             </View>
-            {order.payment_method ? (
-              <View style={styles.paymentMethodRow}>
-                <Ionicons name="card-outline" size={15} color={Colors.textSubtle} />
-                <Text style={styles.paymentMethodText}>{order.payment_method}</Text>
-              </View>
-            ) : null}
           </View>
         </View>
       </ScrollView>
@@ -326,10 +208,9 @@ export default function OrderTrackingScreen() {
               style={styles.advanceBtn}
             >
               <Ionicons name="arrow-forward-circle-outline" size={22} color="#fff" />
-              <Text style={styles.advanceBtnText}>
-                {order.status === 'pending' ? 'Confirm Order'
-                  : order.status === 'confirmed' ? 'Mark as Shipped'
-                  : 'Mark as Delivered'}
+                <Text style={styles.advanceBtnText}>
+                {order.status === 'pending' ? 'Start preparing'
+                  : 'Complete order'}
               </Text>
             </LinearGradient>
           </Pressable>

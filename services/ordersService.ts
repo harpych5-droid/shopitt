@@ -13,7 +13,7 @@ export interface DbOrder {
   color: string | null;
   total_price: number;
   currency: string;
-  status: 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
+  status: 'pending' | 'preparing' | 'delivered' | 'cancelled';
   payment_status: string;
   created_at: string;
   updated_at: string;
@@ -26,6 +26,22 @@ export interface DbOrder {
     profiles?: { username: string | null; avatar_url: string | null };
   };
   buyer_profile?: { username: string | null; avatar_url: string | null };
+}
+
+export function normalizeOrderStatus(status: string | null | undefined): DbOrder['status'] {
+  const normalized = String(status ?? 'pending').trim().toLowerCase();
+  const map: Record<string, DbOrder['status']> = {
+    pending: 'pending',
+    received: 'pending',
+    confirmed: 'pending',
+    preparing: 'preparing',
+    ready: 'preparing',
+    shipped: 'preparing',
+    completed: 'delivered',
+    delivered: 'delivered',
+    cancelled: 'cancelled',
+  };
+  return map[normalized] ?? 'pending';
 }
 
 export interface AddressSnapshot {
@@ -53,7 +69,7 @@ export async function fetchBuyerOrders(userId: string) {
     .order('created_at', { ascending: false });
 
   if (error) return { data: null, error: error.message };
-  return { data: data as DbOrder[], error: null };
+  return { data: (data ?? []).map((row: any) => ({ ...row, status: normalizeOrderStatus(row.status) })) as DbOrder[], error: null };
 }
 
 export async function fetchSellerOrders(sellerId: string) {
@@ -68,21 +84,19 @@ export async function fetchSellerOrders(sellerId: string) {
     .order('created_at', { ascending: false });
 
   if (error) return { data: null, error: error.message };
-  return { data: data as DbOrder[], error: null };
+  return { data: (data ?? []).map((row: any) => ({ ...row, status: normalizeOrderStatus(row.status) })) as DbOrder[], error: null };
 }
 
 export async function fetchOrderById(orderId: string) {
   const { data, error } = await supabase
     .from('orders')
-    .select(`
-      *,
-      post:posts (title, media_url, description, profiles (username, avatar_url))
-    `)
+    .select('*')
     .eq('id', orderId)
     .single();
 
   if (error) return { data: null, error: error.message };
-  return { data: data as DbOrder, error: null };
+  if (!data) return { data: null, error: null };
+  return { data: { ...data, status: normalizeOrderStatus(data.status) } as DbOrder, error: null };
 }
 
 export async function createOrder(params: {
@@ -121,9 +135,10 @@ export async function createOrder(params: {
 }
 
 export async function updateOrderStatus(orderId: string, status: DbOrder['status']) {
+  const canonical = normalizeOrderStatus(status);
   const { error } = await supabase
     .from('orders')
-    .update({ status, updated_at: new Date().toISOString() })
+    .update({ status: canonical, updated_at: new Date().toISOString() })
     .eq('id', orderId);
   return { error: error?.message ?? null };
 }

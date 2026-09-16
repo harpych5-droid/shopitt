@@ -34,21 +34,6 @@ export interface ShortVideo {
   hasProduct: boolean;
 }
 
-export interface Order {
-  id: string;
-  orderId: string;
-  username: string;
-  avatar: string;
-  verified: boolean;
-  status: 'pending' | 'confirmed' | 'delivered';
-  timeAgo: string;
-  productName: string;
-  quantity: number;
-  total: string;
-  location: string;
-  isNew?: boolean;
-}
-
 export interface Notification {
   id: string;
   avatar: string;
@@ -171,63 +156,6 @@ export const MOCK_SHORTS: ShortVideo[] = [
     sold: 89,
     scarcity: 'Only 3 left',
     hasProduct: true,
-  },
-];
-
-export const MOCK_ORDERS: Order[] = [
-  {
-    id: '1',
-    orderId: '#SHP-2025001',
-    username: '@the_joystreet_shop',
-    avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100&h=100&fit=crop',
-    verified: false,
-    status: 'pending',
-    timeAgo: '3h ago',
-    productName: 'Air Jordan 1 Retro High',
-    quantity: 1,
-    total: 'K1,800',
-    location: 'Livingstone, Zambia',
-    isNew: true,
-  },
-  {
-    id: '2',
-    orderId: '#SHP-2025002',
-    username: '@zm_isaacbanda_plug',
-    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop',
-    verified: true,
-    status: 'confirmed',
-    timeAgo: '6h ago',
-    productName: 'Oversized Hoodie – Black',
-    quantity: 2,
-    total: 'K900',
-    location: 'Livingstone, Zambia',
-  },
-  {
-    id: '3',
-    orderId: '#SHP-2025003',
-    username: '@the_ariatembo_store',
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop',
-    verified: false,
-    status: 'delivered',
-    timeAgo: '9h ago',
-    productName: 'Nike Dunk Low',
-    quantity: 1,
-    total: 'K1,200',
-    location: 'Lusaka, Zambia',
-  },
-  {
-    id: '4',
-    orderId: '#SHP-2025004',
-    username: '@lusaka_fits_plug',
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop',
-    verified: false,
-    status: 'pending',
-    timeAgo: '1h ago',
-    productName: 'Vintage Denim Jacket',
-    quantity: 1,
-    total: 'K750',
-    location: 'Kitwe, Zambia',
-    isNew: true,
   },
 ];
 

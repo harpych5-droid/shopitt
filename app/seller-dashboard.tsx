@@ -13,7 +13,7 @@ import FloatingBag from '@/components/ui/FloatingBag';
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchSellerOrders, updateOrderStatus, DbOrder } from '@/services/ordersService';
 import { fetchWalletBalance } from '@/services/walletService';
-import { MOCK_ORDERS, WEEKLY_REVENUE } from '@/services/mockData';
+import { WEEKLY_REVENUE } from '@/services/mockData';
 import OrderCard from '@/components/feature/OrderCard';
 import Animated, { useSharedValue, withTiming, useAnimatedStyle } from 'react-native-reanimated';
 
@@ -21,7 +21,7 @@ const { width } = Dimensions.get('window');
 const CHART_MAX = 12400;
 const CHART_HEIGHT = 110;
 
-type FilterType = 'all' | 'pending' | 'confirmed' | 'delivered';
+type FilterType = 'all' | 'pending' | 'preparing' | 'delivered';
 
 const TOP_PRODUCTS = [
   { id: '1', name: 'Air Jordan 1 Retro High', image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=200&h=200&fit=crop', sold: 89, revenue: 'K160,200', badge: '🔥 Top Seller' },
@@ -58,7 +58,7 @@ export default function SellerDashboardScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const [filter, setFilter] = useState<FilterType>('all');
-  const [orders, setOrders] = useState(MOCK_ORDERS);
+  const [orders, setOrders] = useState<any[]>([]);
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -69,19 +69,19 @@ export default function SellerDashboardScreen() {
       fetchSellerOrders(user.id),
       fetchWalletBalance(user.id),
     ]).then(([ordersRes, balance]) => {
-      if (ordersRes.data && ordersRes.data.length > 0) {
-        // Map DB orders to mock format for display
-        setOrders(MOCK_ORDERS); // Keep mock for now, real data would need mapping
-      }
+      setOrders(ordersRes.data ?? []);
       setWalletBalance(balance);
     }).finally(() => setLoading(false));
   }, [user]);
 
   const filteredOrders = filter === 'all' ? orders : orders.filter(o => o.status === filter);
 
-  const confirmOrder = (id: string) => {
-    setOrders(prev => prev.map(o => o.id === id ? { ...o, status: 'confirmed' as const, isNew: false } : o));
-    if (user) updateOrderStatus(id, 'confirmed');
+  const advanceOrder = (id: string) => {
+    setOrders(prev => prev.map(o => {
+      if (o.id !== id) return o;
+      return { ...o, status: 'preparing', isNew: false };
+    }));
+    if (user) updateOrderStatus(id, 'preparing');
   };
 
   const deliverOrder = (id: string) => {
@@ -90,13 +90,13 @@ export default function SellerDashboardScreen() {
   };
 
   const pending = orders.filter(o => o.status === 'pending').length;
-  const confirmed = orders.filter(o => o.status === 'confirmed').length;
+  const preparing = orders.filter(o => o.status === 'preparing').length;
   const delivered = orders.filter(o => o.status === 'delivered').length;
 
   const filterOptions: { key: FilterType; label: string; count: number }[] = [
     { key: 'all', label: 'All', count: orders.length },
     { key: 'pending', label: 'Pending', count: pending },
-    { key: 'confirmed', label: 'Confirmed', count: confirmed },
+    { key: 'preparing', label: 'Preparing', count: preparing },
     { key: 'delivered', label: 'Delivered', count: delivered },
   ];
 
@@ -160,7 +160,7 @@ export default function SellerDashboardScreen() {
         <View style={styles.statsGrid}>
           {[
             { num: pending, label: 'Pending', color: '#F59E0B' },
-            { num: confirmed, label: 'Confirmed', color: '#3B82F6' },
+            { num: preparing, label: 'Preparing', color: '#3B82F6' },
             { num: delivered, label: 'Delivered', color: '#22C55E' },
             { num: 'K49K', label: 'Revenue', color: '#FF4DA6' },
           ].map(s => (
@@ -190,7 +190,7 @@ export default function SellerDashboardScreen() {
 
         {/* ─── ORDERS ─── */}
         {filteredOrders.map(order => (
-          <OrderCard key={order.id} order={order} onConfirm={confirmOrder} onDeliver={deliverOrder} />
+          <OrderCard key={order.id} order={order} onConfirm={advanceOrder} onDeliver={deliverOrder} />
         ))}
 
         {/* ─── TOP PRODUCTS ─── */}

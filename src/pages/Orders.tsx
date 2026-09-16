@@ -9,10 +9,9 @@ import { supabase } from "@/lib/supabase";
 import { formatDistanceToNow } from "date-fns";
 
 const TABS = [
-  { key: "pending", label: "Pending" },
+  { key: "pending", label: "Received" },
   { key: "preparing", label: "Preparing" },
-  { key: "ready", label: "Ready" },
-  { key: "delivered", label: "Delivered" },
+  { key: "delivered", label: "Completed" },
 ] as const;
 
 type TabKey = typeof TABS[number]["key"];
@@ -52,7 +51,7 @@ const Orders = () => {
   const items = useMemo(() => {
     const match = (s: string | null) => {
       const n = (s ?? "pending").toLowerCase();
-      if (tab === "pending") return n === "pending" || n === "received";
+      if (tab === "pending") return n === "pending";
       return n === tab;
     };
     return orders.filter((o) => match(o.status));
