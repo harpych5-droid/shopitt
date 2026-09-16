@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
-import { Heart, Bookmark, MessageCircle, Send, MoreHorizontal, MapPin, Volume2, VolumeX, X, ExternalLink } from "lucide-react";
+import { Heart, Bookmark, MessageCircle, Send, MoreHorizontal, MapPin, Volume2, VolumeX, X, ExternalLink, Repeat2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import type { FeedItem } from "@/data/feed";
 import { useShopitt, shopitt } from "@/store/useShopittStore";
@@ -13,6 +13,7 @@ import { optimizedImageUrl } from "@/lib/media";
 import { VerificationBadge } from "@/components/identity/VerificationBadge";
 import { PostTimestamp } from "@/components/feed/PostTimestamp";
 import { fetchPostShopTags, type ShopTag } from "@/services/shopTagsService";
+import { getMediaCount } from "@/data/feed";
 
 interface HomeFeedCardProps {
   item: FeedItem;
@@ -128,6 +129,7 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
       if ((error as DOMException).name !== "AbortError") toast.error("Could not share this post");
     }
   };
+  const handleRemix = () => navigate(`/create?remixFrom=${encodeURIComponent(item.id)}`);
   const openShop = async () => {
     setSelectedTagId(null);
     setShopOpen(true);
@@ -178,6 +180,7 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
 
   const avatar = item.avatar;
   const initial = (item.brand?.[0] ?? "S").toUpperCase();
+  const mediaCount = getMediaCount(item);
 
   return (
     <article className="w-full bg-background border-b border-border/40">
@@ -305,9 +308,9 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
           </button>
         )}
 
-        {item.mediaUrls.length > 1 && (
+        {mediaCount > 1 && (
           <div className="absolute top-3 right-3 z-10 rounded-full bg-black/60 px-2 py-1 text-[11px] font-bold text-white">
-            1/{item.mediaUrls.length}
+            1/{mediaCount}
           </div>
         )}
 
@@ -459,6 +462,10 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
           <button onClick={handleShare} aria-label="Share" className="active:scale-90 transition-transform">
             <Send className="h-6 w-6 text-foreground" strokeWidth={2} />
           </button>
+          <button onClick={handleRemix} aria-label="Remix this Look" className="flex items-center gap-1.5 active:scale-90 transition-transform">
+            <Repeat2 className="h-5 w-5 text-foreground" strokeWidth={2} />
+            {item.remixCount ? <span className="text-xs font-semibold text-foreground">{item.remixCount} {item.remixCount === 1 ? "Remix" : "Remixes"}</span> : null}
+          </button>
         </div>
         <button onClick={handleSave} aria-label="Save" className="active:scale-90 transition-transform">
           <Bookmark
@@ -473,6 +480,12 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
         {item.caption && (
           <div>
             <p className="text-[10px] font-bold tracking-[0.14em] text-muted-foreground">THE STORY</p>
+        {item.remixedFromPostId && (
+          <Link to={`/p/${item.remixedFromPostId}`} className="flex items-center gap-1 px-4 pb-2 text-xs text-muted-foreground">
+            <Repeat2 className="h-3.5 w-3.5 text-brand-pink" />
+            <span>Remixed from @{item.remixedFromHandle ?? "creator"}'s Look</span>
+          </Link>
+        )}
             <p className="mt-1 text-sm text-foreground/90 leading-snug">{item.caption}</p>
           </div>
         )}

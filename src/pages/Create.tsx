@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { X, Box, Video, Briefcase, ChevronRight, Camera, Loader2, Play, Trash2, Search, Tag, Grip, Plus, Check } from "lucide-react";
 import { BottomNav } from "@/components/feed/BottomNav";
 import { useIdentity } from "@/hooks/useIdentity";
@@ -7,6 +7,8 @@ import { supabase } from "@/lib/supabase";
 import { uploadManyToCloudinary, type CloudinaryUploadResult } from "@/lib/cloudinary";
 import { toast } from "sonner";
 import { createPostShopTags, searchProducts, type CatalogProduct } from "@/services/shopTagsService";
+import { createRemixNotification } from "@/services/remixService";
+import { fetchPostById } from "@/services/postsService";
 
 type Mode = null | "product" | "short" | "service";
 type PostType = "product" | "inspiration";
@@ -43,6 +45,7 @@ const MAX_MEDIA = 5;
 
 const Create = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, profile, isAuthed } = useIdentity();
 
   const [mode, setMode] = useState<Mode>(null);
@@ -64,12 +67,27 @@ const Create = () => {
   const [itemPrice, setItemPrice] = useState("");
   const [tagPosition, setTagPosition] = useState({ x: 0.5, y: 0.5 });
   const [linkedProduct, setLinkedProduct] = useState<CatalogProduct | null>(null);
+  const [remixSource, setRemixSource] = useState<{ id: string; handle: string } | null>(null);
   const mediaStageRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     document.title = "Create Post — Shopitt";
   }, []);
+
+  useEffect(() => {
+    const sourceId = searchParams.get("remixFrom");
+    if (!sourceId) { setRemixSource(null); return; }
+    let cancelled = false;
+    void fetchPostById(sourceId).then(({ data }) => {
+      if (!cancelled && data) {
+        setRemixSource({ id: data.id, handle: data.profiles?.username ?? "creator" });
+        setPostType("product");
+        setMode("product");
+      }
+    });
+    return () => { cancelled = true; };
+  }, [searchParams]);
 
   // Cleanup preview URLs
   useEffect(() => {
@@ -114,6 +132,7 @@ const Create = () => {
     setProductSelectorOpen(false);
     setTagFormOpen(false);
     setProductQuery("");
+    setRemixSource(null);
     setMode(null);
   };
 
@@ -229,6 +248,7 @@ const Create = () => {
         media_type: isVideo ? "video" : "image",
         post_type: finalPostType,
         content_type: finalPostType,
+        remixed_from_post_id: remixSource?.id ?? null,
         hashtags: parseHashtags(hashtags),
         price:
           finalPostType === "product" && price ? Number(price) : null,
@@ -245,6 +265,11 @@ const Create = () => {
       if (finalPostType === "product" && taggedProducts.length > 0) {
         const { error: tagError } = await createPostShopTags(createdPost.id, user.id, taggedProducts.map(({ item_name, price, position_x, position_y, linked_product_id }) => ({ item_name, price, position_x, position_y, linked_product_id })));
         if (tagError) throw new Error(`Post created, but products could not be tagged: ${tagError}`);
+      }
+
+      if (remixSource) {
+        const { error: notificationError } = await createRemixNotification(remixSource.id, user.id, `@${profile?.username ?? "Someone"} remixed your Look`);
+        if (notificationError) throw new Error(`Remix created, but attribution notification failed: ${notificationError}`);
       }
 
       toast.success("Posted! 🔥");
@@ -330,6 +355,12 @@ const Create = () => {
               onSubmit();
             }}
           >
+            {remixSource && (
+              <div className="rounded-2xl border border-brand-pink/20 bg-brand-pink/5 px-4 py-3">
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-brand-pink">REMIXING</p>
+                <Link to={`/p/${remixSource.id}`} className="mt-1 block text-sm font-bold text-foreground">@{remixSource.handle}</Link>
+              </div>
+            )}
             {mode === "product" && (
               <div>
                 <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Post type</span>

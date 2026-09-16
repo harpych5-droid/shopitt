@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchFeedPosts, postToFeedItem } from "@/services/postsService";
 import type { FeedItem } from "@/data/feed";
 import { supabase } from "@/lib/supabase";
+import { fetchRemixCounts } from "@/services/remixService";
 
 const PAGE_SIZE = 12;
 
@@ -42,12 +43,23 @@ export function useFeedPosts(initialCount = PAGE_SIZE) {
       inflight.current = false;
       return;
     }
+
+    if (!data.length) {
+      hasMoreRef.current = false;
+      setHasMore(false);
+      setLoading(false);
+      inflight.current = false;
+      return;
+    }
+
     if (data.length < limit) {
       hasMoreRef.current = false;
       setHasMore(false);
     }
 
     const mapped = data.map(postToFeedItem);
+    const remixCounts = await fetchRemixCounts(mapped.map((item) => item.id));
+    mapped.forEach((item) => { item.remixCount = remixCounts.get(item.id) ?? 0; });
     offsetRef.current += mapped.length;
     setItems((prev) => mergeFeedItems(prev, mapped));
     setLoading(false);
@@ -71,7 +83,19 @@ export function useFeedPosts(initialCount = PAGE_SIZE) {
       return false;
     }
 
+    if (!data.length) {
+      setItems([]);
+      offsetRef.current = 0;
+      hasMoreRef.current = false;
+      setHasMore(false);
+      setLoading(false);
+      inflight.current = false;
+      return true;
+    }
+
     const fresh = data.map(postToFeedItem);
+    const remixCounts = await fetchRemixCounts(fresh.map((item) => item.id));
+    fresh.forEach((item) => { item.remixCount = remixCounts.get(item.id) ?? 0; });
     setItems((prev) => mergeFeedItems(prev, fresh));
     offsetRef.current = Math.max(itemsRef.current.length, fresh.length);
     const nextHasMore = data.length === limit;

@@ -52,7 +52,15 @@ export type FeedItem = {
   mediaUrls?: string[];
   /** True when this item resolves from public.products rather than public.posts. */
   catalogProduct?: boolean;
+  remixedFromPostId?: string | null;
+  remixCount?: number;
+  remixedFromHandle?: string | null;
 };
+
+export function getMediaCount(item: Pick<FeedItem, "mediaUrls" | "image"> | { mediaUrls?: string[] | null; image?: string | null }) {
+  const urls = Array.isArray(item?.mediaUrls) ? item.mediaUrls : [];
+  return urls.length || (item?.image ? 1 : 0);
+}
 
 export const FEED: FeedItem[] = [
   {

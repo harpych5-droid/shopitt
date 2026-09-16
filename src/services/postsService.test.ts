@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { mergeFeedItems } from '@/hooks/useFeedPosts';
+import { getMediaCount } from '@/data/feed';
 import { isShoppablePost, isVideoPost } from './postsService';
 import { findFeedRestoreTarget } from '@/lib/feedRestore';
 
@@ -13,6 +14,13 @@ describe('mergeFeedItems', () => {
       { id: '2', title: 'B' },
       { id: '3', title: 'C' },
     ]);
+  });
+});
+
+describe('getMediaCount', () => {
+  it('treats missing media arrays as empty and preserves valid counts', () => {
+    expect(getMediaCount({} as any)).toBe(0);
+    expect(getMediaCount({ mediaUrls: ['a', 'b'] })).toBe(2);
   });
 });
 

@@ -21,6 +21,8 @@ export type DbPost = {
   post_type: string | null;
   category_name: string | null;
   content_type: string | null;
+  remixed_from_post_id: string | null;
+  remixed_from?: { profiles?: { username: string | null } | null } | null;
   post_badges: { label: string | null; badge_type: string | null }[] | null;
   is_available: boolean | null;
   stock_quantity: number | null;
@@ -65,7 +67,7 @@ export function isVideoPost(post: Pick<DbPost, "media_type" | "media_url" | "med
 
 const SELECT = `
   id, user_id, title, description, media_url, media_urls, media, media_type,
-  price, currency, hashtags, post_type, category_name, content_type, is_available,
+  price, currency, hashtags, post_type, category_name, content_type, remixed_from_post_id, is_available,
   stock_quantity, quantity, delivery_type, has_free_delivery, rating, review_count, created_at,
   profiles!posts_user_id_fkey ( username, avatar_url, full_name, country, is_verified ),
   post_badges ( label, badge_type )
@@ -183,5 +185,7 @@ export function postToFeedItem(p: DbPost): FeedItem {
     postType: isInspiration ? "inspiration" : "product",
     badge: isInspiration ? "Inspiration" : (dropLabel ? undefined : "Product"),
     mediaType: isVideo ? "video" : "image",
+    remixedFromPostId: p.remixed_from_post_id,
+    remixedFromHandle: p.remixed_from?.profiles?.username ?? null,
   };
 }

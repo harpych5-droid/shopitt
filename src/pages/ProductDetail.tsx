@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft, Heart, Bookmark, Send, Truck, ShoppingBag, MapPin,
-  MessageCircle, Sparkles, Plus, ChevronLeft, ChevronRight, CalendarCheck, Globe, Loader2,
+  MessageCircle, Sparkles, Plus, ChevronLeft, ChevronRight, CalendarCheck, Globe, Loader2, Repeat2,
 } from "lucide-react";
 import type { FeedItem } from "@/data/feed";
 import { useShopitt, shopitt } from "@/store/useShopittStore";
@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { setPageMetadata } from "@/lib/seo";
 import { PostTimestamp } from "@/components/feed/PostTimestamp";
 import { fetchCatalogProductById, type CatalogProduct } from "@/services/shopTagsService";
+import { fetchRemixCounts, fetchRemixPosts } from "@/services/remixService";
 
 const DELIVERY_META = {
   international: { icon: Globe, label: "International delivery" },
@@ -61,6 +62,7 @@ function catalogProductToFeedItem(product: CatalogProduct): FeedItem {
 
 const ProductDetail = () => {
   const { id = "" } = useParams();
+  const navigate = useNavigate();
   const { user } = useIdentity();
   const [product, setProduct] = useState<FeedItem | null>(null);
   const [notFound, setNotFound] = useState(false);
@@ -75,6 +77,10 @@ const ProductDetail = () => {
       if (cancelled) return;
       if (data) {
         setProduct(postToFeedItem(data));
+        const remixCounts = await fetchRemixCounts([data.id]);
+        if (!cancelled) setRemixCount(remixCounts.get(data.id) ?? 0);
+        const remixResult = await fetchRemixPosts(data.id);
+        if (!cancelled) setRemixLooks(remixResult.data);
       } else {
         const catalog = await fetchCatalogProductById(id);
         if (cancelled) return;
@@ -119,6 +125,8 @@ const ProductDetail = () => {
   const [orderOpen, setOrderOpen] = useState(false);
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [relatedLooks, setRelatedLooks] = useState<FeedItem[]>([]);
+  const [remixCount, setRemixCount] = useState(0);
+  const [remixLooks, setRemixLooks] = useState<FeedItem[]>([]);
 
   const authed = useShopitt((s) => s.authed);
   const social = usePostSocial(product?.id ?? "", 0, 0);
@@ -190,6 +198,7 @@ const ProductDetail = () => {
       if ((error as DOMException).name !== "AbortError") toast.error("Could not share this post");
     }
   };
+  const handleRemix = () => navigate(`/create?remixFrom=${encodeURIComponent(product.id)}`);
   const handleFollow = async () => {
     if (!user || !product.userId) return;
     const next = !following;
@@ -316,6 +325,11 @@ const ProductDetail = () => {
 
         {/* LOOK CONTEXT */}
         <section className="px-5 pt-8">
+          {product.remixedFromPostId && (
+            <Link to={`/p/${product.remixedFromPostId}`} className="mb-3 inline-flex items-center gap-1.5 text-xs font-semibold text-white/65">
+              <Repeat2 className="h-3.5 w-3.5 text-brand-pink" /> Remixed from @{product.remixedFromHandle ?? "creator"}'s Look
+            </Link>
+          )}
           <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-brand-pink">{product.drop || "The Look"}</p>
           <h1 className="mt-2 font-display text-3xl font-extrabold leading-tight tracking-tight text-white sm:text-4xl">
             {product.title}
@@ -436,8 +450,26 @@ const ProductDetail = () => {
             <button onClick={handleShare} aria-label="Share" className="active:scale-90 transition-transform">
               <Send className="h-6 w-6 text-foreground" />
             </button>
+            <button onClick={handleRemix} aria-label="Remix this Look" className="flex items-center gap-1.5 active:scale-90 transition-transform">
+              <Repeat2 className="h-6 w-6 text-white" />
+              {remixCount > 0 && <span className="text-sm font-bold tabular-nums text-white">{remixCount}</span>}
+            </button>
           </div>
+          <button onClick={handleRemix} className="text-xs font-bold text-brand-pink">Remix this Look</button>
         </section>
+
+        {remixLooks.length > 0 && <section className="px-5 mt-10">
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-pink">Remixes</p>
+          <h2 className="mt-1 font-display text-2xl font-extrabold text-white">{remixCount} {remixCount === 1 ? "Remix" : "Remixes"}</h2>
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            {remixLooks.map((look) => (
+              <Link key={look.id} to={`/p/${look.id}`} className="overflow-hidden bg-[#121212]">
+                <img src={look.image} alt={look.title} className="aspect-[4/5] w-full object-cover" />
+                <div className="p-3"><p className="text-xs font-bold text-white line-clamp-2">{look.title}</p><p className="mt-1 text-[11px] text-white/45">@{look.brandHandle}</p></div>
+              </Link>
+            ))}
+          </div>
+        </section>}
 
         {/* COMMENTS */}
         <section className="px-5 mt-6">
