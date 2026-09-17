@@ -1,7 +1,8 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, ChevronRight, User, ShoppingBag, Bell, MessageCircle, Store, PlusCircle, Shield, HelpCircle } from "lucide-react";
+import { ChevronRight, User, ShoppingBag, Bell, MessageCircle, Store, PlusCircle, Shield, HelpCircle } from "lucide-react";
 import { BottomNav } from "@/components/feed/BottomNav";
+import { BackButton } from "@/components/navigation/BackButton";
 
 const SECTIONS = [
   {
@@ -38,9 +39,7 @@ const Profile = () => {
     <main className="min-h-[100dvh] bg-background">
       <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-xl border-b border-border/40">
         <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
-          <Link to="/" aria-label="Back" className="h-9 w-9 rounded-full hover:bg-muted/50 flex items-center justify-center">
-            <ArrowLeft className="h-5 w-5 text-foreground" />
-          </Link>
+          <BackButton fallback="/" />
           <span className="rounded-full gradient-brand px-4 py-1.5 text-sm font-extrabold text-white shadow-brand">
             Shopitt
           </span>

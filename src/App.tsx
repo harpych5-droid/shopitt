@@ -26,6 +26,8 @@ const Menu = lazy(() => import("./pages/Menu.tsx"));
 const Chats = lazy(() => import("./pages/Chats.tsx"));
 const ChatThread = lazy(() => import("./pages/ChatThread.tsx"));
 const SellerDashboard = lazy(() => import("./pages/SellerDashboard.tsx"));
+const CreatorStudio = lazy(() => import("./pages/CreatorStudio.tsx"));
+const CreatorStudioOrders = lazy(() => import("./pages/CreatorStudioOrders.tsx"));
 const ProductDetail = lazy(() => import("./pages/ProductDetail.tsx"));
 const Dashboard = lazy(() => import("./pages/Dashboard.tsx"));
 const Shoppable = lazy(() => import("./pages/Shoppable.tsx"));
@@ -92,6 +94,9 @@ const App = () => (
                   <Route path="/orders/:id" element={<OrderTracking />} />
                   <Route path="/saved" element={<Saved />} />
                   <Route path="/seller" element={<SellerDashboard />} />
+                  <Route path="/creator-studio" element={<CreatorStudio />} />
+                  <Route path="/creator-studio/orders" element={<CreatorStudioOrders />} />
+                  <Route path="/creator-studio/orders/:id" element={<CreatorStudioOrders />} />
                   <Route path="/p/:id" element={<ProductDetail />} />
 
                   <Route path="/profile" element={<UserProfile />} />

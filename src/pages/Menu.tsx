@@ -2,12 +2,12 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  ArrowLeft,
   ChevronDown,
   User,
   Pencil,
   Globe,
   Wallet,
+  Store,
   Package,
   Bookmark,
   HelpCircle,
@@ -25,6 +25,7 @@ import {
   Info,
 } from "lucide-react";
 import { BottomNav } from "@/components/feed/BottomNav";
+import { BackButton } from "@/components/navigation/BackButton";
 import { useIdentity } from "@/hooks/useIdentity";
 import { IdentityAvatar } from "@/components/identity/IdentityAvatar";
 import { useInstallPrompt, requestInstallPrompt } from "@/hooks/useInstallPrompt";
@@ -58,6 +59,7 @@ const SECTIONS: { key: SectionKey; title: string; tag: string; items: Item[]; ct
     tag: "Commerce",
     items: [
       { icon: Wallet, label: "Wallet", hint: "Balance, payouts, withdraw", to: "/wallet" },
+      { icon: Store, label: "Creator Studio", hint: "Looks, shop, orders and revenue", to: "/creator-studio" },
       { icon: Package, label: "Orders", hint: "Track & manage", to: "/orders" },
       { icon: Bookmark, label: "Saved items", hint: "Your wishlist", to: "/saved" },
       { icon: CreditCard, label: "Subscription", hint: "Updates from Shopitt", to: "/subscription" },
@@ -107,9 +109,7 @@ const Menu = () => {
 
       <header className="sticky top-0 z-40 bg-background/70 backdrop-blur-xl border-b border-border/40">
         <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
-          <Link to="/" aria-label="Back" className="h-9 w-9 rounded-full hover:bg-muted/50 flex items-center justify-center">
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
+          <BackButton fallback="/" />
           <h1 className="text-base font-bold">Menu</h1>
           <span className="h-9 w-9" />
         </div>

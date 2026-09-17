@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft, Heart, Bookmark, Send, Truck, ShoppingBag, MapPin,
-  MessageCircle, Sparkles, Plus, ChevronLeft, ChevronRight, CalendarCheck, Globe, Loader2, Repeat2,
+  MessageCircle, Sparkles, Plus, ChevronLeft, ChevronRight, CalendarCheck, Globe, Loader2, Repeat2, X,
 } from "lucide-react";
 import type { FeedItem } from "@/data/feed";
 import { useShopitt, shopitt } from "@/store/useShopittStore";
@@ -23,6 +23,7 @@ import { setPageMetadata } from "@/lib/seo";
 import { PostTimestamp } from "@/components/feed/PostTimestamp";
 import { fetchCatalogProductById, type CatalogProduct } from "@/services/shopTagsService";
 import { fetchRemixCounts, fetchRemixPosts } from "@/services/remixService";
+import { AI_TRY_ON_ENABLED, AI_TRY_ON_COPY } from "@/config/featureFlags";
 
 const DELIVERY_META = {
   international: { icon: Globe, label: "International delivery" },
@@ -127,6 +128,7 @@ const ProductDetail = () => {
   const [relatedLooks, setRelatedLooks] = useState<FeedItem[]>([]);
   const [remixCount, setRemixCount] = useState(0);
   const [remixLooks, setRemixLooks] = useState<FeedItem[]>([]);
+  const [tryOnOpen, setTryOnOpen] = useState(false);
 
   const authed = useShopitt((s) => s.authed);
   const social = usePostSocial(product?.id ?? "", 0, 0);
@@ -199,6 +201,7 @@ const ProductDetail = () => {
     }
   };
   const handleRemix = () => navigate(`/create?remixFrom=${encodeURIComponent(product.id)}`);
+  const handleTryOn = () => setTryOnOpen(true);
   const handleFollow = async () => {
     if (!user || !product.userId) return;
     const next = !following;
@@ -429,6 +432,13 @@ const ProductDetail = () => {
                 Add to Bag
               </button>
             </div>
+            <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-brand-pink/20 bg-brand-pink/6 px-3 py-2">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-brand-pink">TRY IT ON ✨</p>
+                <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-white/60">COMING SOON</p>
+              </div>
+              <button type="button" onClick={handleTryOn} className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-white">OPEN</button>
+            </div>
             <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-white/55">
               <span>{product.stockLeft > 0 ? `${product.stockLeft} available` : "Availability varies"}</span>
               <span>{product.freeDelivery ? "Free delivery" : product.shipsIn !== "—" ? `Ships ${product.shipsIn}` : "Shopitt delivery"}</span>
@@ -459,8 +469,13 @@ const ProductDetail = () => {
         </section>
 
         {remixLooks.length > 0 && <section className="px-5 mt-10">
-          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-pink">Remixes</p>
-          <h2 className="mt-1 font-display text-2xl font-extrabold text-white">{remixCount} {remixCount === 1 ? "Remix" : "Remixes"}</h2>
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-pink">Remixes</p>
+              <h2 className="mt-1 font-display text-2xl font-extrabold text-white">{remixCount} {remixCount === 1 ? "Remix" : "Remixes"}</h2>
+            </div>
+            <button type="button" onClick={handleTryOn} className="rounded-full border border-brand-pink/30 bg-brand-pink/8 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-brand-pink">TRY THIS LOOK ON YOU</button>
+          </div>
           <div className="mt-4 grid grid-cols-2 gap-3">
             {remixLooks.map((look) => (
               <Link key={look.id} to={`/p/${look.id}`} className="overflow-hidden bg-[#121212]">
@@ -540,6 +555,55 @@ const ProductDetail = () => {
           })()}
         </div>
       </div>}
+
+      <AnimatePresence>
+        {tryOnOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[70] flex items-end justify-center bg-black/75 backdrop-blur-md sm:items-center"
+          >
+            <motion.div
+              initial={{ y: 32, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 32, opacity: 0 }}
+              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+              className="relative w-full max-w-md rounded-t-3xl border border-white/10 bg-[#121212] p-5 sm:rounded-3xl"
+            >
+              <button
+                type="button"
+                onClick={() => setTryOnOpen(false)}
+                className="absolute right-4 top-4 h-8 w-8 rounded-full bg-white/5 text-white/80"
+                aria-label="Close"
+              >
+                <X className="mx-auto h-4 w-4" />
+              </button>
+              <div className="mb-4 inline-flex rounded-full border border-brand-pink/30 bg-brand-pink/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-brand-pink">
+                COMING SOON
+              </div>
+              <h3 className="text-2xl font-black tracking-tight text-white">{AI_TRY_ON_COPY.title}</h3>
+              <p className="mt-3 text-sm leading-relaxed text-white/70">{AI_TRY_ON_COPY.body}</p>
+              <div className="mt-5 space-y-2.5">
+                <button
+                  type="button"
+                  onClick={() => setTryOnOpen(false)}
+                  className="w-full rounded-full bg-gradient-to-r from-brand-pink to-brand-purple px-4 py-3 text-sm font-bold text-white shadow-brand"
+                >
+                  {AI_TRY_ON_COPY.cta}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTryOnOpen(false)}
+                  className="w-full rounded-full border border-white/15 bg-white/5 px-4 py-3 text-sm font-bold text-white/80"
+                >
+                  NOT NOW
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} action={authAction} />
       <BagSheet open={bagOpen} onClose={() => setBagOpen(false)} />

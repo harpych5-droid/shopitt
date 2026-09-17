@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Send, Trash2, Loader2, MessageCircle } from "lucide-react";
+import { X, Send, Trash2, Loader2, MessageCircle, Reply, Heart } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useIdentity } from "@/hooks/useIdentity";
@@ -7,6 +7,8 @@ import {
   addComment,
   deleteComment,
   fetchComments,
+  fetchCommentLikeCounts,
+  toggleCommentLike,
   type CommentRow,
 } from "@/services/socialService";
 import { toast } from "sonner";
@@ -26,12 +28,15 @@ export const CommentsSheet = ({ open, postId, onClose, onCountChange }: Comments
   const [loading, setLoading] = useState(false);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
+  const [replyTo, setReplyTo] = useState<CommentRow | null>(null);
+  const [likeCounts, setLikeCounts] = useState<Map<string, number>>(new Map());
 
   useEffect(() => {
     if (!open || !postId) return;
     setLoading(true);
     fetchComments(postId).then((c) => {
       setComments(c);
+      void fetchCommentLikeCounts(c.map((comment) => comment.id)).then(setLikeCounts);
       setLoading(false);
       onCountChange?.(c.length);
     });
@@ -61,13 +66,14 @@ export const CommentsSheet = ({ open, postId, onClose, onCountChange }: Comments
     const value = text.trim();
     if (!value) return;
     setSending(true);
-    const { error } = await addComment(postId, user.id, value);
+    const { error } = await addComment(postId, user.id, value, replyTo?.id ?? null);
     setSending(false);
     if (error) {
       toast.error(error);
       return;
     }
     setText("");
+    setReplyTo(null);
   };
 
   const handleDelete = async (id: string) => {
@@ -118,7 +124,7 @@ export const CommentsSheet = ({ open, postId, onClose, onCountChange }: Comments
               ) : (
                 <ul className="space-y-4">
                   {comments.map((c) => (
-                    <li key={c.id} className="flex gap-3">
+                    <li key={c.id} className={`flex gap-3 ${c.parent_comment_id ? "ml-8" : ""}`}>
                       <span className="h-10 w-10 rounded-full bg-muted shrink-0 overflow-hidden">
                         {c.profiles?.avatar_url ? (
                           <img src={c.profiles.avatar_url} alt="" className="h-full w-full object-cover" />
@@ -150,6 +156,10 @@ export const CommentsSheet = ({ open, postId, onClose, onCountChange }: Comments
                         <p className="mt-0.5 text-sm text-foreground/90 leading-snug break-words">
                           {c.text}
                         </p>
+                        <div className="mt-2 flex items-center gap-3 text-[11px] text-muted-foreground">
+                          <button onClick={() => setReplyTo(c)} className="inline-flex items-center gap-1 hover:text-foreground"><Reply className="h-3.5 w-3.5" /> Reply</button>
+                          <button onClick={async () => { if (!user) { toast.error("Sign in to react"); return; } const result = await toggleCommentLike(c.id, user.id); if (result.error) { console.error("Comment reaction failed", result.error); toast.error(`Could not react: ${result.error}`); } else setLikeCounts((current) => new Map(current).set(c.id, Math.max(0, (current.get(c.id) ?? 0) + (result.liked ? 1 : -1)))); }} className="inline-flex items-center gap-1 hover:text-brand-pink"><Heart className="h-3.5 w-3.5" /> {likeCounts.get(c.id) ?? 0}</button>
+                        </div>
                       </div>
                     </li>
                   ))}
@@ -158,6 +168,7 @@ export const CommentsSheet = ({ open, postId, onClose, onCountChange }: Comments
             </div>
 
             <div className="border-t border-border/60 px-3 py-2.5 flex items-center gap-2">
+              {replyTo && <div className="absolute bottom-[66px] left-3 right-3 flex items-center justify-between rounded-xl bg-card border border-border px-3 py-2 text-xs"><span className="truncate">Replying to @{replyTo.profiles?.username ?? "shopper"}</span><button onClick={() => setReplyTo(null)} aria-label="Cancel reply"><X className="h-4 w-4" /></button></div>}
               <span className="h-10 w-10 rounded-full overflow-hidden bg-muted shrink-0">
                 {profile?.avatar_url ? (
                   <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />

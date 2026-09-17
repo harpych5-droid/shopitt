@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Search, MessageCircle, Sparkles, Loader2 } from "lucide-react";
+import { Search, MessageCircle, Sparkles, Loader2 } from "lucide-react";
 import { BottomNav } from "@/components/feed/BottomNav";
+import { BackButton } from "@/components/navigation/BackButton";
 import { useIdentity } from "@/hooks/useIdentity";
 import { fetchConversations, type ConversationRow } from "@/services/chatService";
 import { supabase } from "@/lib/supabase";
@@ -52,9 +53,7 @@ const Chats = () => {
     <main className="min-h-[100dvh] bg-background">
       <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-xl border-b border-border/40">
         <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
-          <Link to="/" aria-label="Back" className="h-9 w-9 rounded-full hover:bg-muted/50 flex items-center justify-center">
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
+          <BackButton fallback="/" />
           <h1 className="text-base font-bold">Chats</h1>
           <span className="w-9" />
         </div>
@@ -75,7 +74,7 @@ const Chats = () => {
           <ul className="px-2 pt-2">
             {filtered.map((c) => {
               const other = c.other;
-              const name = other?.full_name || other?.username || "Shopper";
+              const name = other?.username || other?.full_name || "Shopper";
               const handle = other?.username || (other?.id ?? "");
               const time = c.updated_at ? formatDistanceToNow(new Date(c.updated_at), { addSuffix: false }) : "";
               return (

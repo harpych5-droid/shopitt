@@ -1,10 +1,12 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Sun, Moon, Monitor, LogOut, Check } from "lucide-react";
+import { Sun, Moon, Monitor, LogOut, Check, MessageCircle, Phone, Loader2 } from "lucide-react";
 import { useTheme, type ThemeMode } from "@/hooks/useTheme";
 import { useIdentity } from "@/hooks/useIdentity";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import { normalizeWhatsAppNumber, buildWhatsAppUrl } from "@/services/ordersService";
+import { BackButton } from "@/components/navigation/BackButton";
 
 const themeOptions: { value: ThemeMode; label: string; icon: typeof Sun; hint: string }[] = [
   { value: "light", label: "Light", icon: Sun, hint: "Bright & editorial" },
@@ -14,8 +16,16 @@ const themeOptions: { value: ThemeMode; label: string; icon: typeof Sun; hint: s
 
 const Settings = () => {
   const { mode, setMode } = useTheme();
-  const { isAuthed, profile } = useIdentity();
+  const { isAuthed, profile, user, refresh } = useIdentity();
   const navigate = useNavigate();
+  const [whatsappNumber, setWhatsappNumber] = useState(profile?.whatsapp_number ?? "");
+  const [whatsappEnabled, setWhatsappEnabled] = useState(Boolean(profile?.whatsapp_enabled));
+  const [savingWhatsapp, setSavingWhatsapp] = useState(false);
+
+  useEffect(() => {
+    setWhatsappNumber(profile?.whatsapp_number ?? "");
+    setWhatsappEnabled(Boolean(profile?.whatsapp_enabled));
+  }, [profile]);
 
   useEffect(() => {
     document.title = "Settings — Shopitt";
@@ -27,17 +37,40 @@ const Settings = () => {
     navigate("/");
   };
 
+  const handleWhatsAppSave = async () => {
+    if (!user) return;
+    const normalized = normalizeWhatsAppNumber(whatsappNumber);
+    if (!normalized) {
+      toast.error("Use a valid WhatsApp number in international format.");
+      return;
+    }
+    setSavingWhatsapp(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        whatsapp_number: normalized,
+        whatsapp_enabled: whatsappEnabled,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", user.id);
+    setSavingWhatsapp(false);
+
+    if (error) {
+      toast.error(error.message ?? "Could not save WhatsApp settings");
+      return;
+    }
+
+    await refresh();
+    toast.success(whatsappEnabled ? "WhatsApp enabled for order alerts" : "WhatsApp notifications turned off");
+  };
+
+  const testWhatsAppLink = buildWhatsAppUrl(whatsappNumber || profile?.whatsapp_number || null, "Shopitt test notification: your WhatsApp connection is active.");
+
   return (
     <main className="min-h-[100dvh] bg-background pb-24">
       <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-xl border-b border-border/40">
         <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
-          <Link
-            to="/menu"
-            aria-label="Back"
-            className="h-9 w-9 rounded-full hover:bg-muted/50 flex items-center justify-center"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
+          <BackButton fallback="/menu" />
           <h1 className="font-display text-base font-bold">Settings</h1>
           <span className="h-9 w-9" />
         </div>
@@ -79,6 +112,59 @@ const Settings = () => {
                 </button>
               );
             })}
+          </div>
+        </section>
+
+        <section>
+          <h2 className="px-2 mb-2 text-[11px] uppercase tracking-[0.18em] font-bold text-brand-pink">
+            WhatsApp orders
+          </h2>
+          <div className="rounded-3xl bg-card border border-border overflow-hidden p-4 space-y-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold">Receive new order notifications on WhatsApp</p>
+                <p className="text-xs text-muted-foreground">{profile?.whatsapp_number ? "Connected" : "Not connected"}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setWhatsappEnabled((v) => !v)}
+                className={`relative h-7 w-12 rounded-full transition-colors ${whatsappEnabled ? "bg-brand-pink" : "bg-muted"}`}
+                aria-label="Toggle WhatsApp notifications"
+              >
+                <span className={`absolute top-1 h-5 w-5 rounded-full bg-white transition-transform ${whatsappEnabled ? "left-6" : "left-1"}`} />
+              </button>
+            </div>
+
+            <div className="rounded-2xl border border-border/60 bg-background/50 px-3 py-2">
+              <label className="block text-[10px] uppercase tracking-[0.16em] font-bold text-muted-foreground">WhatsApp business number</label>
+              <input
+                type="tel"
+                value={whatsappNumber}
+                onChange={(e) => setWhatsappNumber(e.target.value)}
+                placeholder="+260971234567"
+                className="mt-2 w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={handleWhatsAppSave}
+                disabled={savingWhatsapp}
+                className="flex-1 rounded-full gradient-brand text-white text-xs font-extrabold px-4 h-10 shadow-brand inline-flex items-center justify-center gap-2 disabled:opacity-60"
+              >
+                {savingWhatsapp ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Phone className="h-3.5 w-3.5" />}
+                {savingWhatsapp ? "Saving" : "Save"}
+              </button>
+              <a
+                href={testWhatsAppLink ?? undefined}
+                aria-disabled={!testWhatsAppLink}
+                className={`flex-1 rounded-full border text-xs font-extrabold px-4 h-10 inline-flex items-center justify-center gap-2 ${testWhatsAppLink ? "border-border bg-card" : "pointer-events-none border-muted bg-muted text-muted-foreground"}`}
+              >
+                <MessageCircle className="h-3.5 w-3.5" />
+                Test
+              </a>
+            </div>
           </div>
         </section>
 

@@ -10,6 +10,11 @@ const recoverFromStaleAsset = (reason: unknown) => {
   const message = reason instanceof Error ? reason.message : String(reason ?? "");
   if (!staleAssetPattern.test(message) || sessionStorage.getItem(STALE_ASSET_RELOAD_KEY)) return;
   sessionStorage.setItem(STALE_ASSET_RELOAD_KEY, "1");
+  if ("serviceWorker" in navigator) {
+    void navigator.serviceWorker.getRegistrations().then((registrations) => {
+      registrations.forEach((registration) => void registration.unregister());
+    });
+  }
   window.location.reload();
 };
 

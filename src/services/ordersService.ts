@@ -39,7 +39,7 @@ export function normalizeOrderStatus(status: string | null | undefined): OrderSt
   const map: Record<string, OrderStatus> = {
     pending: "pending",
     received: "pending",
-    confirmed: "pending",
+    confirmed: "preparing",
     preparing: "preparing",
     ready: "preparing",
     shipped: "preparing",
@@ -60,17 +60,47 @@ export function getOrderStatusLabel(status: string | null | undefined): string {
   }
 }
 
-export function sanitizePhone(raw: string | null | undefined): string | null {
+export function normalizeWhatsAppNumber(raw: string | null | undefined): string | null {
   if (!raw) return null;
-  const digits = raw.replace(/\D/g, "");
-  if (!digits) return null;
-  if (digits.startsWith("0") && digits.length === 10) return `260${digits.slice(1)}`;
-  if (digits.startsWith("00")) return digits.slice(2);
+  let candidate = String(raw).trim();
+  if (!candidate) return null;
+  candidate = candidate.replace(/\s+/g, "");
+  candidate = candidate.replace(/^\+/, "");
+  candidate = candidate.replace(/^00/, "");
+  if (candidate.startsWith("0") && candidate.length === 10) candidate = `260${candidate.slice(1)}`;
+  const digits = candidate.replace(/\D/g, "");
+  if (!/^\d{10,15}$/.test(digits)) return null;
   return digits;
 }
 
+export function sanitizePhone(raw: string | null | undefined): string | null {
+  return normalizeWhatsAppNumber(raw);
+}
+
+export function buildSellerOrderNotificationText(input: {
+  orderNumber: string;
+  itemName: string;
+  quantity: number;
+  total: string;
+  buyerName: string;
+  deliveryLocation: string;
+  orderLink: string;
+}) {
+  return [
+    "🛍️ *NEW SHOPITT ORDER*",
+    "",
+    `Order #${input.orderNumber}`,
+    `${input.itemName} ×${input.quantity}`,
+    `Buyer: ${input.buyerName}`,
+    `Delivery: ${input.deliveryLocation}`,
+    `Total: ${input.total}`,
+    "",
+    `View order: ${input.orderLink}`,
+  ].join("\n");
+}
+
 export function buildWhatsAppUrl(phone: string | null | undefined, message?: string) {
-  const clean = sanitizePhone(phone);
+  const clean = normalizeWhatsAppNumber(phone);
   if (!clean) return null;
   const base = `https://wa.me/${clean}`;
   if (!message) return base;
@@ -152,7 +182,10 @@ export async function fetchOrderById(id: string) {
 }
 
 export async function updateOrderStatus(orderId: string, status: OrderStatus | "received" | "completed") {
-  const canonical = normalizeOrderStatus(status);
+  const normalized = normalizeOrderStatus(status);
+  // The UI calls this phase "preparing", while the production orders
+  // constraint stores the seller-confirmed phase as "confirmed".
+  const canonical = normalized === "preparing" ? "confirmed" : normalized;
   const patch: Record<string, any> = {
     status: canonical,
     updated_at: new Date().toISOString(),
@@ -160,6 +193,29 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus | "
   if (canonical === "delivered") patch.delivered_at = new Date().toISOString();
   const { error } = await supabase.from("orders").update(patch).eq("id", orderId);
   return { error: error?.message ?? null };
+}
+
+async function createSellerOrderNotification(order: {
+  id: string;
+  sellerId: string;
+  buyerId: string;
+  postId: string | null;
+  itemName: string;
+  quantity: number;
+  total: string;
+}) {
+  const { error } = await supabase.from("notifications").insert({
+    user_id: order.sellerId,
+    actor_id: order.buyerId,
+    type: "order_received",
+    title: "New order",
+    body: `${order.itemName} ×${order.quantity} · ${order.total}`,
+    message: "A new order is waiting in Creator Studio.",
+    post_id: order.postId,
+    order_id: order.id,
+    is_read: false,
+  });
+  return error?.message ?? null;
 }
 
 async function findRecentDuplicateOrder(input: {
@@ -226,53 +282,109 @@ export async function createOrder(input: {
     return { id: duplicateId, error: null };
   }
 
+  const orderPayload = {
+    buyer_id: input.buyerId,
+    seller_id: input.sellerId,
+    post_id: input.postId,
+    quantity: input.quantity,
+    unit_price: input.unitPrice,
+    price_snapshot: input.unitPrice,
+    total_price: total,
+    currency: input.currency,
+    size: input.size ?? null,
+    color: input.color ?? null,
+    status: "pending",
+    buyer_name: input.buyerName,
+    buyer_phone: input.buyerPhone,
+    delivery_address_snapshot: { address: input.deliveryAddress },
+    product_snapshot: input.productSnapshot,
+  };
+
   const { data, error } = await supabase
     .from("orders")
-    .insert({
-      buyer_id: input.buyerId,
-      seller_id: input.sellerId,
-      post_id: input.postId,
-      quantity: input.quantity,
-      unit_price: input.unitPrice,
-      price_snapshot: input.unitPrice,
-      total_price: total,
-      currency: input.currency,
-      size: input.size ?? null,
-      color: input.color ?? null,
-      status: "pending",
-      buyer_name: input.buyerName,
-      buyer_phone: input.buyerPhone,
-      delivery_address_snapshot: { address: input.deliveryAddress },
-      product_snapshot: input.productSnapshot,
-    })
+    .insert(orderPayload)
     .select("id")
     .maybeSingle();
 
   if (!error && data?.id) {
     if (typeof window !== "undefined") sessionStorage.setItem(localKey, data.id);
+    void createSellerOrderNotification({
+      id: data.id,
+      sellerId: input.sellerId,
+      buyerId: input.buyerId,
+      postId: input.postId,
+      itemName: input.productSnapshot.title ?? "Shopitt item",
+      quantity: input.quantity,
+      total: `${input.currency} ${Number(total).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+    }).catch(() => undefined);
+
+    try {
+      const { triggerSellerOrderWhatsAppNotification } = await import("@/services/whatsappService");
+      await triggerSellerOrderWhatsAppNotification({
+        sellerId: input.sellerId,
+        orderId: data.id,
+        orderNumber: `SHP-${String(data.id).slice(0, 8).toUpperCase()}`,
+        itemName: input.productSnapshot.title ?? "Shopitt item",
+        quantity: input.quantity,
+        total: `${input.currency} ${Number(total).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+        buyerName: input.buyerName,
+        deliveryLocation: input.deliveryAddress || "Lusaka",
+        orderLink: `https://shopitt.app/orders/${encodeURIComponent(data.id)}`,
+      });
+    } catch {
+      // WhatsApp is optional and must never block the real order flow.
+    }
+
     return { id: data.id, error: null };
   }
 
+  const fallbackPayload = {
+    buyer_id: input.buyerId,
+    seller_id: input.sellerId,
+    post_id: input.postId,
+    quantity: input.quantity,
+    unit_price: input.unitPrice,
+    total_price: total,
+    currency: input.currency,
+    status: "pending",
+    buyer_name: input.buyerName,
+    buyer_phone: input.buyerPhone,
+    address: input.deliveryAddress,
+  };
+
   const { data: fallback, error: fallbackError } = await supabase
     .from("orders")
-    .insert({
-      buyer_id: input.buyerId,
-      seller_id: input.sellerId,
-      post_id: input.postId,
-      quantity: input.quantity,
-      unit_price: input.unitPrice,
-      total_price: total,
-      currency: input.currency,
-      status: "pending",
-      buyer_name: input.buyerName,
-      buyer_phone: input.buyerPhone,
-      address: input.deliveryAddress,
-    })
+    .insert(fallbackPayload)
     .select("id")
     .maybeSingle();
 
   if (!fallbackError && fallback?.id) {
     if (typeof window !== "undefined") sessionStorage.setItem(localKey, fallback.id);
+    void createSellerOrderNotification({
+      id: fallback.id,
+      sellerId: input.sellerId,
+      buyerId: input.buyerId,
+      postId: input.postId,
+      itemName: input.productSnapshot.title ?? "Shopitt item",
+      quantity: input.quantity,
+      total: `${input.currency} ${Number(total).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+    }).catch(() => undefined);
+    try {
+      const { triggerSellerOrderWhatsAppNotification } = await import("@/services/whatsappService");
+      await triggerSellerOrderWhatsAppNotification({
+        sellerId: input.sellerId,
+        orderId: fallback.id,
+        orderNumber: `SHP-${String(fallback.id).slice(0, 8).toUpperCase()}`,
+        itemName: input.productSnapshot.title ?? "Shopitt item",
+        quantity: input.quantity,
+        total: `${input.currency} ${Number(total).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+        buyerName: input.buyerName,
+        deliveryLocation: input.deliveryAddress || "Lusaka",
+        orderLink: `https://shopitt.app/orders/${encodeURIComponent(fallback.id)}`,
+      });
+    } catch {
+      // WhatsApp is optional and must never block the real order flow.
+    }
     return { id: fallback.id, error: null };
   }
 

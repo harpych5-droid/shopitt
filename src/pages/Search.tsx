@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { ArrowLeft, Search as SearchIcon, TrendingUp, Clock, X, Sparkles, Loader2 } from "lucide-react";
+import { Link, useSearchParams } from "react-router-dom";
+import { Search as SearchIcon, TrendingUp, Clock, X, Sparkles, Loader2 } from "lucide-react";
 import { BottomNav } from "@/components/feed/BottomNav";
 import { supabase } from "@/lib/supabase";
 import { postToFeedItem, type DbPost } from "@/services/postsService";
 import type { FeedItem } from "@/data/feed";
 import { VerificationBadge } from "@/components/identity/VerificationBadge";
 import { PostTimestamp } from "@/components/feed/PostTimestamp";
+import { BackButton } from "@/components/navigation/BackButton";
 
 type ProfileSearchResult = {
   id: string;
@@ -28,7 +29,8 @@ const SELECT = `
 `;
 
 const Search = () => {
-  const [q, setQ] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [q, setQ] = useState(searchParams.get("q") ?? "");
   const [recent, setRecent] = useState<string[]>(() => {
     try { return JSON.parse(localStorage.getItem(RECENT_KEY) || "[]"); } catch { return []; }
   });
@@ -48,6 +50,11 @@ const Search = () => {
       setTrending(((data ?? []) as DbPost[]).map(postToFeedItem));
     })();
   }, []);
+
+  useEffect(() => {
+    const term = searchParams.get("q") ?? "";
+    if (term !== q) setQ(term);
+  }, [searchParams, q]);
 
   // Debounced search
   useEffect(() => {
@@ -75,8 +82,10 @@ const Search = () => {
   }, [q]);
 
   const submit = (term: string) => {
-    setQ(term);
-    const next = [term, ...recent.filter((x) => x !== term)].slice(0, 6);
+    const normalized = term.trim();
+    setQ(normalized);
+    setSearchParams(normalized ? { q: normalized } : {});
+    const next = [normalized, ...recent.filter((x) => x !== normalized)].filter(Boolean).slice(0, 6);
     setRecent(next);
     localStorage.setItem(RECENT_KEY, JSON.stringify(next));
   };
@@ -85,9 +94,7 @@ const Search = () => {
     <main className="min-h-[100dvh] bg-background pb-32">
       <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-xl border-b border-border/40">
         <div className="max-w-md mx-auto px-3 py-3 flex items-center gap-2">
-          <Link to="/" aria-label="Back" className="h-9 w-9 rounded-full hover:bg-muted/50 flex items-center justify-center shrink-0">
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
+          <BackButton fallback="/" className="shrink-0" />
           <div className="flex-1 flex items-center gap-2 rounded-full bg-muted/60 px-3 h-10">
             <SearchIcon className="h-4 w-4 text-muted-foreground" />
             <input

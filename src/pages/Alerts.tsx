@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Bell, Heart, ShoppingBag, MessageCircle, UserPlus, Sparkles, Loader2, CheckCheck, Megaphone, Reply } from "lucide-react";
+import { Bell, Heart, ShoppingBag, MessageCircle, UserPlus, Sparkles, Loader2, CheckCheck, Megaphone, Reply } from "lucide-react";
 import { BottomNav } from "@/components/feed/BottomNav";
+import { BackButton } from "@/components/navigation/BackButton";
 import { useIdentity } from "@/hooks/useIdentity";
 import { supabase } from "@/lib/supabase";
 import { formatDistanceToNow } from "date-fns";
@@ -120,6 +121,9 @@ const Alerts = () => {
   };
 
   const linkFor = (n: NotificationRow) => {
+    if (n.type === "order_received" || n.type === "order" || n.type === "sold") {
+      return n.order_id ? `/creator-studio/orders/${n.order_id}` : "/creator-studio";
+    }
     if (n.post_id) return `/p/${n.post_id}`;
     if (n.actor_id) return `/u/${n.actor_id}`;
     return "#";
@@ -129,9 +133,7 @@ const Alerts = () => {
     <main className="min-h-[100dvh] bg-background">
       <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-xl border-b border-border/40">
         <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
-          <Link to="/" aria-label="Back" className="h-9 w-9 rounded-full hover:bg-muted/50 flex items-center justify-center">
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
+          <BackButton fallback="/" />
           <h1 className="text-base font-bold">
             Alerts {unread > 0 && <span className="ml-1 text-xs text-brand-pink">({unread})</span>}
           </h1>

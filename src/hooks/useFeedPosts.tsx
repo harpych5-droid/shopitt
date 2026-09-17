@@ -3,6 +3,7 @@ import { fetchFeedPosts, postToFeedItem } from "@/services/postsService";
 import type { FeedItem } from "@/data/feed";
 import { supabase } from "@/lib/supabase";
 import { fetchRemixCounts } from "@/services/remixService";
+import { FEED_HIDDEN_POSTS_KEY, FEED_MUTED_CREATORS_KEY, getStoredIds, isCreatorMuted } from "@/lib/feedControls";
 
 const PAGE_SIZE = 12;
 
@@ -22,14 +23,28 @@ export function useFeedPosts(initialCount = PAGE_SIZE) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
+  const [hiddenIds, setHiddenIds] = useState<string[]>([]);
+  const [mutedCreatorIds, setMutedCreatorIds] = useState<string[]>([]);
   const offsetRef = useRef(0);
   const inflight = useRef(false);
   const hasMoreRef = useRef(true);
   const itemsRef = useRef<FeedItem[]>([]);
 
+  const syncPreferences = useCallback(() => {
+    setHiddenIds(getStoredIds(FEED_HIDDEN_POSTS_KEY));
+    setMutedCreatorIds(getStoredIds(FEED_MUTED_CREATORS_KEY));
+  }, []);
+
   useEffect(() => {
     itemsRef.current = items;
   }, [items]);
+
+  useEffect(() => {
+    syncPreferences();
+    const onPreferenceChange = () => syncPreferences();
+    window.addEventListener("shopitt:feed-preferences-changed", onPreferenceChange);
+    return () => window.removeEventListener("shopitt:feed-preferences-changed", onPreferenceChange);
+  }, [syncPreferences]);
 
   const loadMore = useCallback(async () => {
     if (inflight.current || !hasMoreRef.current) return;
@@ -141,6 +156,10 @@ export function useFeedPosts(initialCount = PAGE_SIZE) {
     };
   }, []);
 
-  return { items, loading, error, hasMore, loadMore, refresh };
+  const visibleItems = items.filter((item) => !hiddenIds.includes(item.id) && !isCreatorMuted(mutedCreatorIds, item.userId));
+  const shouldPauseLoading = !loading && visibleItems.length === 0 && items.length > 0 && hiddenIds.length > 0;
+  const effectiveHasMore = hasMore && !shouldPauseLoading;
+
+  return { items: visibleItems, loading, error, hasMore: effectiveHasMore, loadMore, refresh };
 }
 

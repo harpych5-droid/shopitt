@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { X, Box, Video, Briefcase, ChevronRight, Camera, Loader2, Play, Trash2, Search, Tag, Grip, Plus, Check } from "lucide-react";
+import { extractHashtags, HASHTAG_SUGGESTIONS, MAX_HASHTAGS_PER_POST, normalizeHashtags } from "@/lib/hashtags";
 import { BottomNav } from "@/components/feed/BottomNav";
 import { useIdentity } from "@/hooks/useIdentity";
 import { supabase } from "@/lib/supabase";
@@ -136,11 +137,7 @@ const Create = () => {
     setMode(null);
   };
 
-  const parseHashtags = (s: string) =>
-    s
-      .split(/[\s,]+/)
-      .map((t) => t.replace(/^#/, "").trim())
-      .filter(Boolean);
+  const parseHashtags = (s: string) => normalizeHashtags(extractHashtags(s).length ? extractHashtags(s) : s.split(/[\s,]+/).filter(Boolean), MAX_HASHTAGS_PER_POST);
 
   useEffect(() => {
     if (!productSelectorOpen || !user || postType !== "product") return;
@@ -560,9 +557,35 @@ const Create = () => {
                 type="text"
                 value={hashtags}
                 onChange={(e) => setHashtags(e.target.value)}
-                placeholder="#fashion #streetwear #shopzambia"
+                placeholder="#streetwear #lusakastyle #nightfits"
                 className="mt-1.5 w-full rounded-2xl bg-card border border-border/60 px-4 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:border-brand-pink"
               />
+              {hashtags.trim() && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {normalizeHashtags(
+                    hashtags.split(/[\s,]+/).filter(Boolean),
+                    MAX_HASHTAGS_PER_POST,
+                  ).map((tag) => (
+                    <span key={tag} className="rounded-full bg-brand-pink/10 px-2 py-1 text-[11px] font-bold text-brand-pink">#{tag}</span>
+                  ))}
+                </div>
+              )}
+              <div className="mt-2 flex flex-wrap gap-2">
+                {HASHTAG_SUGGESTIONS.filter((tag) => !hashtags.toLowerCase().includes(tag.toLowerCase())).slice(0, 8).map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => setHashtags((current) => {
+                      const next = current.trim();
+                      const list = next ? `${next} #${tag}` : `#${tag}`;
+                      return list.trim();
+                    })}
+                    className="rounded-full border border-border/60 bg-muted/40 px-2 py-1 text-[11px] font-semibold text-muted-foreground hover:text-foreground"
+                  >
+                    #{tag}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {(mode === "product" && postType === "product") || mode === "service" ? (

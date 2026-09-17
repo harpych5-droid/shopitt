@@ -26,6 +26,8 @@ export const FloatingBag = ({ onClick, bottomOffset = 80, side = "left" }: Float
     prev.current = count;
   }, [count]);
 
+  if (count === 0) return null;
+
   return (
     <motion.button
       onClick={onClick}
@@ -34,11 +36,13 @@ export const FloatingBag = ({ onClick, bottomOffset = 80, side = "left" }: Float
       style={{
         bottom: `calc(${bottomOffset}px + env(safe-area-inset-bottom, 0px))`,
         [side]: "16px",
+        right: side === "right" ? "16px" : undefined,
+        left: side === "left" ? "16px" : undefined,
       } as React.CSSProperties}
-      className="fixed z-30 h-14 w-14 rounded-full gradient-brand shadow-brand flex items-center justify-center animate-breathe"
+      className="fixed z-30 h-14 w-14 rounded-full gradient-brand shadow-brand flex items-center justify-center animate-breathe lg:h-16 lg:w-16"
       aria-label="Open bag"
     >
-      <ShoppingBag className="h-6 w-6 text-white" strokeWidth={2.2} />
+      <ShoppingBag className="h-6 w-6 text-white lg:h-7 lg:w-7" strokeWidth={2.2} />
       <AnimatePresence>
         {count > 0 && (
           <motion.span

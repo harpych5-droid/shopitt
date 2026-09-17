@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
-import { Heart, Bookmark, MessageCircle, Send, MoreHorizontal, MapPin, Volume2, VolumeX, X, ExternalLink, Repeat2 } from "lucide-react";
+import { Heart, Bookmark, MessageCircle, Send, MoreHorizontal, MapPin, Volume2, VolumeX, X, ExternalLink, Repeat2, Sparkles } from "lucide-react";
+import { REACTION_OPTIONS } from "@/lib/hashtags";
 import { Link, useNavigate } from "react-router-dom";
 import type { FeedItem } from "@/data/feed";
 import { useShopitt, shopitt } from "@/store/useShopittStore";
@@ -14,6 +15,16 @@ import { VerificationBadge } from "@/components/identity/VerificationBadge";
 import { PostTimestamp } from "@/components/feed/PostTimestamp";
 import { fetchPostShopTags, type ShopTag } from "@/services/shopTagsService";
 import { getMediaCount } from "@/data/feed";
+import { AI_TRY_ON_ENABLED, AI_TRY_ON_COPY } from "@/config/featureFlags";
+import {
+  createReportPayload,
+  FEED_HIDDEN_POSTS_KEY,
+  FEED_MUTED_CREATORS_KEY,
+  FEED_SEE_FEWER_POSTS_KEY,
+  getStoredIds,
+  markPreference,
+  removeStoredId,
+} from "@/lib/feedControls";
 
 interface HomeFeedCardProps {
   item: FeedItem;
@@ -30,6 +41,18 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
   const [shopTags, setShopTags] = useState<ShopTag[]>([]);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportReason, setReportReason] = useState<string | null>(null);
+  const [tryOnOpen, setTryOnOpen] = useState(false);
+  const [reactionOpen, setReactionOpen] = useState(false);
+  const [selectedReaction, setSelectedReaction] = useState<string | null>(() => {
+    try {
+      const raw = window.localStorage.getItem(`shopitt:reaction:${item.id}`);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  });
 
   const authed = useShopitt((s) => s.authed);
   const { user } = useIdentity();
@@ -118,6 +141,20 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
       setBurst(true);
       setTimeout(() => setBurst(false), 600);
     });
+
+  const handleReactionChoice = (value: string) => {
+    if (!authed) {
+      onAuthRequired("like", item.id);
+      return;
+    }
+    setSelectedReaction(value);
+    setReactionOpen(false);
+    try {
+      window.localStorage.setItem(`shopitt:reaction:${item.id}`, JSON.stringify(value));
+    } catch {
+      // Ignore storage failures - the UI should still work without persistence.
+    }
+  };
   const handleSave = () => guard("save", () => onOpenSaveSheet(item.id));
   const handleBuy = () => guard("buy", () => shopitt.addToBag(item));
   const handleComment = () => onOpenComments(item.id);
@@ -130,6 +167,74 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
     }
   };
   const handleRemix = () => navigate(`/create?remixFrom=${encodeURIComponent(item.id)}`);
+
+  const persistPreference = (key: string, value: string, label: string, undoLabel: string, onUndo: () => void) => {
+    const next = markPreference(key, getStoredIds(key), value);
+    window.localStorage.setItem(key, JSON.stringify(next));
+    window.dispatchEvent(new CustomEvent("shopitt:feed-preferences-changed"));
+    toast.success(label, { action: { label: undoLabel, onClick: onUndo } });
+  };
+
+  const handleNotInterested = () => {
+    const hideValue = item.id;
+    const undo = () => {
+      removeStoredId(FEED_HIDDEN_POSTS_KEY, hideValue);
+      window.dispatchEvent(new CustomEvent("shopitt:feed-preferences-changed"));
+    };
+    persistPreference(FEED_HIDDEN_POSTS_KEY, hideValue, "Got it. We'll show you fewer Looks like this.", "Undo", undo);
+    setMoreOpen(false);
+  };
+
+  const handleSeeFewer = () => {
+    const value = item.id;
+    const undo = () => {
+      removeStoredId(FEED_SEE_FEWER_POSTS_KEY, value);
+      window.dispatchEvent(new CustomEvent("shopitt:feed-preferences-changed"));
+    };
+    persistPreference(FEED_SEE_FEWER_POSTS_KEY, value, "We'll show you less content like this.", "Undo", undo);
+    setMoreOpen(false);
+  };
+
+  const handleMuteCreator = () => {
+    if (!item.userId) return;
+    const value = item.userId;
+    const undo = () => {
+      removeStoredId(FEED_MUTED_CREATORS_KEY, value);
+      window.dispatchEvent(new CustomEvent("shopitt:feed-preferences-changed"));
+    };
+    persistPreference(FEED_MUTED_CREATORS_KEY, value, `Muted @${item.brandHandle}`, "Undo", undo);
+    setMoreOpen(false);
+  };
+
+  const handleCopyLink = async () => {
+    try {
+      await sharePost(item.id, item.title);
+      setMoreOpen(false);
+    } catch (error) {
+      if ((error as DOMException).name !== "AbortError") toast.error("Could not copy this link");
+    }
+  };
+
+  const submitReport = async (reason: string) => {
+    const payload = createReportPayload({
+      postId: item.id,
+      userId: user?.id ?? null,
+      creatorId: item.userId ?? null,
+      reason,
+      description: "Reported from the Look menu",
+    });
+    try {
+      const { error } = await supabase.from("post_reports").insert(payload);
+      if (error) throw error;
+      toast.success("Thanks for reporting this Look.");
+      setReportOpen(false);
+      setReportReason(null);
+      setMoreOpen(false);
+    } catch {
+      toast.error("Could not submit the report right now.");
+    }
+  };
+
   const openShop = async () => {
     setSelectedTagId(null);
     setShopOpen(true);
@@ -181,6 +286,7 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
   const avatar = item.avatar;
   const initial = (item.brand?.[0] ?? "S").toUpperCase();
   const mediaCount = getMediaCount(item);
+  const showTryOn = !isInspiration && AI_TRY_ON_ENABLED === false;
 
   return (
     <article className="w-full bg-background border-b border-border/40">
@@ -232,14 +338,79 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
         <button onClick={() => setMoreOpen((open) => !open)} aria-label="More" className="h-8 w-8 rounded-full hover:bg-muted/50 flex items-center justify-center">
           <MoreHorizontal className="h-5 w-5 text-muted-foreground" />
         </button>
-        {moreOpen && user?.id === item.userId && (
-          <div className="absolute right-0 top-10 z-30 w-32 rounded-xl border border-border bg-popover p-1 shadow-lg">
-            <button onClick={() => void editPost()} className="w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-muted">Edit</button>
-            <button onClick={() => void deletePost()} className="w-full rounded-lg px-3 py-2 text-left text-sm text-destructive hover:bg-muted">Delete</button>
+        {moreOpen && (
+          <div className="absolute right-0 top-10 z-30 w-64 rounded-2xl border border-border bg-popover p-2 shadow-xl">
+            {user?.id === item.userId ? (
+              <>
+                <button onClick={() => void editPost()} className="w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-muted">Edit Look</button>
+                <button onClick={() => void deletePost()} className="w-full rounded-xl px-3 py-2 text-left text-sm text-destructive hover:bg-muted">Delete Look</button>
+              </>
+            ) : (
+              <>
+                <button onClick={handleNotInterested} className="w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-muted">Not interested</button>
+                <button onClick={handleSeeFewer} className="w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-muted">See fewer like this</button>
+                {item.userId && (
+                  <button onClick={handleMuteCreator} className="w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-muted">Mute @{item.brandHandle}</button>
+                )}
+                <button onClick={() => { setReportOpen(true); setMoreOpen(false); }} className="w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-muted">Report</button>
+                <button onClick={() => void handleCopyLink()} className="w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-muted">Copy link</button>
+              </>
+            )}
+            <button onClick={() => setMoreOpen(false)} className="mt-1 w-full rounded-xl px-3 py-2 text-left text-sm text-muted-foreground hover:bg-muted">Cancel</button>
           </div>
         )}
         </div>
       </header>
+
+      <AnimatePresence>
+        {reportOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[80] flex items-end justify-center bg-black/75 backdrop-blur-sm sm:items-center"
+          >
+            <motion.div
+              initial={{ y: 28, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 28, opacity: 0 }}
+              className="w-full max-w-md rounded-t-3xl border border-white/10 bg-[#121212] p-4 sm:rounded-3xl"
+            >
+              <div className="flex items-center justify-between">
+                <h3 className="text-base font-extrabold text-white">Why are you reporting this Look?</h3>
+                <button type="button" onClick={() => { setReportOpen(false); setReportReason(null); }} className="h-8 w-8 rounded-full bg-white/5 text-white/80" aria-label="Close report sheet">
+                  <X className="mx-auto h-4 w-4" />
+                </button>
+              </div>
+              <div className="mt-4 space-y-2">
+                {[
+                  "Spam",
+                  "Nudity or sexual content",
+                  "Violence or dangerous content",
+                  "Hate or harassment",
+                  "Scam or fraud",
+                  "Copyright / intellectual property",
+                  "Impersonation",
+                  "Illegal content",
+                  "Other",
+                ].map((reason) => (
+                  <button
+                    key={reason}
+                    type="button"
+                    onClick={() => {
+                      setReportReason(reason);
+                      void submitReport(reason);
+                    }}
+                    className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 text-left text-sm font-medium text-white/85 hover:bg-white/[0.06]"
+                  >
+                    {reason}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* MEDIA — extended aspect ratio for Instagram-like feel */}
       <Link
@@ -356,12 +527,20 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
             <div className="h-24 overlay-bottom" />
             <div className="absolute inset-x-0 bottom-0 px-3 pb-3 pointer-events-auto">
               {!shopOpen ? (
-                <button
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); void openShop(); }}
-                  className="rounded-full glass-dark px-4 py-2.5 text-[12px] font-bold tracking-[0.14em] text-white active:scale-95 transition-transform"
-                >
-                  SHOP
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setTryOnOpen(true); }}
+                    className="rounded-full border border-white/20 bg-white/8 px-3 py-2 text-[10px] font-bold tracking-[0.12em] text-white active:scale-95 transition-transform"
+                  >
+                    TRY IT ON ✨
+                  </button>
+                  <button
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); void openShop(); }}
+                    className="rounded-full glass-dark px-4 py-2.5 text-[12px] font-bold tracking-[0.14em] text-white active:scale-95 transition-transform"
+                  >
+                    SHOP
+                  </button>
+                </div>
               ) : (
                 <motion.div
                   initial={{ opacity: 0, y: 12 }}
@@ -432,29 +611,128 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
 
       </Link>
 
+      {showTryOn && (
+        <div className="px-4 pb-2">
+          <button
+            type="button"
+            onClick={() => setTryOnOpen(true)}
+            className="w-full rounded-2xl border border-brand-pink/30 bg-brand-pink/8 px-3 py-2.5 text-left transition-colors hover:bg-brand-pink/12"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sm font-black tracking-tight text-white">TRY IT ON ✨</span>
+              <span className="rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-white/75">COMING SOON</span>
+            </div>
+            <p className="mt-1 text-xs text-white/70">See yourself in the Look.</p>
+          </button>
+        </div>
+      )}
+
+      <AnimatePresence>
+        {tryOnOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[70] flex items-end justify-center bg-black/75 backdrop-blur-md sm:items-center"
+          >
+            <motion.div
+              initial={{ y: 32, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 32, opacity: 0 }}
+              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+              className="relative w-full max-w-md rounded-t-3xl border border-white/10 bg-[#121212] p-5 sm:rounded-3xl"
+            >
+              <button
+                type="button"
+                onClick={() => setTryOnOpen(false)}
+                className="absolute right-4 top-4 h-8 w-8 rounded-full bg-white/5 text-white/80"
+                aria-label="Close"
+              >
+                <X className="mx-auto h-4 w-4" />
+              </button>
+              <div className="mb-4 inline-flex rounded-full border border-brand-pink/30 bg-brand-pink/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-brand-pink">
+                COMING SOON
+              </div>
+              <h3 className="text-2xl font-black tracking-tight text-white">{AI_TRY_ON_COPY.title}</h3>
+              <p className="mt-3 text-sm leading-relaxed text-white/70">{AI_TRY_ON_COPY.body}</p>
+              <div className="mt-5 space-y-2.5">
+                <button
+                  type="button"
+                  onClick={() => setTryOnOpen(false)}
+                  className="w-full rounded-full bg-gradient-to-r from-brand-pink to-brand-purple px-4 py-3 text-sm font-bold text-white shadow-brand"
+                >
+                  {AI_TRY_ON_COPY.cta}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTryOnOpen(false)}
+                  className="w-full rounded-full border border-white/15 bg-white/5 px-4 py-3 text-sm font-bold text-white/80"
+                >
+                  NOT NOW
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* ENGAGEMENT ROW */}
       <div className="px-4 pt-3 pb-1 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <button onClick={handleLike} aria-label="React" className="relative flex items-center gap-1.5 active:scale-90 transition-transform">
-            <motion.div animate={burst ? { scale: [1, 1.4, 0.95, 1.1] } : { scale: 1 }} transition={{ duration: 0.5 }}>
-              <Heart
-                className={`h-6 w-6 ${liked ? "fill-brand-pink text-brand-pink" : "text-foreground"}`}
-                strokeWidth={2}
-              />
-            </motion.div>
-            <AnimatePresence>
-              {burst && (
-                <motion.span
-                  initial={{ opacity: 0.7, scale: 0.5 }}
-                  animate={{ opacity: 0, scale: 2.2 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.6 }}
-                  className="absolute inset-0 rounded-full bg-brand-pink/40 blur-xl"
+        <div className="flex items-center gap-3">
+          <div className="relative flex items-center gap-2">
+            <button onClick={handleLike} aria-label="React" className="relative flex items-center gap-1.5 active:scale-90 transition-transform">
+              <motion.div animate={burst ? { scale: [1, 1.4, 0.95, 1.1] } : { scale: 1 }} transition={{ duration: 0.5 }}>
+                <Heart
+                  className={`h-6 w-6 ${liked ? "fill-brand-pink text-brand-pink" : "text-foreground"}`}
+                  strokeWidth={2}
                 />
+              </motion.div>
+              <AnimatePresence>
+                {burst && (
+                  <motion.span
+                    initial={{ opacity: 0.7, scale: 0.5 }}
+                    animate={{ opacity: 0, scale: 2.2 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.6 }}
+                    className="absolute inset-0 rounded-full bg-brand-pink/40 blur-xl"
+                  />
+                )}
+              </AnimatePresence>
+              <span className="text-xs font-semibold text-foreground">{likeCount.toLocaleString()}</span>
+            </button>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setReactionOpen((open) => !open)}
+                aria-label="Choose reaction"
+                className="flex items-center gap-1 rounded-full border border-border/60 bg-muted/40 px-2 py-1 text-[10px] font-bold text-foreground"
+              >
+                {selectedReaction ? (
+                  <>
+                    <span>{REACTION_OPTIONS.find((option) => option.value === selectedReaction)?.emoji ?? "✨"}</span>
+                    <span>{REACTION_OPTIONS.find((option) => option.value === selectedReaction)?.label ?? "React"}</span>
+                  </>
+                ) : (
+                  <span>React</span>
+                )}
+              </button>
+              {reactionOpen && (
+                <div className="absolute left-0 top-10 z-30 w-44 rounded-2xl border border-border bg-popover p-2 shadow-xl">
+                  {REACTION_OPTIONS.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => handleReactionChoice(option.value)}
+                      className="flex w-full items-center gap-2 rounded-xl px-2 py-2 text-left text-sm hover:bg-muted"
+                    >
+                      <span>{option.emoji}</span>
+                      <span>{option.label}</span>
+                    </button>
+                  ))}
+                </div>
               )}
-            </AnimatePresence>
-            <span className="text-xs font-semibold text-foreground">{likeCount.toLocaleString()}</span>
-          </button>
+            </div>
+          </div>
           <button onClick={handleComment} aria-label="Open conversation" className="flex items-center gap-1.5 active:scale-90 transition-transform">
             <MessageCircle className="h-6 w-6 text-foreground" strokeWidth={2} />
             <span className="text-xs font-semibold text-foreground">{commentCount.toLocaleString()}</span>
@@ -466,6 +744,17 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
             <Repeat2 className="h-5 w-5 text-foreground" strokeWidth={2} />
             {item.remixCount ? <span className="text-xs font-semibold text-foreground">{item.remixCount} {item.remixCount === 1 ? "Remix" : "Remixes"}</span> : null}
           </button>
+          {showTryOn && (
+            <button
+              type="button"
+              onClick={() => setTryOnOpen(true)}
+              aria-label="Try on this look"
+              className="flex items-center gap-1.5 active:scale-90 transition-transform"
+            >
+              <Sparkles className="h-5 w-5 text-foreground" strokeWidth={2} />
+              <span className="text-xs font-semibold text-foreground">Try On</span>
+            </button>
+          )}
         </div>
         <button onClick={handleSave} aria-label="Save" className="active:scale-90 transition-transform">
           <Bookmark
@@ -492,12 +781,13 @@ export const HomeFeedCard = ({ item, index, onAuthRequired, onOpenSaveSheet, onO
         {item.hashtags.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1.5">
             {item.hashtags.map((h) => (
-              <span
+              <Link
                 key={h}
-                className="text-xs font-medium text-brand-pink bg-brand-pink/10 rounded-full px-2.5 py-1"
+                to={`/search?q=${encodeURIComponent(h)}`}
+                className="text-xs font-medium text-brand-pink bg-brand-pink/10 rounded-full px-2.5 py-1 transition-colors hover:bg-brand-pink/15"
               >
                 #{h}
-              </span>
+              </Link>
             ))}
           </div>
         )}

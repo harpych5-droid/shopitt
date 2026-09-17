@@ -220,7 +220,27 @@ export async function addComment(
       profiles!post_comments_user_id_fkey ( username, avatar_url, is_verified )`,
     )
     .maybeSingle();
-  return { data: data as unknown as CommentRow | null, error: error?.message ?? null };
+  const comment = data as unknown as CommentRow | null;
+  if (!error && comment) void notifyMentionedUsers(text, userId, comment.id, postId);
+  return { data: comment, error: error?.message ?? null };
+}
+
+async function notifyMentionedUsers(text: string, actorId: string, commentId: string, postId: string) {
+  const handles = Array.from(new Set(Array.from(text.matchAll(/@([a-zA-Z0-9_]{2,24})/g), (match) => match[1])));
+  if (!handles.length) return;
+  const { data: profiles } = await supabase.from("profiles").select("id, username").in("username", handles);
+  const rows = (profiles ?? []).filter((profile) => profile.id !== actorId).map((profile) => ({
+    user_id: profile.id,
+    actor_id: actorId,
+    type: "mention",
+    title: "You were mentioned in Conversation",
+    body: `@${profile.username ?? "shopper"} was mentioned in a Shopitt Look conversation.`,
+    message: text.slice(0, 160),
+    post_id: postId,
+    comment_id: commentId,
+    is_read: false,
+  }));
+  if (rows.length) await supabase.from("notifications").insert(rows);
 }
 
 export async function deleteComment(commentId: string, userId: string) {
@@ -230,6 +250,27 @@ export async function deleteComment(commentId: string, userId: string) {
     .eq("id", commentId)
     .eq("user_id", userId);
   return { error: error?.message ?? null };
+}
+
+export async function toggleCommentLike(commentId: string, userId: string) {
+  const { data: existing } = await supabase
+    .from("comment_likes")
+    .select("comment_id")
+    .eq("comment_id", commentId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  const result = existing
+    ? await supabase.from("comment_likes").delete().eq("comment_id", commentId).eq("user_id", userId)
+    : await supabase.from("comment_likes").insert({ comment_id: commentId, user_id: userId });
+  return { liked: !existing, error: result.error?.message ?? null };
+}
+
+export async function fetchCommentLikeCounts(commentIds: string[]) {
+  const counts = new Map<string, number>();
+  if (!commentIds.length) return counts;
+  const { data } = await supabase.from("comment_likes").select("comment_id").in("comment_id", commentIds);
+  for (const row of data ?? []) counts.set(row.comment_id, (counts.get(row.comment_id) ?? 0) + 1);
+  return counts;
 }
 
 export async function fetchCommentCount(postId: string): Promise<number> {
@@ -291,6 +332,7 @@ export type NotificationRow = {
   message: string | null;
   post_id: string | null;
   comment_id: string | null;
+  order_id: string | null;
   is_read: boolean | null;
   created_at: string;
   actor?: { username: string | null; avatar_url: string | null } | null;
@@ -304,7 +346,7 @@ export async function fetchNotifications(
   const { data, error } = await supabase
     .from("notifications")
     .select(
-      `id, user_id, actor_id, type, title, body, message, post_id, comment_id, is_read, created_at,
+      `id, user_id, actor_id, type, title, body, message, post_id, comment_id, order_id, is_read, created_at,
        actor:profiles!notifications_actor_id_fkey ( username, avatar_url )`,
     )
     .eq("user_id", userId)

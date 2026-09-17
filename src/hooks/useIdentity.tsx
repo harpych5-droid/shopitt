@@ -18,7 +18,10 @@ export type Profile = {
   username: string | null;
   avatar_url: string | null;
   country: string | null;
+  bio?: string | null;
   is_verified: boolean;
+  whatsapp_number?: string | null;
+  whatsapp_enabled?: boolean | null;
 };
 
 type IdentityContextValue = {
@@ -39,7 +42,7 @@ async function fetchOrCreateProfile(user: User): Promise<Profile | null> {
   // 1) Try to fetch existing profile
   const { data: existing, error: fetchErr } = await supabase
     .from("profiles")
-    .select("id, username, avatar_url, country, is_verified")
+    .select("id, username, avatar_url, country, bio, is_verified, whatsapp_number, whatsapp_enabled")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -63,8 +66,8 @@ async function fetchOrCreateProfile(user: User): Promise<Profile | null> {
 
   const { data: created, error: createErr } = await supabase
     .from("profiles")
-    .insert(insertPayload)
-    .select("id, username, avatar_url, country, is_verified")
+    .insert({ ...insertPayload, whatsapp_number: null, whatsapp_enabled: false })
+    .select("id, username, avatar_url, country, bio, is_verified, whatsapp_number, whatsapp_enabled")
     .maybeSingle();
 
   if (createErr) {

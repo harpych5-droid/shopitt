@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Camera, Check, Loader2 } from "lucide-react";
+import { Camera, Check, Loader2 } from "lucide-react";
 import { BottomNav } from "@/components/feed/BottomNav";
+import { BackButton } from "@/components/navigation/BackButton";
 import { toast } from "sonner";
 import { useIdentity } from "@/hooks/useIdentity";
 import { supabase } from "@/lib/supabase";
@@ -16,6 +17,7 @@ const EditProfile = () => {
   const [form, setForm] = useState({
     username: "",
     country: "",
+    bio: "",
     avatar_url: "",
   });
   const [saving, setSaving] = useState(false);
@@ -32,6 +34,7 @@ const EditProfile = () => {
       setForm({
         username: profile.username ?? "",
         country: profile.country ?? "",
+        bio: profile.bio ?? "",
         avatar_url: profile.avatar_url ?? "",
       });
     }
@@ -69,13 +72,14 @@ const EditProfile = () => {
     const payload = {
       username: displayUsername,
       country: form.country.trim() || null,
+      bio: form.bio.trim().slice(0, 160) || null,
       avatar_url: form.avatar_url.trim() || null,
     };
     const { data, error } = await supabase
       .from("profiles")
       .update(payload)
       .eq("id", user.id)
-      .select("id, username, avatar_url, country, is_verified")
+      .select("id, username, avatar_url, country, bio, is_verified, whatsapp_number, whatsapp_enabled")
       .maybeSingle();
     setSaving(false);
 
@@ -99,13 +103,7 @@ const EditProfile = () => {
     <main className="min-h-[100dvh] bg-background pb-32">
       <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-xl border-b border-border/40">
         <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
-          <Link
-            to="/menu"
-            aria-label="Back"
-            className="h-9 w-9 rounded-full hover:bg-muted/50 flex items-center justify-center"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
+          <BackButton fallback="/profile" />
           <h1 className="text-base font-bold">Edit profile</h1>
           <button
             onClick={onSave}
@@ -197,6 +195,22 @@ const EditProfile = () => {
               className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
             />
           </Field>
+
+          <div className="rounded-2xl bg-card border border-border/60 px-4 py-3">
+            <label htmlFor="profile-bio" className="block text-[10px] uppercase tracking-[0.16em] font-bold text-muted-foreground">
+              Bio
+            </label>
+            <textarea
+              id="profile-bio"
+              value={form.bio}
+              maxLength={160}
+              rows={3}
+              onChange={(e) => update("bio", e.target.value)}
+              placeholder="streetwear addict.\nlate-night fits.\nlusaka → everywhere."
+              className="mt-2 w-full resize-none bg-transparent text-sm leading-relaxed outline-none placeholder:text-muted-foreground"
+            />
+            <p className="text-right text-[11px] text-muted-foreground">{form.bio.length}/160</p>
+          </div>
         </section>
 
         <Link

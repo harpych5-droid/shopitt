@@ -1,662 +1,135 @@
 import { useEffect, useMemo, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import {
-  LayoutDashboard, Users, FileImage, BarChart3, TrendingUp, LifeBuoy, Settings as SettingsIcon,
-  Search, Bell, Menu as MenuIcon, X, Star, Megaphone, MoreHorizontal, LogOut,
-  Activity, MessageCircle, Heart, Bookmark, AlertTriangle,
+  Activity, ArrowUpRight, BarChart3, Boxes, FileImage, Heart, LogOut,
+  Menu, MessageCircle, Package, Search, ShieldAlert, Sparkles, Users, X,
 } from "lucide-react";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useIdentity } from "@/hooks/useIdentity";
 import { supabase } from "@/lib/supabase";
 import * as adminSvc from "@/services/adminService";
-import type { FounderDashboard } from "@/services/adminService";
-const { fetchFounderDashboard, timeAgo } = adminSvc;
+import type { AdminPost, AdminUser, AdminOrder, AdminReport, FounderDashboard } from "@/services/adminService";
 
-type Section = "overview" | "users" | "sellers" | "orders" | "content" | "analytics" | "trends" | "featured" | "announcements" | "support" | "settings";
-
-const NAV: { key: Section; label: string; icon: any }[] = [
-  { key: "overview", label: "Dashboard", icon: LayoutDashboard },
+ type View = "overview" | "users" | "content" | "commerce" | "moderation";
+ const NAV: { key: View; label: string; icon: typeof Activity }[] = [
+  { key: "overview", label: "Command Center", icon: BarChart3 },
   { key: "users", label: "Users", icon: Users },
   { key: "content", label: "Content", icon: FileImage },
-  { key: "analytics", label: "Analytics", icon: BarChart3 },
-  { key: "trends", label: "Trends", icon: TrendingUp },
-  { key: "featured", label: "Featured", icon: Star },
-  { key: "announcements", label: "Announcements", icon: Megaphone },
-  { key: "support", label: "Support", icon: LifeBuoy },
-  { key: "settings", label: "Settings", icon: SettingsIcon },
-];
+  { key: "commerce", label: "Commerce", icon: Package },
+  { key: "moderation", label: "Moderation", icon: ShieldAlert },
+ ];
 
 const Admin = () => {
   const { isAdmin, loading } = useIsAdmin();
   const { user } = useIdentity();
-  const [section, setSection] = useState<Section>("overview");
-  const [drawer, setDrawer] = useState(false);
   const navigate = useNavigate();
+  const [view, setView] = useState<View>("overview");
+  const [drawer, setDrawer] = useState(false);
 
-  if (loading) return <div className="min-h-[100dvh] grid place-items-center bg-background"><div className="text-sm text-muted-foreground">Verifying access…</div></div>;
+  if (loading) return <div className="min-h-[100dvh] grid place-items-center bg-[#0E0E0E] text-white/70">Verifying access…</div>;
   if (!user || !isAdmin) return <Navigate to="/" replace />;
 
-  return <div className="min-h-[100dvh] bg-muted/30 text-foreground -ml-0 lg:-ml-60">
-    <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-background border-r border-border/60 transform transition-transform lg:translate-x-0 ${drawer ? "translate-x-0" : "-translate-x-full"}`}>
-      <div className="h-14 px-5 flex items-center justify-between border-b border-border/60"><div className="flex items-center gap-2"><span className="h-7 w-7 rounded-lg gradient-brand grid place-items-center text-white text-[11px] font-black">S</span><div className="leading-tight"><div className="text-sm font-bold">Shopitt</div><div className="text-[10px] text-muted-foreground uppercase tracking-wider">Admin</div></div></div><button onClick={() => setDrawer(false)} className="lg:hidden h-8 w-8 grid place-items-center rounded-md hover:bg-muted"><X className="h-4 w-4" /></button></div>
-      <nav className="p-2 space-y-0.5 overflow-y-auto h-[calc(100dvh-7rem)]">{NAV.map((item) => { const Icon = item.icon; return <button key={item.key} onClick={() => { setSection(item.key); setDrawer(false); }} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium ${item.key === section ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}><Icon className="h-4 w-4" /><span>{item.label}</span></button>; })}</nav>
-      <div className="h-14 border-t border-border/60 px-3 flex items-center justify-between"><button onClick={() => navigate("/")} className="text-xs font-medium text-muted-foreground hover:text-foreground">Exit admin</button><button onClick={async () => { await supabase.auth.signOut(); navigate("/"); }} className="h-8 w-8 grid place-items-center rounded-md hover:bg-muted" aria-label="Sign out"><LogOut className="h-4 w-4" /></button></div>
+  return <div className="min-h-[100dvh] bg-[#0E0E0E] text-white">
+    <aside className={`fixed inset-y-0 left-0 z-50 w-64 border-r border-white/10 bg-[#0E0E0E] transition-transform lg:translate-x-0 ${drawer ? "translate-x-0" : "-translate-x-full"}`}>
+      <div className="flex h-16 items-center justify-between border-b border-white/10 px-5"><div><p className="font-display text-lg font-black">SHOPITT</p><p className="text-[10px] uppercase tracking-[0.2em] text-white/45">Command Center</p></div><button onClick={() => setDrawer(false)} className="lg:hidden"><X className="h-5 w-5" /></button></div>
+      <nav className="space-y-1 p-3">{NAV.map(({ key, label, icon: Icon }) => <button key={key} onClick={() => { setView(key); setDrawer(false); }} className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold transition ${view === key ? "bg-white text-[#0E0E0E]" : "text-white/60 hover:bg-white/10 hover:text-white"}`}><Icon className="h-4 w-4" />{label}</button>)}</nav>
+      <div className="absolute inset-x-0 bottom-0 border-t border-white/10 p-3"><button onClick={() => navigate("/")} className="flex w-full items-center justify-between rounded-xl px-3 py-3 text-xs font-semibold text-white/55 hover:bg-white/10 hover:text-white">Exit admin <ArrowUpRight className="h-4 w-4" /></button><button onClick={async () => { await supabase.auth.signOut(); navigate("/"); }} className="mt-1 flex w-full items-center gap-3 rounded-xl px-3 py-3 text-xs font-semibold text-white/55 hover:bg-white/10 hover:text-white"><LogOut className="h-4 w-4" /> Sign out</button></div>
     </aside>
-    {drawer && <div className="fixed inset-0 z-40 bg-black/40 lg:hidden" onClick={() => setDrawer(false)} />}
-    <div className="lg:pl-64"><header className="sticky top-0 z-30 h-14 bg-background/80 backdrop-blur-xl border-b border-border/60 flex items-center gap-3 px-4"><button onClick={() => setDrawer(true)} className="lg:hidden h-9 w-9 grid place-items-center rounded-md hover:bg-muted"><MenuIcon className="h-5 w-5" /></button><div className="flex-1" /><div className="h-8 w-8 rounded-full gradient-brand grid place-items-center text-white text-xs font-bold">{(user.email?.[0] ?? "A").toUpperCase()}</div></header><main className="p-4 md:p-6 max-w-[1400px] mx-auto">{section === "overview" && <Overview />}{section === "users" && <UsersPage />}{section === "content" && <ContentPage />}{section === "analytics" && <AnalyticsPage />}{section === "trends" && <TrendsPage />}{section === "featured" && <FeaturedPage />}{section === "announcements" && <AnnouncementsPage />}{section === "support" && <SupportPage />}{section === "settings" && <SettingsPage />}</main></div>
+    {drawer && <div className="fixed inset-0 z-40 bg-black/60 lg:hidden" onClick={() => setDrawer(false)} />}
+    <div className="lg:pl-64"><header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-white/10 bg-[#0E0E0E]/90 px-4 backdrop-blur-xl"><button onClick={() => setDrawer(true)} className="lg:hidden"><Menu className="h-5 w-5" /></button><div className="flex-1" /><span className="text-xs text-white/45">Platform overview</span><span className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-[#FF4DA6] to-[#7B5CFF] text-xs font-black">{(user.email?.[0] ?? "A").toUpperCase()}</span></header><main className="mx-auto max-w-[1440px] p-4 md:p-8">{view === "overview" && <Overview setView={setView} />}{view === "users" && <UsersView />}{view === "content" && <ContentView />}{view === "commerce" && <CommerceView />}{view === "moderation" && <ModerationView />}</main></div>
   </div>;
 };
 
-export default Admin;
-
-const FounderMetric = ({ label, value, icon: Icon }: { label: string; value: string; icon: any }) => (
-  <Card className="p-4">
-    <div className="flex items-center justify-between text-muted-foreground">
-      <span className="text-[11px] font-semibold uppercase tracking-wider">{label}</span>
-      <Icon className="h-4 w-4" />
-    </div>
-    <div className="mt-2 text-2xl font-bold tracking-tight">{value}</div>
-  </Card>
-);
-
-const FounderOverview = ({ dashboard, range, setRange }: { dashboard: FounderDashboard; range: 7 | 30 | 90; setRange: (range: 7 | 30 | 90) => void }) => {
+const Overview = ({ setView }: { setView: (view: View) => void }) => {
+  const [range, setRange] = useState<7 | 30 | 90>(30);
+  const [dashboard, setDashboard] = useState<FounderDashboard | null>(null);
+  const [reports, setReports] = useState({ open: 0, reviewed: 0, resolved: 0 });
+  useEffect(() => { void adminSvc.fetchFounderDashboard(range).then(setDashboard); void adminSvc.fetchAdminReportCounts().then(setReports); }, [range]);
+  if (!dashboard) return <Loading />;
   const fmt = (value: number | null) => value === null ? "—" : value.toLocaleString();
   const max = Math.max(1, ...dashboard.growth.map((point) => point.users));
-  return (
-    <>
-      <SectionHeader title="Founder command center" subtitle="Users, activity, growth, and platform health." action={<Pill tone="green"><span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" /> Real data</Pill>} />
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <FounderMetric label="Total users" value={dashboard.totalUsers.toLocaleString()} icon={Users} />
-        <FounderMetric label="Active now" value={fmt(dashboard.activeNow)} icon={Activity} />
-        <FounderMetric label="DAU" value={dashboard.dailyActiveUsers.toLocaleString()} icon={Users} />
-        <FounderMetric label="New users today" value={dashboard.newUsersToday.toLocaleString()} icon={Users} />
-      </div>
-      <div className="grid lg:grid-cols-3 gap-4 mt-4">
-        <Card className="lg:col-span-2 p-5">
-          <div className="flex items-center justify-between gap-3">
-            <div><h2 className="font-semibold">User growth</h2><p className="text-xs text-muted-foreground">New registrations by day</p></div>
-            <div className="flex gap-1">{([7, 30, 90] as const).map((value) => <button key={value} onClick={() => setRange(value)} className={`px-2.5 py-1 rounded-md text-[11px] font-bold ${range === value ? "bg-foreground text-background" : "bg-muted text-muted-foreground"}`}>{value}D</button>)}</div>
-          </div>
-          <div className="mt-5 h-36 flex items-end gap-1">
-            {dashboard.growth.map((point) => <div key={point.date} title={`${point.date}: ${point.users}`} className="flex-1 min-w-0 bg-brand-pink/70 rounded-t-sm" style={{ height: `${Math.max(4, (point.users / max) * 100)}%` }} />)}
-          </div>
-        </Card>
-        <Card className="p-5">
-          <h2 className="font-semibold">User health</h2>
-          <div className="mt-4 space-y-3 text-sm"><div className="flex justify-between"><span className="text-muted-foreground">MAU</span><strong>{dashboard.monthlyActiveUsers.toLocaleString()}</strong></div><div className="flex justify-between"><span className="text-muted-foreground">Verified</span><strong>{dashboard.verifiedAccounts.toLocaleString()}</strong></div><div className="flex justify-between"><span className="text-muted-foreground">Looks today</span><strong>{dashboard.looksToday.toLocaleString()}</strong></div></div>
-        </Card>
-      </div>
-      <div className="mt-4"><h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Platform activity</h2><div className="grid grid-cols-2 md:grid-cols-4 gap-3"><FounderMetric label="Looks" value={dashboard.totalLooks.toLocaleString()} icon={FileImage} /><FounderMetric label="Reactions" value={fmt(dashboard.reactions)} icon={Heart} /><FounderMetric label="Comments" value={dashboard.comments.toLocaleString()} icon={MessageCircle} /><FounderMetric label="Saves" value={fmt(dashboard.saves)} icon={Bookmark} /></div></div>
-      <div className="grid lg:grid-cols-2 gap-4 mt-4"><Card className="p-5"><h2 className="font-semibold">Live activity</h2><ul className="mt-4 space-y-3">{dashboard.activity.map((item) => <li key={item.id} className="flex justify-between gap-3 text-sm"><span><strong>{item.text}</strong><span className="block text-xs text-muted-foreground">{item.who}</span></span><span className="text-xs text-muted-foreground shrink-0">{timeAgo(item.at)}</span></li>)}{dashboard.activity.length === 0 && <li className="text-sm text-muted-foreground">No recent activity.</li>}</ul></Card><Card className="p-5"><h2 className="font-semibold">Needs attention</h2>{dashboard.attention.length === 0 ? <p className="mt-4 text-sm text-muted-foreground">All clear</p> : <ul className="mt-4 space-y-2">{dashboard.attention.map((item) => <li key={item.label} className="flex justify-between text-sm"><span>{item.label}</span><Pill tone="yellow">{item.count}</Pill></li>)}</ul>}</Card></div>
-    </>
-  );
+  return <div className="space-y-8"><Hero title="SHOPITT" subtitle="COMMAND CENTER" /><section><div className="mb-3 flex items-end justify-between"><div><p className="text-xs font-bold uppercase tracking-[0.2em] text-[#FF4DA6]">Platform pulse</p><h1 className="mt-1 font-display text-3xl font-black tracking-tight">What is happening right now?</h1></div><span className="text-xs text-white/45">Updated moments ago</span></div><div className="grid grid-cols-2 gap-3 md:grid-cols-4"><Metric label="Total users" value={dashboard.totalUsers.toLocaleString()} icon={Users} /><Metric label="Active now" value={fmt(dashboard.activeNow)} icon={Activity} /><Metric label="DAU" value={dashboard.dailyActiveUsers.toLocaleString()} icon={Activity} /><Metric label="New today" value={dashboard.newUsersToday.toLocaleString()} icon={Users} /></div></section><section className="grid gap-4 lg:grid-cols-[1.6fr_1fr]"><Panel><div className="flex items-center justify-between"><div><h2 className="font-display text-xl font-black">User growth</h2><p className="text-xs text-white/45">New registrations by day</p></div><div className="flex gap-1">{([7, 30, 90] as const).map((value) => <button key={value} onClick={() => setRange(value)} className={`rounded-full px-3 py-1.5 text-[11px] font-bold ${range === value ? "bg-white text-[#0E0E0E]" : "bg-white/10 text-white/55"}`}>{value}D</button>)}</div></div><div className="mt-7 flex h-44 items-end gap-1">{dashboard.growth.map((point) => <div key={point.date} title={`${point.date}: ${point.users}`} className="min-w-0 flex-1 rounded-t-sm bg-gradient-to-t from-[#FF4DA6] to-[#7B5CFF] opacity-80" style={{ height: `${Math.max(5, point.users / max * 100)}%` }} />)}</div></Panel><Panel><h2 className="font-display text-xl font-black">Platform activity</h2><div className="mt-5 grid grid-cols-2 gap-3"><Mini label="WAU" value="—" /><Mini label="MAU" value={dashboard.monthlyActiveUsers.toLocaleString()} /><Mini label="Looks today" value={dashboard.looksToday.toLocaleString()} /><Mini label="Verified" value={dashboard.verifiedAccounts.toLocaleString()} /></div><p className="mt-5 text-xs leading-relaxed text-white/45">Active-user totals use recorded platform activity events. Live presence is not configured.</p></Panel></section><section><SectionTitle title="Fashion activity" /><div className="grid grid-cols-2 gap-3 md:grid-cols-5"><Metric label="Total Looks" value={dashboard.totalLooks.toLocaleString()} icon={FileImage} /><Metric label="Reactions" value={fmt(dashboard.reactions)} icon={Heart} /><Metric label="Conversations" value={fmt(dashboard.messages)} icon={MessageCircle} /><Metric label="Inspiration" value={fmt(dashboard.saves)} icon={Sparkles} /><Metric label="Remixes" value="—" icon={Activity} /></div></section><section className="grid gap-4 lg:grid-cols-[1.35fr_1fr]"><Panel><SectionTitle title="Live activity" /><div className="mt-4 space-y-3">{dashboard.activity.map((item) => <div key={item.id} className="flex items-center justify-between gap-3 border-b border-white/10 pb-3 text-sm"><div><p className="font-semibold">{item.text}</p><p className="text-xs text-white/45">{item.who}</p></div><span className="shrink-0 text-xs text-white/40">{adminSvc.timeAgo(item.at)}</span></div>)}{dashboard.activity.length === 0 && <p className="text-sm text-white/45">No recent activity.</p>}</div></Panel><Panel><SectionTitle title="Needs attention" /><div className="mt-4 space-y-3"><Attention label="Open reports" value={reports.open} /><Attention label="Under review" value={reports.reviewed} /><Attention label="Resolved" value={reports.resolved} /></div><button onClick={() => setView("moderation")} className="mt-5 text-xs font-bold text-[#FF4DA6]">Open moderation →</button></Panel></section><section><SectionTitle title="Commerce" /><div className="grid grid-cols-2 gap-3 md:grid-cols-4"><Metric label="Orders" value="—" icon={Package} /><Metric label="Orders today" value="—" icon={Package} /><Metric label="GMV" value="—" icon={Boxes} /><Metric label="Shopitt revenue" value="—" icon={BarChart3} /></div><p className="mt-3 text-xs text-white/40">Commerce totals are omitted here until a reliable aggregate and commission rule are configured.</p></section></div>;
 };
 
-const Overview = () => {
-  const [dashboard, setDashboard] = useState<FounderDashboard | null>(null);
-  const [range, setRange] = useState<7 | 30 | 90>(30);
-  useEffect(() => { fetchFounderDashboard(range).then(setDashboard); }, [range]);
-  if (!dashboard) return <div className="py-16 text-center text-sm text-muted-foreground">Loading platform health…</div>;
-  return <FounderOverview dashboard={dashboard} range={range} setRange={setRange} />;
-};
-
-/* ============================== Shared UI ============================== */
-
-const Card = ({ children, className = "" }: any) => (
-  <div className={`bg-background border border-border/60 rounded-xl ${className}`}>{children}</div>
-);
-
-const SectionHeader = ({ title, subtitle, action }: { title: string; subtitle?: string; action?: React.ReactNode }) => (
-  <div className="flex items-end justify-between mb-5 gap-3 flex-wrap">
-    <div>
-      <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
-      {subtitle && <p className="text-sm text-muted-foreground mt-0.5">{subtitle}</p>}
-    </div>
-    {action}
-  </div>
-);
-
-const Pill = ({ tone, children }: { tone: "green" | "red" | "yellow" | "blue" | "gray" | "pink"; children: React.ReactNode }) => {
-  const map: Record<string, string> = {
-    green: "bg-success/10 text-success",
-    red: "bg-destructive/10 text-destructive",
-    yellow: "bg-warning/15 text-warning",
-    blue: "bg-brand-purple/10 text-brand-purple",
-    pink: "bg-brand-pink/10 text-brand-pink",
-    gray: "bg-muted text-muted-foreground",
+const UsersView = () => {
+  const { user } = useIdentity();
+  const [query, setQuery] = useState("");
+  const [rows, setRows] = useState<AdminUser[]>([]);
+  const [badges, setBadges] = useState<adminSvc.ShopittBadge[]>([]);
+  const [saving, setSaving] = useState<string | null>(null);
+  const load = () => void adminSvc.fetchAdminUsers(query).then(setRows);
+  useEffect(load, [query]);
+  useEffect(() => { void adminSvc.fetchBadges().then(setBadges); }, []);
+  const toggleAdmin = async (row: AdminUser) => {
+    setSaving(row.id);
+    const error = await adminSvc.setUserRole(row.id, row.role === "admin" ? "user" : "admin");
+    setSaving(null);
+    if (!error) load();
   };
-  return <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${map[tone]}`}>{children}</span>;
+  const toggleVerified = async (row: AdminUser) => {
+    setSaving(row.id);
+    await adminSvc.setUserVerified(row.id, !Boolean((row as AdminUser & { is_verified?: boolean }).is_verified), user?.id ?? "");
+    setSaving(null);
+    load();
+  };
+  const assignBadge = async (row: AdminUser) => {
+    if (!user || !badges.length) return;
+    const choice = window.prompt(`Badge for @${row.username ?? "user"}:\n${badges.map((badge, index) => `${index + 1}. ${badge.name}`).join("\n")}`);
+    const index = Number(choice) - 1;
+    if (!Number.isInteger(index) || !badges[index]) return;
+    const error = await adminSvc.grantUserBadge(row.id, badges[index].id, user.id);
+    if (error) window.alert(error);
+  };
+  return <div><Hero title="USERS" subtitle="MANAGEMENT + RECOGNITION" /><SearchBox value={query} onChange={setQuery} placeholder="Search users by username" /><Panel className="mt-4 overflow-hidden"><TableHead labels={["User", "Country", "Joined", "Status"]} />{rows.map((row) => <div key={row.id} className="grid grid-cols-[2fr_1fr_1fr_1.8fr] items-center gap-3 border-t border-white/10 px-4 py-3 text-sm"><div className="flex items-center gap-3"><span className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-[#FF4DA6] to-[#7B5CFF] text-xs font-black">{(row.username?.[0] ?? "S").toUpperCase()}</span><div><p className="font-semibold">@{row.username ?? "user"}</p><p className="text-xs text-white/40">{row.role === "admin" ? "Administrator" : row.is_seller ? "Creator / seller" : "Shopitt account"}</p></div></div><span className="text-white/55">{row.country ?? "—"}</span><span className="text-white/55">{new Date(row.created_at).toLocaleDateString()}</span><div className="flex flex-wrap items-center justify-end gap-1.5"><span className={row.is_suspended ? "text-red-300" : "text-emerald-300"}>{row.is_suspended ? "Suspended" : "Active"}</span><button onClick={() => void toggleVerified(row)} disabled={saving === row.id} className="rounded-full border border-white/15 px-2 py-1 text-[10px] font-bold text-white/70 hover:bg-white/10">{(row as AdminUser & { is_verified?: boolean }).is_verified ? "Unverify" : "Verify"}</button><button onClick={() => void assignBadge(row)} className="rounded-full border border-[#FF4DA6]/40 px-2 py-1 text-[10px] font-bold text-[#FF4DA6] hover:bg-[#FF4DA6]/10">Badge</button><button onClick={() => void toggleAdmin(row)} disabled={saving === row.id} className="rounded-full border border-white/15 px-2 py-1 text-[10px] font-bold text-white/70 hover:bg-white/10 disabled:opacity-50">{saving === row.id ? "Saving" : row.role === "admin" ? "Remove admin" : "Make admin"}</button></div></div>)}</Panel></div>;
 };
-
-/* ============================== Overview ============================== */
-
-/* ============================== Users ============================== */
-
-const USERS = [
-  { name: "Adaobi Okeke", handle: "adaobi", email: "adaobi@example.com", role: "Creator", joined: "Mar 12, 2025", status: "Active" },
-  { name: "Kemi Afolabi", handle: "kemiafro", email: "kemi@example.com", role: "Seller", joined: "Apr 02, 2025", status: "Active" },
-  { name: "Tariq Bello", handle: "tariq", email: "tariq@example.com", role: "Buyer", joined: "Apr 18, 2025", status: "Active" },
-  { name: "Nia Styles", handle: "nia.styles", email: "nia@example.com", role: "Creator", joined: "May 09, 2025", status: "Suspended" },
-  { name: "Bella Textiles", handle: "bellatextiles", email: "ops@bella.co", role: "Seller", joined: "May 22, 2025", status: "Active" },
-  { name: "Marcus Cole", handle: "marcus", email: "marcus@example.com", role: "Admin", joined: "Feb 01, 2025", status: "Active" },
-];
-
-const UsersPage = () => {
-  const [q, setQ] = useState("");
-  const [filter, setFilter] = useState<"All" | "Creators" | "Buyers" | "Sellers" | "Admins">("All");
-  const rows = USERS.filter((u) =>
-    (filter === "All" || u.role + "s" === filter) &&
-    (u.name.toLowerCase().includes(q.toLowerCase()) || u.handle.includes(q.toLowerCase()) || u.email.includes(q.toLowerCase()))
-  );
+const ContentView = () => {
+  const [rows, setRows] = useState<AdminPost[]>([]);
+  useEffect(() => { void adminSvc.fetchAdminPosts("all", 60).then(setRows); }, []);
   return (
-    <>
-      <SectionHeader
-        title="Users"
-        subtitle="Search, filter, and moderate every account."
-        action={<button className="text-xs font-semibold px-3 py-2 rounded-lg bg-foreground text-background">Export CSV</button>}
-      />
-      <Card className="p-3">
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex items-center gap-2 h-9 px-3 rounded-lg bg-muted/60 border border-border/60 flex-1 min-w-[200px]">
-            <Search className="h-4 w-4 text-muted-foreground" />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search users" className="bg-transparent outline-none text-sm flex-1" />
-          </div>
-          {(["All", "Creators", "Buyers", "Sellers", "Admins"] as const).map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`text-xs px-3 py-2 rounded-lg font-medium ${filter === f ? "bg-foreground text-background" : "bg-muted text-muted-foreground hover:text-foreground"}`}
-            >
-              {f}
-            </button>
-          ))}
-        </div>
-      </Card>
-
-      <Card className="mt-4 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-muted-foreground text-xs uppercase tracking-wider">
-              <tr>
-                <th className="text-left font-medium px-4 py-3">User</th>
-                <th className="text-left font-medium px-4 py-3 hidden md:table-cell">Email</th>
-                <th className="text-left font-medium px-4 py-3">Role</th>
-                <th className="text-left font-medium px-4 py-3 hidden lg:table-cell">Joined</th>
-                <th className="text-left font-medium px-4 py-3">Status</th>
-                <th className="text-right font-medium px-4 py-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/60">
-              {rows.map((u) => (
-                <tr key={u.handle} className="hover:bg-muted/30">
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <span className="h-9 w-9 rounded-full gradient-brand grid place-items-center text-white text-xs font-bold">
-                        {u.name[0]}
-                      </span>
-                      <div className="min-w-0">
-                        <div className="font-semibold truncate">{u.name}</div>
-                        <div className="text-xs text-muted-foreground truncate">@{u.handle}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 hidden md:table-cell text-muted-foreground">{u.email}</td>
-                  <td className="px-4 py-3">
-                    <Pill tone={u.role === "Admin" ? "pink" : u.role === "Seller" ? "blue" : "gray"}>{u.role}</Pill>
-                  </td>
-                  <td className="px-4 py-3 hidden lg:table-cell text-muted-foreground">{u.joined}</td>
-                  <td className="px-4 py-3">
-                    <Pill tone={u.status === "Active" ? "green" : "red"}>{u.status}</Pill>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <button className="h-8 w-8 rounded-md hover:bg-muted grid place-items-center ml-auto">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
-    </>
-  );
-};
-
-/* ============================== Sellers ============================== */
-
-const SELLERS = [
-  { store: "Bella Textiles", owner: "@bellatextiles", sales: 1284, tier: "Business", revenue: "$48,210", orders: 412, status: "Verified" },
-  { store: "Haute Afrika", owner: "@hauteafrika", sales: 982, tier: "Growth", revenue: "$28,940", orders: 318, status: "Verified" },
-  { store: "Kemi Couture", owner: "@kemiafro", sales: 612, tier: "Free", revenue: "$11,200", orders: 184, status: "Pending" },
-  { store: "Adaobi Studio", owner: "@adaobi", sales: 1820, tier: "Brand", revenue: "$72,180", orders: 612, status: "Verified" },
-];
-
-const SellersPage = () => (
-  <>
-    <SectionHeader title="Sellers" subtitle="Stores, tiers, and revenue across the marketplace." />
-    <Card className="overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/40 text-muted-foreground text-xs uppercase tracking-wider">
-            <tr>
-              <th className="text-left font-medium px-4 py-3">Store</th>
-              <th className="text-left font-medium px-4 py-3 hidden md:table-cell">Owner</th>
-              <th className="text-left font-medium px-4 py-3">Tier</th>
-              <th className="text-left font-medium px-4 py-3 hidden sm:table-cell">Sales</th>
-              <th className="text-left font-medium px-4 py-3">Revenue</th>
-              <th className="text-left font-medium px-4 py-3 hidden lg:table-cell">Orders</th>
-              <th className="text-left font-medium px-4 py-3">Status</th>
-              <th className="text-right font-medium px-4 py-3">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border/60">
-            {SELLERS.map((s) => (
-              <tr key={s.store} className="hover:bg-muted/30">
-                <td className="px-4 py-3 font-semibold">{s.store}</td>
-                <td className="px-4 py-3 hidden md:table-cell text-muted-foreground">{s.owner}</td>
-                <td className="px-4 py-3"><Pill tone={s.tier === "Brand" ? "pink" : s.tier === "Business" ? "blue" : "gray"}>{s.tier}</Pill></td>
-                <td className="px-4 py-3 hidden sm:table-cell">{s.sales}</td>
-                <td className="px-4 py-3 font-semibold">{s.revenue}</td>
-                <td className="px-4 py-3 hidden lg:table-cell">{s.orders}</td>
-                <td className="px-4 py-3"><Pill tone={s.status === "Verified" ? "green" : "yellow"}>{s.status}</Pill></td>
-                <td className="px-4 py-3 text-right">
-                  <button className="h-8 w-8 rounded-md hover:bg-muted grid place-items-center ml-auto">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </Card>
-  </>
-);
-
-/* ============================== Orders ============================== */
-
-const ORDERS = [
-  { no: "ORD-48201", buyer: "@tariq", seller: "@bellatextiles", product: "Ankara Maxi Dress", amount: "$128", status: "Received", date: "Today" },
-  { no: "ORD-48199", buyer: "@adaobi", seller: "@kemiafro", product: "Beaded Clutch", amount: "$64", status: "Preparing", date: "Today" },
-  { no: "ORD-48180", buyer: "@nia.styles", seller: "@hauteafrika", product: "Silk Headwrap", amount: "$32", status: "Ready", date: "Yesterday" },
-  { no: "ORD-48142", buyer: "@marcus", seller: "@adaobi", product: "Two-piece Set", amount: "$210", status: "Delivered", date: "2d ago" },
-  { no: "ORD-48101", buyer: "@kemi", seller: "@bellatextiles", product: "Wax Print Shirt", amount: "$48", status: "Cancelled", date: "3d ago" },
-];
-
-const statusTone = (s: string) =>
-  s === "Delivered" ? "green" : s === "Ready" ? "blue" : s === "Preparing" ? "yellow" : s === "Cancelled" ? "red" : "pink";
-
-const OrdersPage = () => (
-  <>
-    <SectionHeader title="Orders" subtitle="Track every order across the platform." />
-    <Card className="overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/40 text-muted-foreground text-xs uppercase tracking-wider">
-            <tr>
-              <th className="text-left font-medium px-4 py-3">Order</th>
-              <th className="text-left font-medium px-4 py-3 hidden md:table-cell">Buyer</th>
-              <th className="text-left font-medium px-4 py-3 hidden md:table-cell">Seller</th>
-              <th className="text-left font-medium px-4 py-3">Product</th>
-              <th className="text-left font-medium px-4 py-3">Amount</th>
-              <th className="text-left font-medium px-4 py-3">Status</th>
-              <th className="text-left font-medium px-4 py-3 hidden lg:table-cell">Date</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border/60">
-            {ORDERS.map((o) => (
-              <tr key={o.no} className="hover:bg-muted/30">
-                <td className="px-4 py-3 font-mono text-xs font-semibold">{o.no}</td>
-                <td className="px-4 py-3 hidden md:table-cell text-muted-foreground">{o.buyer}</td>
-                <td className="px-4 py-3 hidden md:table-cell text-muted-foreground">{o.seller}</td>
-                <td className="px-4 py-3">{o.product}</td>
-                <td className="px-4 py-3 font-semibold">{o.amount}</td>
-                <td className="px-4 py-3"><Pill tone={statusTone(o.status) as any}>{o.status}</Pill></td>
-                <td className="px-4 py-3 hidden lg:table-cell text-muted-foreground">{o.date}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </Card>
-  </>
-);
-
-/* ============================== Content ============================== */
-
-const ContentPage = () => {
-  const [tab, setTab] = useState<"Posts" | "Reels" | "Comments" | "Reports">("Posts");
-  return (
-    <>
-      <SectionHeader title="Content Moderation" subtitle="Approve, remove, or feature content across Shopitt." />
-      <div className="flex gap-2 mb-4">
-        {(["Posts", "Reels", "Comments", "Reports"] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`text-xs px-3 py-2 rounded-lg font-medium ${tab === t ? "bg-foreground text-background" : "bg-muted text-muted-foreground hover:text-foreground"}`}
-          >
-            {t}
-          </button>
-        ))}
-      </div>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <Card key={i} className="overflow-hidden">
-            <div className="aspect-square bg-gradient-to-br from-brand-pink/20 to-brand-purple/20 grid place-items-center">
-              <FileImage className="h-6 w-6 text-foreground/30" />
-            </div>
-            <div className="p-3">
-              <div className="text-xs font-semibold truncate">@creator_{i + 1}</div>
-              <div className="text-[11px] text-muted-foreground">{tab.slice(0, -1)} · 2h ago</div>
-              <div className="mt-2 flex gap-1.5">
-                <button className="flex-1 text-[11px] py-1 rounded-md bg-foreground text-background font-semibold">Approve</button>
-                <button className="flex-1 text-[11px] py-1 rounded-md bg-muted text-foreground font-semibold">Remove</button>
+    <div>
+      <Hero title="CONTENT" subtitle="LOOKS + REMIXES" />
+      <Panel className="overflow-hidden">
+        <TableHead labels={["Look", "Creator", "Type", "Published", "Actions"]} />
+        {rows.map((row) => (
+          <div key={row.id} className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr] items-center gap-3 border-t border-white/10 px-4 py-3 text-sm">
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 overflow-hidden rounded-xl bg-white/10">
+                {row.media_url && <img src={row.media_url} alt="" className="h-full w-full object-cover" />}
               </div>
+              <span className="truncate font-semibold">{row.title ?? row.drop_title ?? "Untitled Look"}</span>
             </div>
-          </Card>
+            <span className="text-white/55">@{row.username ?? "creator"}</span>
+            <span className="text-white/55">{row.media_type ?? "image"}</span>
+            <span className="text-white/55">{new Date(row.created_at).toLocaleDateString()}</span>
+            <div className="flex gap-2">
+              <button onClick={async () => { const error = await adminSvc.setPostFeatured(row.id, !row.is_featured); if (!error) setRows((current) => current.map((item) => item.id === row.id ? { ...item, is_featured: !row.is_featured } : item)); }} className="text-[10px] font-bold text-[#FF4DA6]">{row.is_featured ? "Unfeature" : "Feature"}</button>
+              <button onClick={async () => { if (!window.confirm("Remove this Look from Shopitt?")) return; const error = await adminSvc.deletePostAdmin(row.id); if (!error) setRows((current) => current.filter((item) => item.id !== row.id)); }} className="text-[10px] font-bold text-red-300">Remove</button>
+            </div>
+          </div>
         ))}
-      </div>
-    </>
+      </Panel>
+    </div>
   );
 };
-
-/* ============================== Analytics ============================== */
-
-const AnalyticsPage = () => (
-  <>
-    <SectionHeader title="Analytics" subtitle="Growth and engagement across the platform." />
-    <div className="grid lg:grid-cols-2 gap-4">
-      <Card className="p-5">
-        <h3 className="font-semibold">Active users</h3>
-        <p className="text-xs text-muted-foreground">DAU · WAU · MAU</p>
-        <SparkChart />
-      </Card>
-      <Card className="p-5">
-        <h3 className="font-semibold">New signups</h3>
-        <p className="text-xs text-muted-foreground">Last 30 days</p>
-        <SparkChart />
-      </Card>
-      <Card className="p-5">
-        <h3 className="font-semibold">Posts & Reels created</h3>
-        <SparkChart />
-      </Card>
-      <Card className="p-5">
-        <h3 className="font-semibold">Orders</h3>
-        <SparkChart />
-      </Card>
-    </div>
-    <div className="grid md:grid-cols-3 gap-4 mt-4">
-      <Card className="p-5">
-        <h3 className="font-semibold mb-3">Top Creators</h3>
-        {["@adaobi", "@kemiafro", "@hauteafrika", "@nia.styles", "@tariq"].map((h, i) => (
-          <div key={h} className="flex items-center justify-between py-1.5 text-sm">
-            <span className="font-medium">{i + 1}. {h}</span>
-            <span className="text-muted-foreground text-xs">{(120 - i * 14)}k</span>
-          </div>
-        ))}
-      </Card>
-      <Card className="p-5">
-        <h3 className="font-semibold mb-3">Top Sellers</h3>
-        {SELLERS.map((s, i) => (
-          <div key={s.store} className="flex items-center justify-between py-1.5 text-sm">
-            <span className="font-medium">{i + 1}. {s.store}</span>
-            <span className="text-muted-foreground text-xs">{s.revenue}</span>
-          </div>
-        ))}
-      </Card>
-      <Card className="p-5">
-        <h3 className="font-semibold mb-3">Top Categories</h3>
-        {["Ankara", "Aso-Oke", "Streetwear", "Bridal", "Accessories"].map((c, i) => (
-          <div key={c} className="flex items-center justify-between py-1.5 text-sm">
-            <span className="font-medium">{i + 1}. {c}</span>
-            <span className="text-muted-foreground text-xs">{(820 - i * 110)} drops</span>
-          </div>
-        ))}
-      </Card>
-    </div>
-  </>
-);
-
-/* ============================== Trends ============================== */
-
-const TrendsPage = () => (
-  <>
-    <SectionHeader title="Trend Engine" subtitle="Auto-calculated trending content across Shopitt." />
-    <div className="grid md:grid-cols-2 gap-4">
-      {[
-        { title: "Trending Hashtags", items: ["#ankaraseason", "#asoebibella", "#streetafrika", "#bridalgoals", "#lookbook2026"] },
-        { title: "Most Viewed Posts", items: ["Lookbook 03 · @hauteafrika", "Sunset Drop · @adaobi", "Beaded Set · @kemiafro", "Headwrap Tutorial", "Owambe Fits"] },
-        { title: "Most Saved Posts", items: ["Owambe Fits", "Bridal Mood", "Two-piece Set", "Wax Print Shirt", "Silk Headwrap"] },
-        { title: "Trending Creators", items: ["@adaobi", "@kemiafro", "@hauteafrika", "@nia.styles", "@tariq"] },
-      ].map((b) => (
-        <Card key={b.title} className="p-5">
-          <h3 className="font-semibold mb-3 flex items-center gap-2"><TrendingUp className="h-4 w-4 text-brand-pink" /> {b.title}</h3>
-          <ol className="space-y-2">
-            {b.items.map((it, i) => (
-              <li key={it} className="flex items-center justify-between text-sm">
-                <span className="font-medium">{i + 1}. {it}</span>
-                <Pill tone="pink">+{50 - i * 7}%</Pill>
-              </li>
-            ))}
-          </ol>
-        </Card>
-      ))}
-    </div>
-  </>
-);
-
-/* ============================== CJ Products ============================== */
-
-const CJPage = () => (
-  <>
-    <SectionHeader title="CJ Products" subtitle="Manage CJ-sourced product margins and visibility." />
-    <Card className="overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
-            <tr>
-              <th className="text-left px-4 py-3 font-medium">Product</th>
-              <th className="text-left px-4 py-3 font-medium hidden md:table-cell">Supplier</th>
-              <th className="text-left px-4 py-3 font-medium">Final</th>
-              <th className="text-left px-4 py-3 font-medium">Margin</th>
-              <th className="text-left px-4 py-3 font-medium">Status</th>
-              <th className="text-right px-4 py-3 font-medium">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border/60">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <tr key={i} className="hover:bg-muted/30">
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-md bg-gradient-to-br from-brand-pink/30 to-brand-purple/30" />
-                    <div>
-                      <div className="font-semibold">CJ Streetwear #{1000 + i}</div>
-                      <div className="text-xs text-muted-foreground">SKU CJ-{2400 + i}</div>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-4 py-3 hidden md:table-cell">${(12 + i).toFixed(2)}</td>
-                <td className="px-4 py-3 font-semibold">${(28 + i * 1.4).toFixed(2)}</td>
-                <td className="px-4 py-3"><Pill tone="green">+{42 + i}%</Pill></td>
-                <td className="px-4 py-3"><Pill tone={i % 3 === 0 ? "gray" : "blue"}>{i % 3 === 0 ? "Draft" : "Published"}</Pill></td>
-                <td className="px-4 py-3 text-right">
-                  <button className="text-xs font-semibold px-3 py-1.5 rounded-md bg-muted hover:bg-foreground hover:text-background">Edit</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </Card>
-  </>
-);
-
-/* ============================== Subscriptions ============================== */
-
-const SubsPage = () => (
-  <>
-    <SectionHeader title="Subscriptions" subtitle="Tier mix and MRR." />
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-      <KpiCard label="MRR" value="$92,400" delta="+8.2%" />
-      <KpiCard label="Active Subs" value="1,284" delta="+3.4%" />
-      <KpiCard label="Expiring 30d" value="142" delta="−4.1%" deltaTone="red" />
-      <KpiCard label="Upgrades 30d" value="218" delta="+12.6%" />
-    </div>
-    <div className="grid md:grid-cols-2 gap-4">
-      {[
-        { name: "Free", count: 6210, color: "gray" },
-        { name: "Growth", count: 482, color: "blue" },
-        { name: "Business", count: 312, color: "pink" },
-        { name: "Brand", count: 84, color: "pink" },
-      ].map((p) => (
-        <Card key={p.name} className="p-5">
-          <div className="flex items-center justify-between">
-            <h3 className="font-semibold">{p.name}</h3>
-            <Pill tone={p.color as any}>{p.count} subs</Pill>
-          </div>
-          <div className="mt-3 h-2 rounded-full bg-muted overflow-hidden">
-            <div className="h-full gradient-brand" style={{ width: `${Math.min(100, p.count / 70)}%` }} />
-          </div>
-        </Card>
-      ))}
-    </div>
-  </>
-);
-
-/* ============================== Featured ============================== */
-
-const FeaturedPage = () => (
-  <>
-    <SectionHeader title="Featured Content" subtitle="Homepage placements and editor picks." />
-    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {["Hero banner", "Trending row", "Featured creators", "Top sellers", "Editor's pick"].map((slot) => (
-        <Card key={slot} className="p-4">
-          <div className="flex items-center justify-between">
-            <h3 className="font-semibold">{slot}</h3>
-            <Pill tone="green"><CheckCircle2 className="h-3 w-3" /> Live</Pill>
-          </div>
-          <div className="mt-3 aspect-[16/9] rounded-lg bg-gradient-to-br from-brand-pink/20 to-brand-purple/20 grid place-items-center text-xs text-muted-foreground">
-            Drag content here
-          </div>
-          <button className="mt-3 w-full text-xs font-semibold py-2 rounded-md bg-foreground text-background">Manage slot</button>
-        </Card>
-      ))}
-    </div>
-  </>
-);
-
-/* ============================== Announcements ============================== */
-
-const AnnouncementsPage = () => {
-  const [audience, setAudience] = useState<"All Users" | "Sellers Only" | "Creators Only">("All Users");
-  return (
-    <>
-      <SectionHeader title="Announcements" subtitle="Broadcast platform-wide notifications." />
-      <Card className="p-5">
-        <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Audience</label>
-        <div className="mt-2 flex gap-2 flex-wrap">
-          {(["All Users", "Sellers Only", "Creators Only"] as const).map((a) => (
-            <button
-              key={a}
-              onClick={() => setAudience(a)}
-              className={`text-xs px-3 py-2 rounded-lg font-medium ${audience === a ? "bg-foreground text-background" : "bg-muted text-muted-foreground"}`}
-            >
-              {a}
-            </button>
-          ))}
-        </div>
-        <label className="mt-4 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Title</label>
-        <input className="mt-2 w-full h-10 px-3 rounded-lg bg-muted/60 border border-border/60 outline-none text-sm" placeholder="Maintenance window tonight" />
-        <label className="mt-4 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Message</label>
-        <textarea rows={4} className="mt-2 w-full p-3 rounded-lg bg-muted/60 border border-border/60 outline-none text-sm" placeholder="Write your announcement…" />
-        <div className="mt-4 flex justify-end gap-2">
-          <button className="text-sm font-semibold px-4 py-2 rounded-lg bg-muted">Save draft</button>
-          <button className="text-sm font-semibold px-4 py-2 rounded-lg gradient-brand text-white">Send announcement</button>
-        </div>
-      </Card>
-    </>
-  );
+const CommerceView = () => { const [rows, setRows] = useState<AdminOrder[]>([]); useEffect(() => { void adminSvc.fetchAdminOrders().then(setRows); }, []); return <div><Hero title="COMMERCE" subtitle="ORDERS + MARKETPLACE FLOW" /><Panel className="overflow-hidden"><TableHead labels={["Order", "Product", "Buyer", "Value"]} />{rows.map((row) => <div key={row.id} className="grid grid-cols-[1fr_2fr_1fr_1fr] items-center gap-3 border-t border-white/10 px-4 py-3 text-sm"><span className="font-mono text-xs">#{row.id.slice(0, 8).toUpperCase()}</span><span className="truncate font-semibold">{row.product_title ?? "Shopitt order"}</span><span className="text-white/55">{row.buyer_name ?? "Buyer"}</span><span className="font-bold">{row.currency ?? "—"} {Number(row.total_price ?? 0).toLocaleString()}</span></div>)}</Panel></div>; };
+const ModerationView = () => {
+  const { user } = useIdentity();
+  const [reports, setReports] = useState<AdminReport[]>([]);
+  const [counts, setCounts] = useState({ open: 0, reviewed: 0, resolved: 0 });
+  const load = async () => { const [nextReports, nextCounts] = await Promise.all([adminSvc.fetchAdminReports(), adminSvc.fetchAdminReportCounts()]); setReports(nextReports); setCounts(nextCounts); };
+  useEffect(() => { void load(); }, []);
+  const update = async (report: AdminReport, status: AdminReport["status"]) => { if (!user) return; const error = await adminSvc.updateAdminReport(report.id, status, user.id); if (!error) void load(); };
+  return <div><Hero title="MODERATION" subtitle="REPORTS + ACTIONS" /><div className="grid grid-cols-3 gap-3"><Metric label="Open" value={counts.open.toString()} icon={ShieldAlert} /><Metric label="Under review" value={counts.reviewed.toString()} icon={Activity} /><Metric label="Resolved" value={counts.resolved.toString()} icon={Sparkles} /></div><Panel className="mt-4 overflow-hidden"><TableHead labels={["Report", "Look", "Reason", "Status"]} />{reports.map((report) => <div key={report.id} className="grid grid-cols-[1.4fr_1.5fr_1fr_1.4fr] items-center gap-3 border-t border-white/10 px-4 py-3 text-sm"><div><p className="font-semibold">{report.reason}</p><p className="text-xs text-white/40">{new Date(report.created_at).toLocaleDateString()}</p></div><span className="truncate text-white/60">{report.post?.title ?? report.post_id.slice(0, 8)}</span><span className="truncate text-white/60">{report.description || "No details"}</span><div className="flex flex-wrap gap-2"><span className="text-xs font-bold capitalize text-amber-200">{report.status}</span>{report.status === "open" && <button onClick={() => void update(report, "reviewed")} className="text-[10px] font-bold text-white/70">Review</button>}{report.status === "reviewed" && <button onClick={() => void update(report, "resolved")} className="text-[10px] font-bold text-emerald-300">Resolve</button>}{report.status !== "resolved" && <button onClick={() => void update(report, "dismissed")} className="text-[10px] font-bold text-white/45">Dismiss</button>}</div></div>)}{reports.length === 0 && <p className="p-6 text-sm text-white/45">No reports found.</p>}</Panel></div>;
 };
 
-/* ============================== Support ============================== */
+const Hero = ({ title, subtitle }: { title: string; subtitle: string }) => <div className="mb-8"><p className="font-display text-2xl font-black tracking-tight">{title}</p><p className="mt-1 text-[11px] font-bold uppercase tracking-[0.24em] text-[#FF4DA6]">{subtitle}</p></div>;
+const SectionTitle = ({ title }: { title: string }) => <h2 className="font-display text-xl font-black">{title}</h2>;
+const Panel = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => <section className={`border border-white/10 bg-[#121212] p-5 ${className}`}>{children}</section>;
+const Metric = ({ label, value, icon: Icon }: { label: string; value: string; icon: typeof Users }) => <div className="border border-white/10 bg-[#121212] p-4"><Icon className="h-4 w-4 text-[#FF4DA6]" /><p className="mt-4 text-xl font-black tabular-nums">{value}</p><p className="mt-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white/45">{label}</p></div>;
+const Mini = ({ label, value }: { label: string; value: string }) => <div className="border border-white/10 p-3"><p className="text-[10px] font-bold uppercase tracking-wider text-white/40">{label}</p><p className="mt-2 text-lg font-black">{value}</p></div>;
+const Attention = ({ label, value }: { label: string; value: number }) => <div className="flex items-center justify-between border-b border-white/10 pb-3 text-sm"><span className="text-white/65">{label}</span><span className={value > 0 ? "font-black text-amber-300" : "font-bold text-emerald-300"}>{value}</span></div>;
+const SearchBox = ({ value, onChange, placeholder }: { value: string; onChange: (value: string) => void; placeholder: string }) => <div className="flex max-w-xl items-center gap-2 border border-white/10 bg-[#121212] px-4 py-3"><Search className="h-4 w-4 text-white/40" /><input value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} className="flex-1 bg-transparent text-sm outline-none placeholder:text-white/30" /></div>;
+const TableHead = ({ labels }: { labels: string[] }) => <div className={`grid grid-cols-${labels.length} gap-3 px-4 pb-3 text-[10px] font-bold uppercase tracking-[0.14em] text-white/35`}>{labels.map((label) => <span key={label}>{label}</span>)}</div>;
+const Loading = () => <div className="grid min-h-[40vh] place-items-center text-sm text-white/45">Loading platform health…</div>;
 
-const TICKETS = [
-  { id: "TCK-1042", user: "@tariq", subject: "Order not received", priority: "High", status: "Open" },
-  { id: "TCK-1038", user: "@kemiafro", subject: "Payout question", priority: "Medium", status: "Open" },
-  { id: "TCK-1031", user: "@nia.styles", subject: "Account recovery", priority: "Low", status: "Resolved" },
-];
-
-const SupportPage = () => (
-  <>
-    <SectionHeader title="Support Center" subtitle="Resolve user reports and seller issues." />
-    <Card className="overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
-            <tr>
-              <th className="text-left px-4 py-3 font-medium">Ticket</th>
-              <th className="text-left px-4 py-3 font-medium">User</th>
-              <th className="text-left px-4 py-3 font-medium">Subject</th>
-              <th className="text-left px-4 py-3 font-medium">Priority</th>
-              <th className="text-left px-4 py-3 font-medium">Status</th>
-              <th className="text-right px-4 py-3 font-medium">Action</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border/60">
-            {TICKETS.map((t) => (
-              <tr key={t.id} className="hover:bg-muted/30">
-                <td className="px-4 py-3 font-mono text-xs font-semibold">{t.id}</td>
-                <td className="px-4 py-3 text-muted-foreground">{t.user}</td>
-                <td className="px-4 py-3">{t.subject}</td>
-                <td className="px-4 py-3"><Pill tone={t.priority === "High" ? "red" : t.priority === "Medium" ? "yellow" : "gray"}>{t.priority}</Pill></td>
-                <td className="px-4 py-3"><Pill tone={t.status === "Open" ? "pink" : "green"}>{t.status}</Pill></td>
-                <td className="px-4 py-3 text-right">
-                  <button className="text-xs font-semibold px-3 py-1.5 rounded-md bg-foreground text-background">Open</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </Card>
-  </>
-);
-
-/* ============================== Settings ============================== */
-
-const SettingsPage = () => (
-  <>
-    <SectionHeader title="Admin Settings" subtitle="Platform configuration and feature flags." />
-    <div className="grid md:grid-cols-2 gap-4">
-      <Card className="p-5 space-y-3">
-        <h3 className="font-semibold">Platform</h3>
-        <Field label="Platform name" value="Shopitt" />
-        <Field label="Default theme" value="System" />
-        <Field label="Version" value="v0.9.0-jets" />
-      </Card>
-      <Card className="p-5 space-y-3">
-        <h3 className="font-semibold">Feature flags</h3>
-        {[
-          ["Reels", true], ["CJ Catalog", true], ["Inspiration posts", true],
-          ["Subscriptions", true], ["Maintenance mode", false],
-        ].map(([k, v]) => (
-          <div key={k as string} className="flex items-center justify-between text-sm">
-            <span className="font-medium">{k as string}</span>
-            <span className={`h-5 w-9 rounded-full p-0.5 ${v ? "bg-foreground" : "bg-muted"}`}>
-              <span className={`block h-4 w-4 rounded-full bg-background transition-transform ${v ? "translate-x-4" : ""}`} />
-            </span>
-          </div>
-        ))}
-      </Card>
-    </div>
-  </>
-);
-
-const Field = ({ label, value }: { label: string; value: string }) => (
-  <div>
-    <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">{label}</label>
-    <div className="mt-1 h-10 px-3 rounded-lg bg-muted/60 border border-border/60 flex items-center text-sm">{value}</div>
-  </div>
-);
+export default Admin;

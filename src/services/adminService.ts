@@ -73,16 +73,17 @@ export type AdminUser = {
   full_name: string | null;
   avatar_url: string | null;
   country: string | null;
-  role: string | null;
-  is_seller: boolean | null;
-  is_suspended: boolean | null;
+  is_verified: boolean | null;
+  role?: string | null;
+  is_seller?: boolean | null;
+  is_suspended?: boolean | null;
   created_at: string;
 };
 
 export async function fetchAdminUsers(search = "", limit = 50): Promise<AdminUser[]> {
   let q = (supabase as any)
     .from("profiles")
-    .select("id, username, full_name, avatar_url, country, role, is_seller, is_suspended, created_at")
+    .select("id, username, avatar_url, country, is_verified, role, created_at")
     .order("created_at", { ascending: false })
     .limit(limit);
   if (search.trim()) {
@@ -93,7 +94,7 @@ export async function fetchAdminUsers(search = "", limit = 50): Promise<AdminUse
   if (error) {
     const { data: basic } = await (supabase as any)
       .from("profiles")
-      .select("id, username, avatar_url, country, created_at")
+      .select("id, username, avatar_url, country, is_verified, role, created_at")
       .order("created_at", { ascending: false })
       .limit(limit);
     return (basic ?? []) as AdminUser[];
@@ -184,6 +185,65 @@ export async function setSellerVerified(userId: string, verified: boolean) {
     .from("profiles")
     .update({ is_verified: verified })
     .eq("id", userId);
+  return error?.message ?? null;
+}
+
+export type ShopittBadge = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  category: string;
+  icon: string;
+};
+
+export type UserBadge = ShopittBadge & {
+  assignment_id: string;
+  granted_at: string;
+  expires_at: string | null;
+  internal_note: string | null;
+};
+
+export async function fetchBadges(): Promise<ShopittBadge[]> {
+  const { data } = await (supabase as any).from("badges").select("id, name, slug, description, category, icon").eq("active", true).order("name");
+  return (data ?? []) as ShopittBadge[];
+}
+
+export async function fetchUserBadges(userId: string): Promise<UserBadge[]> {
+  const { data } = await (supabase as any)
+    .from("user_badges")
+    .select("id, granted_at, expires_at, internal_note, badges!inner(id, name, slug, description, category, icon)")
+    .eq("user_id", userId)
+    .eq("active", true)
+    .order("granted_at", { ascending: false });
+  return (data ?? []).map((row: any) => ({ ...row.badges, assignment_id: row.id, granted_at: row.granted_at, expires_at: row.expires_at, internal_note: row.internal_note })) as UserBadge[];
+}
+
+export async function setUserVerified(userId: string, verified: boolean, adminId: string, note = "") {
+  const { error } = await (supabase as any).from("profiles").update({
+    is_verified: verified,
+    verified_at: verified ? new Date().toISOString() : null,
+    verified_by: verified ? adminId : null,
+    verification_note: note || null,
+  }).eq("id", userId);
+  return error?.message ?? null;
+}
+
+export async function grantUserBadge(userId: string, badgeId: string, adminId: string, note = "") {
+  const { data: badge } = await (supabase as any).from("badges").select("name").eq("id", badgeId).maybeSingle();
+  const { data: existing } = await (supabase as any).from("user_badges").select("id").eq("user_id", userId).eq("badge_id", badgeId).eq("active", true).maybeSingle();
+  const result = existing
+    ? await (supabase as any).from("user_badges").update({ granted_by: adminId, internal_note: note || null, granted_at: new Date().toISOString() }).eq("id", existing.id)
+    : await (supabase as any).from("user_badges").insert({ user_id: userId, badge_id: badgeId, granted_by: adminId, internal_note: note || null, active: true });
+  const error = result.error;
+  if (!error && badge) {
+    await (supabase as any).from("notifications").insert({ user_id: userId, actor_id: adminId, type: "badge_awarded", title: "Shopitt recognition", body: `You have been recognized as ${badge.name}.`, message: "Your Shopitt identity has been updated.", is_read: false });
+  }
+  return error?.message ?? null;
+}
+
+export async function revokeUserBadge(assignmentId: string) {
+  const { error } = await (supabase as any).from("user_badges").update({ active: false }).eq("id", assignmentId);
   return error?.message ?? null;
 }
 
@@ -281,6 +341,36 @@ export async function deletePostAdmin(postId: string) {
   return error?.message ?? null;
 }
 
+export type AdminReport = {
+  id: string;
+  post_id: string;
+  creator_id: string | null;
+  reason: string;
+  description: string | null;
+  status: "open" | "reviewed" | "resolved" | "dismissed";
+  created_at: string;
+  post?: { title: string | null; media_url: string | null } | null;
+  creator?: { username: string | null } | null;
+};
+
+export async function fetchAdminReports(limit = 80): Promise<AdminReport[]> {
+  const { data, error } = await (supabase as any)
+    .from("post_reports")
+    .select("id, post_id, creator_id, reason, description, status, created_at, post:posts(title, media_url), creator:profiles!post_reports_creator_id_fkey(username)")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) return [];
+  return (data ?? []) as AdminReport[];
+}
+
+export async function updateAdminReport(reportId: string, status: AdminReport["status"], reviewerId: string) {
+  const { error } = await (supabase as any)
+    .from("post_reports")
+    .update({ status, reviewed_by: reviewerId, resolved_at: status === "resolved" ? new Date().toISOString() : null, updated_at: new Date().toISOString() })
+    .eq("id", reportId);
+  return error?.message ?? null;
+}
+
 export type AdminComment = {
   id: string;
   content: string | null;
@@ -367,6 +457,21 @@ export type FounderDashboard = {
   attention: { label: string; count: number }[];
 };
 
+export type AdminReportCounts = {
+  open: number;
+  reviewed: number;
+  resolved: number;
+};
+
+export async function fetchAdminReportCounts(): Promise<AdminReportCounts> {
+  const [open, reviewed, resolved] = await Promise.all([
+    count("post_reports", (q) => q.eq("status", "open")),
+    count("post_reports", (q) => q.eq("status", "reviewed")),
+    count("post_reports", (q) => q.eq("status", "resolved")),
+  ]);
+  return { open, reviewed, resolved };
+}
+
 async function countSince(table: string, column: string, iso: string) {
   return count(table, (q) => q.gte(column, iso));
 }
@@ -390,8 +495,8 @@ export async function fetchFounderDashboard(range: 7 | 30 | 90 = 30): Promise<Fo
 
   const [totalUsers, dailyActiveUsers, monthlyActiveUsers, newUsersToday, totalLooks, looksToday, comments, commentsToday, verifiedAccounts, activity] = await Promise.all([
     count("profiles"),
-    countSince("profiles", "updated_at", activeDay),
-    countSince("profiles", "updated_at", activeMonth),
+    countSince("platform_activity_events", "created_at", activeDay),
+    countSince("platform_activity_events", "created_at", activeMonth),
     countSince("profiles", "created_at", dayStart.toISOString()),
     count("posts"),
     countSince("posts", "created_at", dayStart.toISOString()),
